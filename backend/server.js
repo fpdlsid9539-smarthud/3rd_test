@@ -8,6 +8,8 @@ const devRouter = require("./routes/devRouter.js");
 const quizRouter = require("./routes/quizRouter.js");
 const stockRouter = require("./routes/stockRouter.js");
 const achievementsRouter = require("./routes/achievementsRouter.js");
+const educationRouter = require("./routes/educationRouter.js");
+
 
 const app = express();
 
@@ -20,6 +22,8 @@ app.use("/dev", devRouter);
 app.use("/quiz", quizRouter);
 app.use("/stocks", stockRouter);
 app.use("/achievements", achievementsRouter);
+app.use("/education", educationRouter);
+
 
 app.get("/__whoami", (req, res) => {
   res.json({ ok: true, pid: process.pid, time: new Date().toISOString() });
