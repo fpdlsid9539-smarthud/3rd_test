@@ -17,6 +17,7 @@ GET /achievements
 
 응답
 
+```text
 {
   "message": "업적/칭호 조회 성공",
   "data": [
@@ -30,6 +31,8 @@ GET /achievements
     }
   ]
 }
+```
+
 
 ---
 
@@ -60,6 +63,7 @@ GET /achievements/1
 
 응답
 
+```text
 {
   "message": "업적/칭호 상세 조회 성공",
   "data": {
@@ -71,6 +75,8 @@ GET /achievements/1
     "reward_point": 100
   }
 }
+```
+
 
 ---
 
