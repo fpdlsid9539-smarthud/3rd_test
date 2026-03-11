@@ -6,7 +6,67 @@ http://localhost:5000
 
 ---
 
-# 1. 업적 / 칭호 API
+# 1. 학습 콘텐츠 API (Education)
+
+## 학습 목록 조회
+
+GET /education
+
+설명  
+퀴즈 학습 전에 필요한 학습 콘텐츠 목록을 조회합니다.
+
+응답 예시
+
+{
+  "message": "학습 콘텐츠 조회 성공",
+  "data": [
+    {
+      "edu_id": 1,
+      "category": "주식기초",
+      "title": "주식이란 무엇인가",
+      "summary": "주식의 기본 개념을 학습합니다."
+    }
+  ]
+}
+
+---
+
+## 카테고리별 학습 조회
+
+GET /education?category=주식기초
+
+Query Parameter
+
+| 이름 | 설명 |
+|-----|-----|
+| category | 학습 카테고리 |
+
+---
+
+## 학습 상세 조회
+
+GET /education/:edu_id
+
+예시
+
+GET /education/1
+
+응답 예시
+
+{
+  "message": "학습 콘텐츠 상세 조회 성공",
+  "data": {
+    "edu_id": 1,
+    "category": "주식기초",
+    "title": "주식이란 무엇인가",
+    "content": "주식은 회사의 소유권 일부를 의미합니다."
+  }
+}
+
+---
+
+
+# 2. 업적 / 칭호 API
 
 ## 업적 목록 조회
 
@@ -80,7 +140,7 @@ GET /achievements/1
 
 ---
 
-# 2. 퀴즈 API
+# 3. 퀴즈 API
 
 ## 퀴즈 목록 조회
 
@@ -111,7 +171,7 @@ GET /quiz/:quiz_id
 
 ---
 
-# 3. 주식 API
+# 4. 주식 API
 
 ## 종목 목록 조회
 
@@ -146,7 +206,7 @@ GET /stocks/005930/chart?range=1mo&interval=1d
 
 ---
 
-# 4. 개발용 API
+# 5. 개발용 API
 
 ## 회원 목데이터 조회
 
