@@ -2,7 +2,7 @@ const express = require("express");
 const router = express.Router();
 const YahooFinance = require("yahoo-finance2").default;
 const yahooFinance = new YahooFinance();
-const db = require("../../config/db");
+const db = require("../config/db");
 
 function getPeriod1ByRange(range) {
   const now = new Date();

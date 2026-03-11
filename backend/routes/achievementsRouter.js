@@ -1,6 +1,6 @@
 const express = require("express");
 const router = express.Router();
-const db = require("../../config/db");
+const db = require("../config/db");
 
 // 1) 전체 업적/칭호 조회
 router.get("/", async (req, res) => {

@@ -4,10 +4,10 @@ const express = require("express");
 const cors = require("cors");
 const router = require("./routes/router.js");
 const loginRouter = require("./routes/loginRouter.js");
-const devRouter = require("./routes/dev/devRouter.js");
-const quizRouter = require("./routes/quiz/quizRouter.js");
-const stockRouter = require("./routes/stock/stockRouter.js");
-const achievementsRouter = require("./routes/achievements/achievementsRouter.js");
+const devRouter = require("./routes/devRouter.js");
+const quizRouter = require("./routes/quizRouter.js");
+const stockRouter = require("./routes/stockRouter.js");
+const achievementsRouter = require("./routes/achievementsRouter.js");
 
 const app = express();
 

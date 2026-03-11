@@ -1,8 +1,8 @@
 const express = require("express");
 const router = express.Router();
 
-const members = require("../../data/memberData");
-const devRankData = require("../../data/devRankData");
+const members = require("../data/memberData");
+const devRankData = require("../data/devRankData");
 
 // 회원 목데이터 조회
 router.get("/member", (req, res) => {
