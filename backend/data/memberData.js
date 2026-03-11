@@ -17,6 +17,15 @@ const members = [
     isr_score: 86,
     created_at: "2026-03-06T11:20:00",
   },
+  {
+    member_id: 3,
+    provider: "kakao",
+    provider_id: "kakao_33333333",
+    nickname: "차트고수",
+    points: 22000,
+    isr_score: 88,
+    created_at: "2026-03-06T11:25:00",
+  },
 ];
 
 module.exports = members;
