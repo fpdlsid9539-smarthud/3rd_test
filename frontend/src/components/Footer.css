@@ -1,0 +1,31 @@
+.footer {
+  height: 9rem;
+  max-width: 1320px;
+  margin: auto;
+
+  background-color: var(--bg);
+  border-radius: 24px 24px 0px 0px ;
+
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  gap: 16px;
+}
+
+.footer-logo {
+  height: 48px;
+}
+
+.footer-description {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+
+  font-size: 0.875rem;
+  color: var(--text-highlight);
+}
+
+.footer-liner {
+display: flex;
+gap: 24px;
+}

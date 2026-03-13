@@ -1,0 +1,80 @@
+@import url("https://cdn.jsdelivr.net/gh/orioncactus/pretendard@v1.3.9/dist/web/static/pretendard.min.css");
+@import url(//spoqa.github.io/spoqa-han-sans/css/SpoqaHanSansNeo.css);
+
+:root {
+  --primary: #4775ff;
+  --bg: #FFFFFF;
+  --secondary: hsl(144, 100%, 36%);
+  --text: #0B1532;
+  --danger: #FF4766;
+  --warning: #FFBF47;
+
+  --primary-70: color-mix(in oklab, var(--primary) 70%, var(--bg)100%);
+
+  --bg-grad: linear-gradient(135deg, #C2D1FF, #7094ff);
+  --progress-bar: linear-gradient(0deg, color-mix(in oklab, var(--primary), transparent 90%), color-mix(in oklab, #001F7A, transparent));
+  --btn-prim: linear-gradient(90deg, var(--primary-70) 25%, hsla(225, 100%, 88%, 0.70) 100%);
+  --border-prim: color-mix(in oklab, var(--primary) 70%, var(--bg)100%);
+  --text-highlight: color-mix(in oklab, var(--text) 48%, var(--bg));
+  --primary-highlight: color-mix(in oklab, var(--primary) 4%, var(--bg) 96%);
+  --border: color-mix(in oklab, var(--text) 16%, transparent);
+  --box-bg: color-mix(in oklab, var(--bg) 88%, transparent);
+}
+
+* {
+  font-family: 'Pretendard', 'Spoqa Han Sans Neo', 'sans-serif';
+  margin: 0;
+  padding: 0;
+  word-break: keep-all;
+}
+
+body {
+  margin: auto;
+  background: var(--bg-grad);
+}
+
+.icons {
+  width: 1.5rem;
+  height: 1.5rem;
+  padding: 1rem;
+}
+
+.description-top {
+  font-size: 0.875rem;
+  font-weight: 400;
+  color: var(--text-highlight);
+}
+
+.achievment-list {
+  height: 10rem;
+  overflow-y: scroll;
+
+  display: flex;
+  flex-direction: column;
+  gap: 1rem;
+}
+
+.achievment-item {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+}
+
+.img-block {
+  width: 2.5rem;
+  height: 2.5rem;
+
+  border-radius: 1rem;
+  background-color: var(--border);
+}
+
+.achievment-description {
+  display: flex;
+  flex-direction: column;
+  gap: 0.25rem;
+}
+
+.achievment-description p {
+  font-size: 1.125rem;
+  font-weight: 600;
+}

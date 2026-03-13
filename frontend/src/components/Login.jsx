@@ -1,40 +1,51 @@
 import React, { useState } from 'react'
-import api from '../config/axios';
+import './Login.css'
+import logoLong from '../assets/logo-long.svg'
 
-const Login = () => {
-  const [id, setId] = useState("");
-  const [pw, setPw] = useState("");
-  const handleLogin = async (e) => {
-    e.preventDefault();
-    try {
-      const res = await api.post('/api/login', {
-        id: id,
-        pw: pw,
-      });
-      if (res.data?.success) {
-        alert("로그인 성공");
-      }
-      console.log(res.data)
-    } catch (error) {
-      console.log(error);
-      alert(error);
+const Login = ({ setPage }) => {
+  const [id, setId] = useState('')
+  const [pw, setPw] = useState('')
+
+  const handleLogin = (e) => {
+    e.preventDefault()
+
+    // temporary login success
+    if (id && pw) {
+      setPage('main')
     }
-    setId("");
-    setPw("");
   }
 
   return (
-    <div>
-      <form onSubmit={handleLogin}>
-        <div className='flx-col'>
-          <span>아이디</span>
-          <input type="text" value={id} placeholder='아이디 입력' onChange={e => setId(e.target.value)} />
+    <div className='login'>
+      <form onSubmit={handleLogin} className='login-container'>
+        <img src={logoLong} alt="logo-long" className='login-logo' />
+        <div className='login-type'>
+          <div className='login-id'>
+            <input type="text"
+              className='login-input'
+              value={id} 
+              placeholder='카카오메일 아이디, 이메일, 전화번호'
+              onChange={e => setId(e.target.value)} />
+            <span><strong>TIP</strong> 카카오메일이 있다면 메일 아이디만 입력해 보세요.</span>
+          </div>
+          <input type="password"
+            className='login-input'
+            value={pw} 
+            placeholder='비밀번호'
+            onChange={e => setPw(e.target.value)} />
         </div>
-        <div className='flx-col'>
-          <span>비밀번호</span>
-          <input type="password" value={pw} placeholder='비밀번호 입력' onChange={e => setPw(e.target.value)} />
+
+        <div className=''>
+          <button type="submit" className='kakao_btn' alt="Login" onClick={() => setPage('main')}>로그인</button>
+
+          <div className='login-divide'>
+            <div className='divide-slave' />
+            <span>또는</span>
+            <div className='divide-slave' />
+          </div>
+
+          <button type="submit" className='join-btn' alt="Join" onClick={() => setPage('main')}>회원가입</button>
         </div>
-        <input type="submit" value="로그인" className='normal'/>
       </form>
     </div>
   )

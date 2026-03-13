@@ -2,34 +2,51 @@ require("dotenv").config();
 
 const express = require("express");
 const cors = require("cors");
-const router = require("./routes/router.js");
-const loginRouter = require("./routes/loginRouter.js");
-const devRouter = require("./routes/devRouter.js");
-const quizRouter = require("./routes/quizRouter.js");
-const stockRouter = require("./routes/stockRouter.js");
-const achievementsRouter = require("./routes/achievementsRouter.js");
-const educationRouter = require("./routes/educationRouter.js");
 
+const router = require("./src/routes/router");
+const authRoutes = require("./src/routes/authRoutes");
+const stockRoutes = require("./src/routes/stockRoutes");
+const quizRoutes = require("./src/routes/quizRoutes");
+const achievementRoutes = require("./src/routes/achievementRoutes");
 
 const app = express();
 
-app.use(cors());
-app.use(express.json());
+app.use(
+  cors({
+    origin: ["http://localhost:5173", "http://localhost:3000"],
+    credentials: true,
+  })
+);
 
+app.use(express.json());
+app.use(express.urlencoded({ extended: true }));
+
+/* 기본 라우터 */
 app.use("/", router);
-app.use("/login", loginRouter);
-app.use("/dev", devRouter);
-app.use("/quiz", quizRouter);
-app.use("/stocks", stockRouter);
-app.use("/achievements", achievementsRouter);
-app.use("/education", educationRouter);
+
+/* 인증 */
+app.use("/api/auth", authRoutes);
+
+/* 주식 */
+app.use("/api/stocks", stockRoutes);
+
+/* 퀴즈 */
+app.use("/api/quiz", quizRoutes);
+
+/* 업적/칭호 */
+app.use("/api", achievementRoutes);
 
 
 app.get("/__whoami", (req, res) => {
-  res.json({ ok: true, pid: process.pid, time: new Date().toISOString() });
+  res.json({
+    ok: true,
+    pid: process.pid,
+    time: new Date().toISOString(),
+  });
 });
 
 const PORT = process.env.PORT || 5000;
+
 app.listen(PORT, () => {
-  console.log(`서버 실행중: http://localhost:${PORT}`);
+  console.log(`✅ 서버 실행중: http://localhost:${PORT}`);
 });

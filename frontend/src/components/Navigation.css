@@ -1,0 +1,139 @@
+.navigation {
+  position: sticky;
+  top: 0;
+  height: 100vh;
+  padding: 1.5rem;
+
+  background-color: var(--box-bg);
+  border-right: 1px solid var(--border);
+  box-sizing: border-box;
+}
+
+.nav-content {
+  box-sizing: border-box;
+
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 3rem;
+}
+
+.nav-logo {
+  height: 2.5rem;
+  margin-top: 3rem;
+}
+
+.nav-list {
+  width: 100%;
+  box-sizing: border-box;
+
+  display: flex;
+  flex-direction: column;
+  justify-content: start;
+  gap: 1.5rem;
+
+  list-style-type: none;
+}
+
+.nav-menu {
+  height: 3.5rem;
+  width: 100%;
+  padding: 1rem 0;
+  box-sizing: border-box;
+
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+
+  font-size: 1.125rem;
+  font-weight: 500;
+  border-radius: 0.75rem;
+  border: 2px solid transparent;
+  background: transparent 0%;
+
+  transition: all 0.3s ease;
+  cursor: pointer;
+}
+
+.nav-menu:hover {
+  background: var(--btn-prim);
+  border: 2px solid var(--border-prim);
+}
+
+.nav-line {
+  display: flex;
+  align-items: center;
+}
+
+.nav-mixed {
+  display: flex;
+  flex-direction: column;
+}
+
+.sub-list {
+  width: 100%;
+  margin-top: 1rem;
+  
+  display: flex;
+  flex-direction: column;
+  /* align-items: end; */
+
+  max-height: 0;
+  overflow: hidden;
+  opacity: 0;
+  transform: translateY(-50%);
+  gap: 1rem;
+
+  list-style-type: none;
+  font-size: 1.125rem;
+  
+  transition: all 0.3s ease;
+}
+
+.nav-mixed.open .sub-list {
+  max-height: fit-content;
+  opacity: 1;
+  transform: translateY(0%);
+}
+
+.arrow {
+  width: 1.5rem;
+  height: 1.5rem;
+  padding: 1rem;
+
+  transition: all 0.3s ease;
+}
+
+.nav-mixed.open .arrow {
+  transform: rotate(180deg);
+}
+
+.line-item {
+  width: fit-content;
+  height: 3rem;
+  margin-left: 1.5rem;
+  padding: 0 1rem;
+  box-sizing: border-box;
+
+  display: flex;
+  align-items: center;
+  gap: 1.5rem;
+
+  background: transparent;
+  border: 2px solid transparent;
+  border-radius: 0.875rem;
+  cursor: pointer;
+}
+
+.sub-item {
+  width: 0.5rem;
+  height: 0.25rem;
+
+  background-color: var(--text);
+  border-radius: 0rem 0.25rem;
+}
+
+.line-item:hover {
+  background: var(--btn-prim);
+  border: 2px solid var(--border-prim);
+}

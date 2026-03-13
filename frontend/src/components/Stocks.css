@@ -1,0 +1,289 @@
+.stocks-container {
+  width: 100%;
+  min-height: 100vh;
+  padding: 1.5rem 2rem;
+  box-sizing: border-box;
+
+  display: flex;
+  flex-direction: column;
+  gap: 1rem;
+}
+
+.stocks-breadcrumb {
+  font-size: 0.75rem;
+  font-weight: 500;
+  color: #6f6f6f;
+}
+
+.stocks-layout {
+  display: grid;
+  grid-template-columns: 2.2fr 1fr;
+  gap: 1rem;
+  align-items: start;
+}
+
+.stocks-main {
+  display: flex;
+  flex-direction: column;
+  gap: 0.75rem;
+}
+
+.stocks-search-box {
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+}
+
+.stocks-label {
+  font-size: 0.95rem;
+  font-weight: 600;
+  color: #222;
+}
+
+.stocks-search-input {
+  width: 100%;
+  height: 2.6rem;
+  padding: 0 1rem;
+  box-sizing: border-box;
+
+  background-color: rgba(255, 255, 255, 0.88);
+  border: 1px solid #d7d7d7;
+  border-radius: 0.9rem;
+
+  font-size: 0.95rem;
+  color: #222;
+  outline: none;
+}
+
+.stocks-search-input::placeholder {
+  color: #8a8a95;
+}
+
+.stocks-search-input:focus {
+  border-color: #4f73ff;
+  box-shadow: 0 0 0 3px rgba(79, 115, 255, 0.12);
+}
+
+.stocks-tab-group {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+}
+
+.stocks-tab {
+  height: 2rem;
+  padding: 0 0.9rem;
+
+  border: none;
+  border-radius: 999px;
+  background-color: #e8e8ee;
+  color: #6d6d78;
+  font-size: 0.85rem;
+  font-weight: 500;
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+
+.stocks-tab:hover {
+  background-color: #dfe4ff;
+  color: #3f5ce0;
+}
+
+.stocks-tab.active {
+  background-color: #4f73ff;
+  color: #fff;
+}
+
+.stocks-chart-panel {
+  width: 100%;
+  min-height: 18rem;
+  padding: 1rem;
+  box-sizing: border-box;
+
+  background-color: rgba(255, 255, 255, 0.88);
+  border: 1px solid #d7d7d7;
+  border-radius: 1.2rem;
+
+  display: flex;
+  flex-direction: column;
+  gap: 0.75rem;
+}
+
+.stocks-panel-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.75rem;
+  padding-bottom: 0.5rem;
+  border-bottom: 1px solid #ececf2;
+}
+
+.stocks-panel-header h3 {
+  font-size: 1.05rem;
+  font-weight: 700;
+  color: #111;
+}
+
+.stocks-panel-header span {
+  font-size: 0.85rem;
+  color: #7a7a85;
+}
+
+.stocks-list {
+  display: flex;
+  flex-direction: column;
+  gap: 0.75rem;
+}
+
+.stocks-list-item {
+  padding: 0.9rem 1rem;
+
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 1rem;
+
+  background-color: #ffffff;
+  border: 1px solid #ececf2;
+  border-radius: 0.9rem;
+}
+
+.stocks-item-left,
+.stocks-item-right {
+  display: flex;
+  flex-direction: column;
+  gap: 0.25rem;
+}
+
+.stocks-item-name {
+  font-size: 0.98rem;
+  font-weight: 700;
+  color: #111;
+}
+
+.stocks-item-price {
+  font-size: 0.85rem;
+  color: #70707c;
+}
+
+.stocks-item-right {
+  align-items: flex-end;
+}
+
+.stocks-up {
+  color: #16a34a;
+  font-weight: 600;
+}
+
+.stocks-down {
+  color: #ef4444;
+  font-weight: 600;
+}
+
+.stocks-empty {
+  min-height: 12rem;
+
+  display: flex;
+  align-items: center;
+  justify-content: center;
+
+  color: #8a8a95;
+  font-size: 0.95rem;
+}
+
+.stocks-side {
+  display: flex;
+  flex-direction: column;
+  gap: 0.75rem;
+}
+
+.stocks-card {
+  width: 100%;
+  padding: 0.75rem;
+  box-sizing: border-box;
+
+  display: flex;
+  flex-direction: column;
+  gap: 0.75rem;
+
+  background-color: rgba(255, 255, 255, 0.88);
+  border: 1px solid #d7d7d7;
+  border-radius: 1.2rem;
+}
+
+.stocks-card.small {
+  min-height: 11.5rem;
+}
+
+.stocks-card h3 {
+  font-size: 1rem;
+  font-weight: 700;
+  color: #111;
+}
+
+.stocks-card-body {
+  display: flex;
+  flex-direction: column;
+  gap: 0.65rem;
+}
+
+.side-stock-item {
+  padding: 0.8rem 0.9rem;
+
+  display: flex;
+  flex-direction: column;
+  gap: 0.25rem;
+
+  background-color: #ffffff;
+  border: 1px solid #ececf2;
+  border-radius: 0.85rem;
+}
+
+.side-stock-item p {
+  font-size: 0.95rem;
+  font-weight: 600;
+  color: #111;
+}
+
+.side-stock-item span {
+  font-size: 0.82rem;
+  color: #777784;
+}
+
+/* 반응형 */
+@media (max-width: 1100px) {
+  .stocks-layout {
+    grid-template-columns: 1fr;
+  }
+
+  .stocks-side {
+    flex-direction: row;
+  }
+
+  .stocks-card {
+    flex: 1;
+  }
+}
+
+@media (max-width: 768px) {
+  .stocks-container {
+    padding: 1rem;
+  }
+
+  .stocks-side {
+    flex-direction: column;
+  }
+
+  .stocks-tab-group {
+    flex-wrap: wrap;
+  }
+
+  .stocks-list-item {
+    flex-direction: column;
+    align-items: flex-start;
+  }
+
+  .stocks-item-right {
+    align-items: flex-start;
+  }
+}
