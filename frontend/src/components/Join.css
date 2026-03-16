@@ -26,6 +26,8 @@
   align-items: center;
   gap: 0.5rem;
 
+  border: none;
+  background-color: transparent;
   font-size: 0.75rem;
   font-weight: 500;
 
@@ -58,7 +60,7 @@
   align-items: center;
   gap: 1rem;
   
-  background-color: var(--box-bg);
+  background-color: var(--bg-trans);
   border: 1px solid var(--border);
   border-radius: 1.5rem;
   box-sizing: border-box;

@@ -1,6 +1,7 @@
 import React, { useMemo, useState } from 'react'
 import './Education.css'
 import { educationLessons, getEducationProgress } from './educationData'
+import arrowDown from '../assets/icons/arrow-down-line.svg'
 
 const Education = () => {
   const [searchText, setSearchText] = useState('')
@@ -40,25 +41,25 @@ const Education = () => {
 
   return (
     <div className='education-container'>
-      <div className='education-breadcrumb'>대시보드 &gt; 교육실</div>
+      <div className='breadcrumb'>대시보드 &gt; 교육실</div>
 
       <div className='education-top-card'>
         <div className='education-title-wrap'>
-          <h1>주식의 기초를 알아가자!</h1>
-          <p>기초를 알아야 발전해요!</p>
+          <h1>주식의 <strong>기초를 알아가자!</strong></h1>
+          <p>기초를 알아야 <span className='daily-percent'>발전</span>해요!</p>
         </div>
 
         <div className='education-top-meta'>
-          <div className='education-meta-chip'>오늘 목표 1개 완료</div>
+          <div className='education-meta-chip'>오늘 목표 {progress.completedCount}개 완료</div>
           <div className='education-meta-chip'>연속 학습 3일째</div>
         </div>
 
         <div className='education-progress-wrap'>
           <div className='education-progress-top'>
             <span>학습 진행도</span>
-            <strong>
+            <span>
               {progress.completedCount}/{progress.totalCount}
-            </strong>
+            </span>
           </div>
 
           <div className='education-progress-bar'>
@@ -78,31 +79,31 @@ const Education = () => {
           onChange={(e) => setSearchText(e.target.value)}
           className='education-search-input'
         />
+        <div className='education-filter-row'>
+          <button
+            type='button'
+            className={`education-filter-btn ${selectedFilter === 'all' ? 'active' : ''}`}
+            onClick={() => setSelectedFilter('all')}
+          >
+            전체
+          </button>
+          <button
+            type='button'
+            className={`education-filter-btn ${selectedFilter === 'new' ? 'active' : ''}`}
+            onClick={() => setSelectedFilter('new')}
+          >
+            신규
+          </button>
+          <button
+            type='button'
+            className={`education-filter-btn ${selectedFilter === 'basic' ? 'active' : ''}`}
+            onClick={() => setSelectedFilter('basic')}
+          >
+            기초
+          </button>
+        </div>
       </div>
 
-      <div className='education-filter-row'>
-        <button
-          type='button'
-          className={`education-filter-btn ${selectedFilter === 'all' ? 'active' : ''}`}
-          onClick={() => setSelectedFilter('all')}
-        >
-          전체
-        </button>
-        <button
-          type='button'
-          className={`education-filter-btn ${selectedFilter === 'new' ? 'active' : ''}`}
-          onClick={() => setSelectedFilter('new')}
-        >
-          신규
-        </button>
-        <button
-          type='button'
-          className={`education-filter-btn ${selectedFilter === 'basic' ? 'active' : ''}`}
-          onClick={() => setSelectedFilter('basic')}
-        >
-          기초
-        </button>
-      </div>
 
       <div className='education-list'>
         {filteredLessons.length > 0 ? (
@@ -138,7 +139,7 @@ const Education = () => {
                     </div>
                   </div>
 
-                  <span className='education-arrow'>{isOpen ? '⌃' : '⌄'}</span>
+                  <img src={arrowDown} alt="collapsed" className='arrow' />
                 </button>
 
                 {isOpen && (
@@ -147,12 +148,9 @@ const Education = () => {
                       {lesson.summary}
                     </div>
 
-                    <div className='education-body-actions'>
-                      <span className='education-mini-tag'>{lesson.duration}</span>
-                      <button type='button' className='education-xp-btn'>
-                        학습 시작
-                      </button>
-                    </div>
+                    <button type='button' className='education-xp-btn'>
+                      학습 시작
+                    </button>
                   </div>
                 )}
               </div>

@@ -1,39 +1,6 @@
-import React, { useMemo, useState } from 'react'
+import React, { useEffect, useMemo, useState } from 'react'
 import './Stocks.css'
-
-const stockData = {
-  popular: [
-    { id: 1, name: '삼성전자', price: '73,200원', change: '+1,200원', rate: '+1.67%' },
-    { id: 2, name: 'SK하이닉스', price: '198,400원', change: '+2,500원', rate: '+1.28%' },
-    { id: 3, name: 'NAVER', price: '212,000원', change: '-1,000원', rate: '-0.47%' },
-    { id: 4, name: '카카오', price: '41,350원', change: '+350원', rate: '+0.85%' },
-    { id: 5, name: '현대차', price: '238,500원', change: '-2,000원', rate: '-0.83%' },
-  ],
-  rising: [
-    { id: 1, name: '한화에어로스페이스', price: '412,000원', change: '+18,000원', rate: '+4.57%' },
-    { id: 2, name: 'POSCO홀딩스', price: '365,500원', change: '+9,500원', rate: '+2.67%' },
-    { id: 3, name: 'LG화학', price: '298,000원', change: '+6,000원', rate: '+2.05%' },
-    { id: 4, name: '삼성전자', price: '73,200원', change: '+1,200원', rate: '+1.67%' },
-  ],
-  falling: [
-    { id: 1, name: '에코프로', price: '91,300원', change: '-4,700원', rate: '-4.90%' },
-    { id: 2, name: '카카오', price: '41,350원', change: '-1,250원', rate: '-2.94%' },
-    { id: 3, name: '현대차', price: '238,500원', change: '-2,000원', rate: '-0.83%' },
-    { id: 4, name: 'NAVER', price: '212,000원', change: '-1,000원', rate: '-0.47%' },
-  ],
-}
-
-const holdings = [
-  { id: 1, name: '삼성전자', info: '12주 보유' },
-  { id: 2, name: 'NAVER', info: '3주 보유' },
-  { id: 3, name: '현대차', info: '2주 보유' },
-]
-
-const favorites = [
-  { id: 1, name: '카카오', info: '관심 종목' },
-  { id: 2, name: 'LG화학', info: '관심 종목' },
-  { id: 3, name: 'SK하이닉스', info: '관심 종목' },
-]
+import { api } from '../config/api'
 
 const tabTitleMap = {
   popular: '인기 종목',
@@ -44,23 +11,78 @@ const tabTitleMap = {
 const Stocks = () => {
   const [activeTab, setActiveTab] = useState('popular')
   const [searchKeyword, setSearchKeyword] = useState('')
+  const [stocks, setStocks] = useState([])
+  const [loading, setLoading] = useState(true)
+  const [error, setError] = useState('')
+
+  useEffect(() => {
+    const loadStocks = async () => {
+      try {
+        const response = await api.get('/api/stocks')
+        setStocks(response.data || [])
+      } catch (err) {
+        setError(err.message)
+      } finally {
+        setLoading(false)
+      }
+    }
+
+    loadStocks()
+  }, [])
+
+  const normalizedStocks = useMemo(() => {
+    return stocks.map((stock, index) => {
+      const name = stock.name || stock.shortName || stock.longName || stock.symbol || `종목 ${index + 1}`
+      const price = stock.price || stock.regularMarketPrice || stock.close || 0
+      const change = stock.change || stock.regularMarketChange || 0
+      const rate = stock.rate || stock.regularMarketChangePercent || 0
+
+      return {
+        id: stock.symbol || index + 1,
+        symbol: stock.symbol || '',
+        name,
+        price: typeof price === 'number' ? `${price.toLocaleString()}원` : String(price),
+        change:
+          typeof change === 'number'
+            ? `${change >= 0 ? '+' : ''}${change.toLocaleString()}원`
+            : String(change),
+        rate:
+          typeof rate === 'number'
+            ? `${rate >= 0 ? '+' : ''}${rate.toFixed(2)}%`
+            : String(rate),
+      }
+    })
+  }, [stocks])
 
   const filteredStocks = useMemo(() => {
-    const currentList = stockData[activeTab]
+    let currentList = normalizedStocks
+
+    if (activeTab === 'rising') {
+      currentList = normalizedStocks.filter((stock) => String(stock.rate).startsWith('+'))
+    } else if (activeTab === 'falling') {
+      currentList = normalizedStocks.filter((stock) => String(stock.rate).startsWith('-'))
+    }
 
     if (!searchKeyword.trim()) return currentList
 
     return currentList.filter((stock) =>
       stock.name.toLowerCase().includes(searchKeyword.toLowerCase())
     )
-  }, [activeTab, searchKeyword])
+  }, [activeTab, searchKeyword, normalizedStocks])
+
+  if (loading) {
+    return <div className='stocks-container'>주식 목록 불러오는 중...</div>
+  }
+
+  if (error) {
+    return <div className='stocks-container'>오류: {error}</div>
+  }
 
   return (
     <div className='stocks-container'>
       <div className='stocks-breadcrumb'>대시보드 &gt; 전략실 &gt; 주식</div>
 
       <div className='stocks-layout'>
-        {/* 왼쪽 메인 영역 */}
         <div className='stocks-main'>
           <div className='stocks-search-box'>
             <label className='stocks-label' htmlFor='stock-search'>
@@ -121,7 +143,7 @@ const Stocks = () => {
                     <div className='stocks-item-right'>
                       <p
                         className={
-                          stock.change.startsWith('+')
+                          String(stock.change).startsWith('+')
                             ? 'stocks-up'
                             : 'stocks-down'
                         }
@@ -130,7 +152,7 @@ const Stocks = () => {
                       </p>
                       <span
                         className={
-                          stock.rate.startsWith('+')
+                          String(stock.rate).startsWith('+')
                             ? 'stocks-up'
                             : 'stocks-down'
                         }
@@ -141,37 +163,30 @@ const Stocks = () => {
                   </div>
                 ))
               ) : (
-                <div className='stocks-empty'>
-                  검색 결과가 없습니다.
-                </div>
+                <div className='stocks-empty'>검색 결과가 없습니다.</div>
               )}
             </div>
           </div>
         </div>
 
-        {/* 오른쪽 사이드 영역 */}
         <div className='stocks-side'>
           <div className='stocks-card small'>
             <h3>💹 보유 주식</h3>
             <div className='stocks-card-body'>
-              {holdings.map((stock) => (
-                <div className='side-stock-item' key={stock.id}>
-                  <p>{stock.name}</p>
-                  <span>{stock.info}</span>
-                </div>
-              ))}
+              <div className='side-stock-item'>
+                <p>아직 연동 전</p>
+                <span>보유 종목 API 연결 예정</span>
+              </div>
             </div>
           </div>
 
           <div className='stocks-card small'>
             <h3>💖 찜한 주식</h3>
             <div className='stocks-card-body'>
-              {favorites.map((stock) => (
-                <div className='side-stock-item' key={stock.id}>
-                  <p>{stock.name}</p>
-                  <span>{stock.info}</span>
-                </div>
-              ))}
+              <div className='side-stock-item'>
+                <p>아직 연동 전</p>
+                <span>찜 목록 API 연결 예정</span>
+              </div>
             </div>
           </div>
         </div>

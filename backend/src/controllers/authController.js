@@ -1,6 +1,6 @@
 const axios = require("axios");
-const jwt = require("jsonwebtoken");
 const db = require("../../config/db");
+const { createToken } = require("../utils/jwt");
 
 /* 공통 응답 */
 function success(res, message, data = null, status = 200) {
@@ -17,24 +17,6 @@ function fail(res, message, error = null, status = 500) {
     message,
     error,
   });
-}
-
-/* JWT 생성 */
-function createToken(member) {
-  if (!process.env.JWT_SECRET) {
-    throw new Error("JWT_SECRET이 설정되지 않았습니다.");
-  }
-
-  return jwt.sign(
-    {
-      member_id: member.member_id ?? null,
-      provider: member.provider,
-      provider_id: member.provider_id,
-      nickname: member.nickname,
-    },
-    process.env.JWT_SECRET,
-    { expiresIn: "1h" }
-  );
 }
 
 /* 업적 데이터 */
@@ -123,6 +105,15 @@ async function findMember(provider, providerId) {
   const [rows] = await db.promise().query(
     "SELECT * FROM members WHERE provider = ? AND provider_id = ?",
     [provider, providerId]
+  );
+
+  return rows[0] || null;
+}
+
+async function findMemberById(memberId) {
+  const [rows] = await db.promise().query(
+    "SELECT * FROM members WHERE member_id = ?",
+    [memberId]
   );
 
   return rows[0] || null;
@@ -221,16 +212,11 @@ exports.test = (req, res) => {
 
 exports.getMe = async (req, res) => {
   try {
-    const [rows] = await db.promise().query(
-      "SELECT * FROM members WHERE member_id = ?",
-      [req.user.member_id]
-    );
+    const member = await findMemberById(req.user.member_id);
 
-    if (!rows[0]) {
+    if (!member) {
       return fail(res, "회원 정보를 찾을 수 없습니다.", null, 404);
     }
-
-    const member = rows[0];
 
     return success(res, "현재 로그인 사용자 조회 성공", {
       member: buildMemberPayload(member),
@@ -245,31 +231,16 @@ exports.updateMe = async (req, res) => {
   try {
     const { nickname } = req.body;
 
-    if (!nickname || !nickname.trim()) {
-      return fail(res, "닉네임은 필수입니다.", null, 400);
-    }
-
-    const trimmedNickname = nickname.trim();
-
-    if (trimmedNickname.length > 100) {
-      return fail(res, "닉네임은 100자 이하로 입력해주세요.", null, 400);
-    }
-
     const [updateResult] = await db.promise().query(
       "UPDATE members SET nickname = ? WHERE member_id = ?",
-      [trimmedNickname, req.user.member_id]
+      [nickname, req.user.member_id]
     );
 
     if (updateResult.affectedRows === 0) {
       return fail(res, "회원 정보를 찾을 수 없습니다.", null, 404);
     }
 
-    const [rows] = await db.promise().query(
-      "SELECT * FROM members WHERE member_id = ?",
-      [req.user.member_id]
-    );
-
-    const updatedMember = rows[0];
+    const updatedMember = await findMemberById(req.user.member_id);
     const newToken = createToken(updatedMember);
 
     return success(res, "회원 정보 수정 성공", {
@@ -294,16 +265,11 @@ exports.logout = async (req, res) => {
 
 exports.getProfileMeta = async (req, res) => {
   try {
-    const [rows] = await db.promise().query(
-      "SELECT * FROM members WHERE member_id = ?",
-      [req.user.member_id]
-    );
+    const member = await findMemberById(req.user.member_id);
 
-    if (!rows[0]) {
+    if (!member) {
       return fail(res, "회원 정보를 찾을 수 없습니다.", null, 404);
     }
-
-    const member = rows[0];
 
     return success(res, "프로필 메타 조회 성공", {
       title: getTitle(member),
@@ -423,7 +389,7 @@ exports.googleLogin = (req, res) => {
     `&redirect_uri=${encodeURIComponent(process.env.GOOGLE_REDIRECT_URI)}` +
     `&response_type=code` +
     `&scope=openid%20email%20profile` +
-    `&prompt=select_account`;
+    `&prompt=consent%20select_account`;
 
   return res.redirect(url);
 };

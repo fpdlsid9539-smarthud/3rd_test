@@ -1,14 +1,41 @@
-import React from 'react'
+import React, { useEffect, useState } from 'react'
 import profile from '../assets/chicken running machine.gif'
 import './Dashboard.css'
+import { api } from '../config/api'
 
 const Dashboard = () => {
+  const [member, setMember] = useState(null)
+  const [loading, setLoading] = useState(true)
+  const [error, setError] = useState('')
+
+  useEffect(() => {
+    const loadDashboard = async () => {
+      try {
+        const data = await api.get('/api/auth/me')
+        setMember(data.data.member)
+      } catch (err) {
+        setError(err.message)
+      } finally {
+        setLoading(false)
+      }
+    }
+    loadDashboard()
+  }, [])
+
+  if (loading) {
+    return <div className='dash-container'>대시보드 불러오는 중...</div>
+  }
+
+  if (error) {
+    return <div className='dash-container'>오류: {error}</div>
+  }
+
   return (
     <div className='dash-container'>
       {/* breadcrumb */}
       <div className='breadcrumb'>대시보드</div>
       <div className='dash-title'>
-        <h1>어서오세요, <strong>Vivere</strong>님!</h1>
+        <h1>어서오세요, <strong>{member?.nickname || '사용자'}</strong>님!</h1>
         <p>일일 퀘스트 <span className='daily-percent'>0% 달성했어요!</span></p>
       </div>
       {/* content */}
@@ -84,9 +111,9 @@ const Dashboard = () => {
                 <div className='item-profile'>
                   <div className='rank-num'>1</div>
                   <img src={profile} alt="account image" className='rank-profile' />
-                  <span>nickname</span>
+                  <span>{member?.nickname || 'nickname'}</span>
                 </div>
-                <div className='rank-num'>score</div>
+                <div className='rank-num'>{member?.points ?? 0}</div>
               </li>
             </ul>
           </div>

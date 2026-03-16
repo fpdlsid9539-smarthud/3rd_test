@@ -1,4 +1,5 @@
 import React, { useState } from 'react'
+import api from '../config/axios';
 import './Join.css'
 import kakao from '../assets/kakao.svg'
 import google from '../assets/google.svg'
@@ -29,18 +30,12 @@ const Join = () => {
           서비스 사용을 위해서는
           가입 또는 로그인이 필요합니다.
         </p>
-        <button
-          className='kakao_btn'
-          onClick={() => setPage('login')}
-        >
+        <button className='kakao_btn'>
           <img src={kakao} alt="카카오" />
           <span>카카오로 시작하기</span>
         </button>
-        <button
-          className='google_btn'
-          onClick={() => setPage('login')}
-        >
-          <img src={google} alt="구글" />
+        <button className='google_btn'>
+          <img src={google} alt="카카오" />
           <span>구글로 시작하기</span>
         </button>
       </div>

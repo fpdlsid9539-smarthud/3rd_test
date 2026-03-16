@@ -3,7 +3,7 @@
   max-width: 1320px;
   margin: auto;
 
-  background-color: var(--bg);
+  background-color: var(--box-bg);
   border-radius: 24px 24px 0px 0px ;
 
   display: flex;

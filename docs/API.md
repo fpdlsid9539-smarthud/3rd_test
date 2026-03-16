@@ -287,6 +287,8 @@ limit=3
 - GET /api/auth/me
 - GET /api/auth/meta
 - GET /api/dashboard/invest-summary
+- GET /api/dashboard/holdings
+- GET /api/dashboard/recent-stocks
 - GET /api/member/achievements/recent
 
 ## 교육실
@@ -299,10 +301,13 @@ limit=3
 - GET /api/stocks/:symbol
 - GET /api/stocks/:symbol/chart
 
+
 ## 전략실 - 퀴즈
 - GET /api/quiz/random
+- POST /api/quiz/answer
 - POST /api/quiz/check
 - GET /api/quiz/:quiz_id/status
+- GET /api/dashboard/ranking-preview
 
 ## 랭킹
 - GET /api/ranking/grouped

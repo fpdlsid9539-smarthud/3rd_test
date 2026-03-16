@@ -1,4 +1,4 @@
-import React, { useState } from 'react'
+import React from 'react'
 import './Landing.css'
 import './Join.css'
 import kakao from '../assets/kakao.svg'
@@ -10,10 +10,27 @@ import Footer from './Footer'
 import finsight from '../assets/finsight.svg'
 import idk from '../assets/idk.jpg'
 
-const Landing = ({ setPage }) => {
+const BACKEND_URL = 'http://localhost:5000'
+
+const Landing = () => {
+  const clearAuth = () => {
+    localStorage.removeItem('token')
+    localStorage.removeItem('member')
+    localStorage.removeItem('nickname')
+    sessionStorage.clear()
+  }
+
+  const handleKakaoLogin = () => {
+    clearAuth()
+    window.location.href = `${BACKEND_URL}/api/auth/kakao`
+  }
+
+  const handleGoogleLogin = () => {
+    clearAuth()
+    window.location.href = `${BACKEND_URL}/api/auth/google`
+  }
 
   return (
-
     <div>
       <div className='container'>
         <main>
@@ -21,10 +38,12 @@ const Landing = ({ setPage }) => {
             <img src={finsight} alt="logo" className='logo' />
             <h1>투자를 게임처럼 배우다!</h1>
           </div>
+
           <div className='title-description'>
             <p>주식 차트 분석, 투자 판단, 그리고 나만의 투자 성향 분석까지.</p>
             <p>실전 데이터를 기반으로 투자 감각을 훈련하는 금융 트레이닝 플랫폼입니다.</p>
           </div>
+
           <div className='intro-container'>
             <img src={idk} alt="ikd" className='landing-idk' />
             <div className='intro-title'>
@@ -39,6 +58,7 @@ const Landing = ({ setPage }) => {
               </div>
             </div>
           </div>
+
           <div>
             <div className='ad-title'>
               <h2>게임처럼 성장하세요</h2>
@@ -52,6 +72,7 @@ const Landing = ({ setPage }) => {
                 <p>목표는 단 하나, <strong>더 나은 투자 판단 능력 만들기.</strong></p>
               </div>
             </div>
+
             <div className='ad-title-r'>
               <h2>실제 돈은 사용하지 않습니다!</h2>
               <div className='intro-description'>
@@ -64,15 +85,16 @@ const Landing = ({ setPage }) => {
                 <p>실수를 통해 배우고 투자 감각을 키워보세요.</p>
               </div>
             </div>
+
             <div className='ad-title'>
               <h2>당신의 투자 성향은 어떤 모습인가요?</h2>
               <div className='ad-description'>
                 <p>지금 시작하고 나만의 투자 성향 카드를 만들어보세요.</p>
-                <button className='ad-btn'>무료로 시작하기</button>
               </div>
             </div>
           </div>
         </main>
+
         <aside className='floating-nav'>
           <div className='landing-navigation'>
             <div className='landing-navigation-menu'>
@@ -88,28 +110,27 @@ const Landing = ({ setPage }) => {
               <p>연락</p>
             </div>
           </div>
+
           <div className='box'>
             <p>
               서비스 사용을 위해서는
-              가입 또는 로그인이 필요합니다.
+              <br />
+              소셜 로그인이 필요합니다.
             </p>
-            <button
-              className='kakao_btn'
-              onClick={() => setPage('login')}
-            >
+
+            <button className='kakao_btn' onClick={handleKakaoLogin}>
               <img src={kakao} alt="카카오" />
               <span>카카오로 시작하기</span>
             </button>
-            <button
-              className='google_btn'
-              onClick={() => setPage('login')}
-            >
+
+            <button className='google_btn' onClick={handleGoogleLogin}>
               <img src={google} alt="구글" />
               <span>구글로 시작하기</span>
             </button>
           </div>
         </aside>
       </div>
+
       <div className='white-section' />
       <Footer />
     </div>

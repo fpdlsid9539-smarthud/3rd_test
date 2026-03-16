@@ -1,14 +1,13 @@
 const db = require("../../config/db");
 
-// 공통 응답 함수 (규격 통일)
 function success(res, message, data = null, status = 200) {
   return res.status(status).json({ success: true, message, data });
 }
+
 function fail(res, message, error = null, status = 500) {
   return res.status(status).json({ success: false, message, error });
 }
 
-// 1) 전체 업적/칭호 조회
 exports.getAllAchievements = async (req, res) => {
   try {
     const { item_type, category } = req.query;
@@ -37,12 +36,11 @@ exports.getAllAchievements = async (req, res) => {
   }
 };
 
-// 2) 특정 업적/칭호 1개 조회
 exports.getAchievementById = async (req, res) => {
   try {
     const { id } = req.params;
     const sql = `SELECT ach_id, item_type, category, name, description, reward_point FROM achievements WHERE ach_id = ?`;
-    
+
     const [rows] = await db.promise().query(sql, [id]);
 
     if (rows.length === 0) {
@@ -53,5 +51,16 @@ exports.getAchievementById = async (req, res) => {
   } catch (err) {
     console.error("업적/칭호 상세 조회 오류:", err);
     return fail(res, "업적/칭호 상세 조회 실패", err.message);
+  }
+};
+
+exports.getMyAchievements = async (req, res) => {
+  try {
+    return success(res, "내 업적 조회 성공", {
+      member_id: req.user.member_id,
+      achievements: [],
+    });
+  } catch (err) {
+    return fail(res, "내 업적 조회 실패", err.message);
   }
 };
