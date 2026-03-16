@@ -21,21 +21,11 @@ app.use(
 app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
 
-/* 기본 라우터 */
 app.use("/", router);
-
-/* 인증 */
 app.use("/api/auth", authRoutes);
-
-/* 주식 */
 app.use("/api/stocks", stockRoutes);
-
-/* 퀴즈 */
 app.use("/api/quiz", quizRoutes);
-
-/* 업적/칭호 */
 app.use("/api", achievementRoutes);
-
 
 app.get("/__whoami", (req, res) => {
   res.json({

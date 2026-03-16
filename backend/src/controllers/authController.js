@@ -106,51 +106,16 @@ function buildLoginResponseData(result, token) {
   };
 }
 
-function renderLoginSuccessPage(providerLabel, data) {
-  const achievementHtml = data.recentAchievements.length
-    ? data.recentAchievements.map((item) => `<li>${item}</li>`).join("")
-    : "<li>업적 없음</li>";
+function buildFrontendRedirectUrl(data) {
+  const frontendUrl = process.env.FRONTEND_URL || "http://localhost:5173";
 
-  return `
-    <html lang="ko">
-      <head>
-        <meta charset="UTF-8" />
-        <title>${providerLabel} 로그인 성공</title>
-      </head>
-      <body style="font-family:sans-serif; padding:40px; line-height:1.8;">
-        <h1>${providerLabel} 로그인 성공</h1>
+  const params = new URLSearchParams({
+    token: data.token,
+    nickname: data.member.nickname || "",
+    provider: data.member.provider || "",
+  });
 
-        <h2>
-          ${data.member.nickname}
-          <span style="font-size:18px; border:1px solid #d4a017; border-radius:12px; padding:4px 10px; margin-left:8px;">
-            ${data.member.title}
-          </span>
-          <span style="font-size:18px; border:1px solid #999; border-radius:12px; padding:4px 10px; margin-left:8px;">
-            ${data.member.tier}
-          </span>
-        </h2>
-
-        <ul>
-          <li><strong>member_id:</strong> ${data.member.member_id}</li>
-          <li><strong>provider:</strong> ${data.member.provider}</li>
-          <li><strong>provider_id:</strong> ${data.member.provider_id}</li>
-          <li><strong>points:</strong> ${data.member.points}</li>
-          <li><strong>isr_score:</strong> ${data.member.isr_score}</li>
-          <li><strong>신규회원 여부:</strong> ${data.isNewUser ? "예" : "아니오"}</li>
-        </ul>
-
-        <h3>최근 업적</h3>
-        <ul>${achievementHtml}</ul>
-
-        <h3>토큰</h3>
-        <textarea style="width:100%; height:120px;">${data.token}</textarea>
-
-        <p style="margin-top:20px;">
-          <a href="/api/auth">소셜 로그인 화면으로 돌아가기</a>
-        </p>
-      </body>
-    </html>
-  `;
+  return `${frontendUrl}/?${params.toString()}`;
 }
 
 /* DB 함수 */
@@ -361,7 +326,8 @@ exports.kakaoLogin = (req, res) => {
     `https://kauth.kakao.com/oauth/authorize` +
     `?client_id=${process.env.KAKAO_REST_API_KEY}` +
     `&redirect_uri=${encodeURIComponent(process.env.KAKAO_REDIRECT_URI)}` +
-    `&response_type=code`;
+    `&response_type=code` +
+    `&prompt=select_account`;
 
   return res.redirect(url);
 };
@@ -429,8 +395,9 @@ exports.kakaoCallback = async (req, res) => {
     const token = createToken(result.member);
     const responseData = buildLoginResponseData(result, token);
 
-    return res.send(renderLoginSuccessPage("카카오", responseData));
+    return res.redirect(buildFrontendRedirectUrl(responseData));
   } catch (err) {
+    console.error("카카오 로그인 상세 오류:", err.response?.data || err.message);
     return fail(
       res,
       "카카오 로그인 실패",
@@ -525,8 +492,9 @@ exports.googleCallback = async (req, res) => {
     const token = createToken(result.member);
     const responseData = buildLoginResponseData(result, token);
 
-    return res.send(renderLoginSuccessPage("구글", responseData));
+    return res.redirect(buildFrontendRedirectUrl(responseData));
   } catch (err) {
+    console.error("구글 로그인 상세 오류:", err.response?.data || err.message);
     return fail(
       res,
       "구글 로그인 실패",

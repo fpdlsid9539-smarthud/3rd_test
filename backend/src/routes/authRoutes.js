@@ -4,10 +4,7 @@ const router = express.Router();
 const authController = require("../controllers/authController");
 const authMiddleware = require("../../middlewares/authMiddleware");
 
-
 router.get("/", authController.loginPage);
-
-
 router.get("/test", authController.test);
 
 /* 소셜 로그인 */
