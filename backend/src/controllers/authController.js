@@ -171,7 +171,7 @@ async function createMember(provider, providerId, nickname) {
   }
 }
 
-async function loginOrRegister(provider, providerId, nickname) {
+async function loginOrRegister(provider, providerId, nickname, profile_Image) {
   const member = await findMember(provider, providerId);
 
   if (member) {
@@ -182,7 +182,7 @@ async function loginOrRegister(provider, providerId, nickname) {
     };
   }
 
-  const newMember = await createMember(provider, providerId, nickname);
+  const newMember = await createMember(provider, providerId, nickname, profile_Image);
   return {
     isNewUser: true,
     member: newMember,
@@ -334,6 +334,7 @@ async function getKakaoUserInfo(accessToken) {
       data?.properties?.nickname ||
       data?.kakao_account?.profile?.nickname ||
       "kakao_user",
+    profile_Image: data?.kakao_account?.profile?.profile_image_url || "" 
   };
 }
 

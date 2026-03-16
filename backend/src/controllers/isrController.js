@@ -6,13 +6,13 @@ exports.getISR = async (req, res) => {
 
   try {
 
-    const userId = req.user.id
+    const memberId = req.user.member_id;
 
     const [rows] = await db.query(
       `SELECT *
-       FROM irs_score
+       FROM isr_score
        WHERE member_id = ?`,
-      [userId]
+      [memberId]
     )
 
     if (rows.length === 0) {

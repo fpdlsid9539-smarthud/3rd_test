@@ -2,21 +2,21 @@ exports.calculateISR = async (req, res) => {
 
   try {
 
-    const userId = req.user.id
+    const memberId = req.user.member_id;
 
     // 1️⃣ get trades
     const [trades] = await db.query(
-      `SELECT * FROM trades WHERE user_id = ?`,
-      [userId]
+      `SELECT * FROM gameLog WHERE member_id = ?`,
+      [memberId]
     )
 
     // 2️⃣ get portfolio history
     const [portfolioHistory] = await db.query(
       `SELECT value
        FROM point_history
-       WHERE user_id = ?
+       WHERE member_id = ?
        ORDER BY date`,
-      [userId]
+      [memberId]
     )
 
     const portfolioValues =
@@ -61,11 +61,11 @@ exports.calculateISR = async (req, res) => {
     // 5️⃣ save to DB
 
     await db.query(
-      `REPLACE INTO isr_score
-       (user_id, accuracy, risk, strategy, stability, discipline, adaptability, isr_score)
+      `INSERT INTO isr_chart
+       (member_id, isr_accuracy, isr_risk, isr_strategy, isr_stability, isr_discipline, isr_adaptability, isr_score)
        VALUES (?, ?, ?, ?, ?, ?, ?, ?)`,
       [
-        userId,
+        memberId,
         accuracy,
         risk,
         strategy,
