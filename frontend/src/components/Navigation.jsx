@@ -17,20 +17,20 @@ const Navigation = ({ setActiveMenu }) => {
         <ul className='nav-list'>
           <li className='nav-menu' onClick={() => setActiveMenu('Dashboard')}>
             <div className='nav-line'>
-              <img src={dashboard} alt="Dashboard" className='icons' /><span>대시보드</span>
+              <img src={dashboard} alt="Dashboard" className='icons icon-btn' /><span>대시보드</span>
             </div>
           </li>
           <li className='nav-menu' onClick={() => setActiveMenu('Education')}>
             <div className='nav-line'>
-              <img src={education} alt="Education" className='icons' /><span>교육실</span>
+              <img src={education} alt="Education" className='icons icon-btn' /><span>교육실</span>
             </div>
           </li>
           <li className={`nav-mixed ${open ? "open" : ""}`} >
             <div className='nav-menu' onClick={() => setOpen(!open)}>
               <div className='nav-line'>
-                <img src={strategy} alt="Strategy Room" className='icons' /><span>전략실</span>
+                <img src={strategy} alt="Strategy Room" className='icons icon-btn' /><span>전략실</span>
               </div>
-              <img src={arrowDown} alt="collapsed" className='arrow' />
+              <img src={arrowDown} alt="collapsed" className='arrow ' />
             </div>
             <ul className='sub-list'>
               <li className='line-item' onClick={() => setActiveMenu('Quiz')}>
@@ -43,7 +43,7 @@ const Navigation = ({ setActiveMenu }) => {
           </li>
           <li className='nav-menu' onClick={() => setActiveMenu('Ranking')}>
             <div className='nav-line'>
-              <img src={rank} alt="Ranking" className='icons' /><span>랭킹</span>
+              <img src={rank} alt="Ranking" className='icons icon-btn' /><span>랭킹</span>
             </div>
           </li>
         </ul>

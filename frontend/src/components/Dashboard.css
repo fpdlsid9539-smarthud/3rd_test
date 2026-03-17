@@ -63,13 +63,6 @@
   gap: 1.5rem;
 }
 
-/* 
-.dash-slave {
-  display: grid;
-  grid-template-rows: 1fr 1fr;
-  gap: 1.5rem;
-} */
-
 .dash-box {
   width: 100%;
   height: fit-content;
@@ -155,20 +148,23 @@
 
   display: flex;
   justify-content: space-between;
-  list-style-type: none;
-
+  
   background-color: var(--primary-highlight);
   border-bottom: 1px solid var(--border);
-  border-start-start-radius: 0.75rem;
-  border-start-end-radius: 0.75rem;
+  border-radius: 0.75rem 0.75rem 0 0;
+  
+  list-style-type: none;
 }
 
 .league {
   width: 3.5rem;
   height: 3.5rem;
+}
 
-  background-color: var(--primary);
-  border-radius: 1.5rem;
+.league-badge {
+  width: 3.5rem;
+  height: 3.5rem;
+  
 }
 
 .rank-list {

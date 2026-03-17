@@ -1,6 +1,5 @@
 import React from 'react'
 import './Landing.css'
-import './Join.css'
 import kakao from '../assets/kakao.svg'
 import google from '../assets/google.svg'
 import home from '../assets/icons/home.svg'

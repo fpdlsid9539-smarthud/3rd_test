@@ -3,7 +3,7 @@ import './Profile.css'
 import notification from '../assets/icons/notification.svg'
 import account from '../assets/icons/account.svg'
 import logout from '../assets/icons/logout.svg'
-import profile from '../assets/chicken running machine.gif'
+import defaultProfile from '../assets/chicken running machine.gif'
 import vivereBeginner from '../assets/icons/achievement/vivere_beginner.png'
 import { api } from '../config/api.js'
 
@@ -74,7 +74,7 @@ const Profile = () => {
 
         <div className='profile-master'>
           <div className='profile-account'>
-            <img src={profile} alt="profile image" className='profile-pic' />
+            <img src={member?.profile_image || defaultProfile} alt="profile image" className='profile-pic' />
             <div className='profile-premium'>👑</div>
           </div>
 

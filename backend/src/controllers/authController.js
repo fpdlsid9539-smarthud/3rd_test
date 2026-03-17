@@ -46,7 +46,7 @@ function getTier(member) {
   if (isr >= 80) return "플래티넘 II";
   if (isr >= 65) return "골드 III";
   if (isr >= 50) return "실버 IV";
-  return "브론즈 I";
+  return "브론즈 V";
 }
 
 function getRecentAchievements(member) {
@@ -76,6 +76,7 @@ function buildMemberPayload(member) {
     points: member.points ?? 0,
     isr_score: member.isr_score ?? 0,
     created_at: member.created_at ?? null,
+    profile_image: member.profile_image,
   };
 }
 
@@ -133,7 +134,7 @@ async function grantDefaultAchievementIfMissing(memberId) {
   }
 }
 
-async function createMember(provider, providerId, nickname) {
+async function createMember(provider, providerId, nickname, profile_image) {
   const safeNickname =
     nickname && nickname.trim()
       ? nickname.trim()
@@ -145,8 +146,8 @@ async function createMember(provider, providerId, nickname) {
     await conn.beginTransaction();
 
     const [result] = await conn.query(
-      "INSERT INTO members (provider, provider_id, nickname) VALUES (?, ?, ?)",
-      [provider, providerId, safeNickname]
+      "INSERT INTO members (provider, provider_id, nickname, profile_image) VALUES (?, ?, ?, ?)",
+      [provider, providerId, safeNickname, profile_image]
     );
 
     const newMemberId = result.insertId;
@@ -171,10 +172,18 @@ async function createMember(provider, providerId, nickname) {
   }
 }
 
-async function loginOrRegister(provider, providerId, nickname, profile_Image) {
+async function loginOrRegister(provider, providerId, nickname, profile_image) {
   const member = await findMember(provider, providerId);
 
   if (member) {
+    if (profile_image) {
+      await db.promise().query(
+        "UPDATE members SET profile_image = ? WHERE member_id = ?",
+        [profile_image, member.member_id]
+      );
+      member.profile_image = profile_image; // 프론트로 보낼 객체도 최신 프사로 갱신
+    }
+
     await grantDefaultAchievementIfMissing(member.member_id);
     return {
       isNewUser: false,
@@ -182,7 +191,7 @@ async function loginOrRegister(provider, providerId, nickname, profile_Image) {
     };
   }
 
-  const newMember = await createMember(provider, providerId, nickname, profile_Image);
+  const newMember = await createMember(provider, providerId, nickname, profile_image);
   return {
     isNewUser: true,
     member: newMember,
@@ -282,6 +291,26 @@ exports.getProfileMeta = async (req, res) => {
   }
 };
 
+/* 토큰 재발급 */
+exports.refreshToken = async (req, res) => {
+  try {
+    const member = await findMemberById(req.user.member_id);
+
+    if (!member) {
+      return fail(res, "회원 정보를 찾을 수 없습니다.", null, 404);
+    }
+
+    const newToken = createToken(member);
+
+    return success(res, "토큰 재발급 성공", {
+      token: newToken,
+      member: buildMemberPayload(member),
+    });
+  } catch (err) {
+    return fail(res, "토큰 재발급 실패", err.message, 500);
+  }
+};
+
 /* Kakao */
 exports.kakaoLogin = (req, res) => {
   if (!process.env.KAKAO_REST_API_KEY || !process.env.KAKAO_REDIRECT_URI) {
@@ -320,21 +349,31 @@ async function getKakaoAccessToken(code) {
 
 async function getKakaoUserInfo(accessToken) {
   const response = await axios.get("https://kapi.kakao.com/v2/user/me", {
-    headers: {
-      Authorization: `Bearer ${accessToken}`,
-    },
+    headers: { Authorization: `Bearer ${accessToken}`, },
   });
 
   const data = response.data;
+
+  const profileNeedsAgreement =
+    data?.kakao_account?.profile_needs_agreement;
+
+  if (profileNeedsAgreement) {
+    console.warn("카카오 프로필 동의 필요 - 콘솔에서 동의항목 설정 확인 필요");
+  }
+
+  const profile_image =
+    data?.kakao_account?.profile?.profile_image_url ||
+    data?.kakao_account?.profile?.thumbnail_image_url ||
+    data?.properties?.profile_image ||
+    null;
 
   return {
     provider: "kakao",
     providerId: String(data.id),
     nickname:
       data?.properties?.nickname ||
-      data?.kakao_account?.profile?.nickname ||
-      "kakao_user",
-    profile_Image: data?.kakao_account?.profile?.profile_image_url || "" 
+      data?.kakao_account?.profile?.nickname || "kakao_user",
+    profile_image,
   };
 }
 
@@ -356,7 +395,8 @@ exports.kakaoCallback = async (req, res) => {
     const result = await loginOrRegister(
       user.provider,
       user.providerId,
-      user.nickname
+      user.nickname,
+      user.profile_image,
     );
 
     const token = createToken(result.member);
@@ -432,6 +472,7 @@ async function getGoogleUserInfo(accessToken) {
     provider: "google",
     providerId: String(data.id),
     nickname: data.name || "google_user",
+    profile_image: data.picture || "",
   };
 }
 
@@ -453,7 +494,8 @@ exports.googleCallback = async (req, res) => {
     const result = await loginOrRegister(
       user.provider,
       user.providerId,
-      user.nickname
+      user.nickname,
+      user.profile_image,
     );
 
     const token = createToken(result.member);

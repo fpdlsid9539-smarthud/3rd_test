@@ -3,28 +3,27 @@ import Landing from './components/Landing'
 import Main from './components/Main'
 
 function App() {
-  const [page, setPage] = useState('landing')
+  const [page, setPage] = useState(null) // null = 아직 판단 중 (깜빡임 방지)
 
-  // 💡 마법의 낚아채기 로직 (화면이 처음 켜질 때 한 번만 실행됨)
   useEffect(() => {
-    // 1. 현재 주소창을 쓱 훑어봅니다.
-    const urlParams = new URLSearchParams(window.location.search);
-    const token = urlParams.get('token'); // 주소창에서 'token=' 뒤에 있는 값을 가져옴
+    // 1. URL 에 token 이 있으면 저장 후 URL 정리
+    const urlParams = new URLSearchParams(window.location.search)
+    const tokenFromUrl = urlParams.get('token')
 
-    if (token) {
-      localStorage.setItem('token', token);
-      window.history.replaceState({}, document.title, "/");
-      setPage('main');
+    if (tokenFromUrl) {
+      localStorage.setItem('token', tokenFromUrl)
+      window.history.replaceState({}, document.title, '/')
+      setPage('main')
       return
     }
 
+    // 2. 이미 저장된 토큰이 있으면 바로 main
     const savedToken = localStorage.getItem('token')
-    if (savedToken) {
-      setPage('main')
-    } else {
-      setPage('landing')
-    }
-  }, []);
+    setPage(savedToken ? 'main' : 'landing')
+  }, [])
+
+  // 판단 전에는 아무것도 렌더링하지 않음 (토큰 미확정 상태로 API 호출 방지)
+  if (page === null) return null
 
   return (
     <>

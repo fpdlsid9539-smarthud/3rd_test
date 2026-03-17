@@ -23,21 +23,15 @@ exports.calculateISR = async (req, res) => {
       portfolioHistory.map(p => p.value)
 
     // mock returns
-    const returns =
-      portfolioValues.map((v,i,arr) =>
-        i === 0 ? 0 : (v - arr[i-1]) / arr[i-1]
-      )
+    const returns = portfolioValues.map((v, i, arr) => i === 0 ? 0 : (v - arr[i - 1]) / arr[i - 1])
 
     // 3️⃣ calculate metrics
 
-    const accuracy =
-      isrEngine.calculateAccuracy(trades)
+    const accuracy = isrEngine.calculateAccuracy(trades);
 
-    const stability =
-      isrEngine.calculateStability(returns)
+    const stability = isrEngine.calculateStability(returns);
 
-    const discipline =
-      isrEngine.calculateDiscipline(trades)
+    const discipline = isrEngine.calculateDiscipline(trades);
 
     // placeholders until engines added
     const risk = 70
@@ -51,35 +45,42 @@ exports.calculateISR = async (req, res) => {
       stability,
       discipline,
       adaptability
-    }
+    };
 
     // 4️⃣ calculate final score
 
     const isrScore =
-      isrEngine.calculateISR(metrics)
+      isrEngine.calculateISR(metrics);
 
     // 5️⃣ save to DB
 
     await db.query(
-      `INSERT INTO isr_chart
+      `INSERT INTO isr_Chart
        (member_id, isr_accuracy, isr_risk, isr_strategy, isr_stability, isr_discipline, isr_adaptability, isr_score)
        VALUES (?, ?, ?, ?, ?, ?, ?, ?)`,
       [
         memberId,
-        accuracy,
-        risk,
-        strategy,
-        stability,
-        discipline,
-        adaptability,
-        isrScore
+        isr_accuracy,
+        isr_risk,
+        isr_strategy,
+        isr_stability,
+        isr_discipline,
+        isr_adaptability,
+        isr_score
       ]
-    )
+    );
+
+    await db.query(
+      `UPDATE members
+       SET isr_score = ?
+       WHERE member_id = ?`,
+      [isr_score, memberId]
+    );
 
     res.json({
       metrics,
       isrScore
-    })
+    });
 
   } catch (err) {
 
@@ -87,8 +88,8 @@ exports.calculateISR = async (req, res) => {
 
     res.status(500).json({
       error: "ISR 점수 계산 실패"
-    })
+    });
 
-  }
+  };
 
 }
