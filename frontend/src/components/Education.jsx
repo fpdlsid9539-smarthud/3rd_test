@@ -12,7 +12,9 @@ const getAccessToken = () => {
 const Education = () => {
   const [searchText, setSearchText] = useState('')
   const [openLessonId, setOpenLessonId] = useState(null)
-  const [selectedFilter, setSelectedFilter] = useState('all')
+
+  const [selectedStatusFilter, setSelectedStatusFilter] = useState('all')
+  const [selectedDifficultyFilter, setSelectedDifficultyFilter] = useState('all')
 
   const [educationLessons, setEducationLessons] = useState([])
   const [progress, setProgress] = useState({
@@ -26,27 +28,27 @@ const Education = () => {
   const [actionMessage, setActionMessage] = useState('')
   const [processingLessonId, setProcessingLessonId] = useState(null)
 
-  const getVisibleLessonsByFilter = (lessons, filter) => {
+  const getVisibleLessons = (lessons, statusFilter, difficultyFilter) => {
     let visible = [...lessons]
 
-    if (filter === 'all') {
+    if (statusFilter === 'all') {
       visible = visible.filter((lesson) => !lesson.isCompleted)
     }
 
-    if (filter === 'new') {
+    if (statusFilter === 'new') {
       visible = visible.filter(
         (lesson) => !lesson.isCompleted && lesson.status === 'new'
       )
     }
 
-    if (filter === 'basic') {
-      visible = visible.filter(
-        (lesson) => !lesson.isCompleted && lesson.status === 'basic'
-      )
+    if (statusFilter === 'completed') {
+      visible = visible.filter((lesson) => lesson.isCompleted)
     }
 
-    if (filter === 'completed') {
-      visible = visible.filter((lesson) => lesson.isCompleted)
+    if (difficultyFilter !== 'all') {
+      visible = visible.filter(
+        (lesson) => lesson.difficulty === difficultyFilter
+      )
     }
 
     return visible
@@ -94,12 +96,7 @@ const Education = () => {
         setProgress(progressData)
         setTotalEarnedPoints(data.totalEarnedPoints || 0)
 
-        const firstOpenTarget =
-          lessons.find((lesson) => !lesson.isCompleted) ||
-          lessons.find((lesson) => lesson.isCompleted) ||
-          null
-
-        setOpenLessonId(firstOpenTarget ? firstOpenTarget.id : null)
+        setOpenLessonId(null)
       } catch (err) {
         console.error('교육 데이터 조회 실패:', err)
 
@@ -127,7 +124,12 @@ const Education = () => {
 
   const filteredLessons = useMemo(() => {
     const keyword = searchText.trim().toLowerCase()
-    let filtered = getVisibleLessonsByFilter(educationLessons, selectedFilter)
+
+    let filtered = getVisibleLessons(
+      educationLessons,
+      selectedStatusFilter,
+      selectedDifficultyFilter
+    )
 
     if (keyword) {
       filtered = filtered.filter((lesson) => {
@@ -139,7 +141,24 @@ const Education = () => {
     }
 
     return filtered
-  }, [searchText, selectedFilter, educationLessons])
+  }, [searchText, selectedStatusFilter, selectedDifficultyFilter, educationLessons])
+
+  useEffect(() => {
+    if (filteredLessons.length === 0) {
+      setOpenLessonId(null)
+      return
+    }
+
+    if (openLessonId === null) {
+      return
+    }
+
+    const stillExists = filteredLessons.some((lesson) => lesson.id === openLessonId)
+
+    if (!stillExists) {
+      setOpenLessonId(filteredLessons[0].id)
+    }
+  }, [filteredLessons, openLessonId])
 
   const handleToggleLesson = (lessonId) => {
     setOpenLessonId((prev) => (prev === lessonId ? null : lessonId))
@@ -193,7 +212,12 @@ const Education = () => {
         setActionMessage('학습 완료! 이미 포인트를 받은 학습입니다.')
       }
 
-      const nextVisibleLessons = getVisibleLessonsByFilter(nextLessons, selectedFilter)
+      const nextVisibleLessons = getVisibleLessons(
+        nextLessons,
+        selectedStatusFilter,
+        selectedDifficultyFilter
+      )
+
       setOpenLessonId(nextVisibleLessons.length > 0 ? nextVisibleLessons[0].id : null)
     } catch (err) {
       console.error('학습 완료 처리 실패:', err)
@@ -254,37 +278,65 @@ const Education = () => {
         />
 
         <div className='education-filter-row'>
-          <button
-            type='button'
-            className={`education-filter-btn ${selectedFilter === 'all' ? 'active' : ''}`}
-            onClick={() => setSelectedFilter('all')}
-          >
-            전체
-          </button>
+          <div className='education-filter-group left'>
+            <button
+              type='button'
+              className={`education-filter-btn ${selectedStatusFilter === 'all' ? 'active' : ''}`}
+              onClick={() => setSelectedStatusFilter('all')}
+            >
+              전체
+            </button>
 
-          <button
-            type='button'
-            className={`education-filter-btn ${selectedFilter === 'new' ? 'active' : ''}`}
-            onClick={() => setSelectedFilter('new')}
-          >
-            신규
-          </button>
+            <button
+              type='button'
+              className={`education-filter-btn ${selectedStatusFilter === 'new' ? 'active' : ''}`}
+              onClick={() => setSelectedStatusFilter('new')}
+            >
+              신규
+            </button>
 
-          <button
-            type='button'
-            className={`education-filter-btn ${selectedFilter === 'basic' ? 'active' : ''}`}
-            onClick={() => setSelectedFilter('basic')}
-          >
-            기초
-          </button>
+            <button
+              type='button'
+              className={`education-filter-btn ${selectedStatusFilter === 'completed' ? 'active' : ''}`}
+              onClick={() => setSelectedStatusFilter('completed')}
+            >
+              완료
+            </button>
+          </div>
 
-          <button
-            type='button'
-            className={`education-filter-btn ${selectedFilter === 'completed' ? 'active' : ''}`}
-            onClick={() => setSelectedFilter('completed')}
-          >
-            완료
-          </button>
+          <div className='education-filter-group right'>
+            <button
+              type='button'
+              className={`education-filter-btn ${selectedDifficultyFilter === 'all' ? 'active' : ''}`}
+              onClick={() => setSelectedDifficultyFilter('all')}
+            >
+              전체 난이도
+            </button>
+
+            <button
+              type='button'
+              className={`education-filter-btn ${selectedDifficultyFilter === 'beginner' ? 'active' : ''}`}
+              onClick={() => setSelectedDifficultyFilter('beginner')}
+            >
+              초급
+            </button>
+
+            <button
+              type='button'
+              className={`education-filter-btn ${selectedDifficultyFilter === 'intermediate' ? 'active' : ''}`}
+              onClick={() => setSelectedDifficultyFilter('intermediate')}
+            >
+              중급
+            </button>
+
+            <button
+              type='button'
+              className={`education-filter-btn ${selectedDifficultyFilter === 'advanced' ? 'active' : ''}`}
+              onClick={() => setSelectedDifficultyFilter('advanced')}
+            >
+              상급
+            </button>
+          </div>
         </div>
       </div>
 
@@ -323,6 +375,18 @@ const Education = () => {
                     <div className='education-header-text'>
                       <div className='education-header-title-row'>
                         <span className='education-lesson-title'>{lesson.title}</span>
+
+                        {lesson.status === 'new' && !lesson.isCompleted && (
+                          <span className='education-badge education-badge-new'>
+                            신규
+                          </span>
+                        )}
+
+                        {lesson.isCompleted && (
+                          <span className='education-badge education-badge-completed'>
+                            완료
+                          </span>
+                        )}
                       </div>
 
                       <div className='education-sub-info'>
@@ -333,12 +397,23 @@ const Education = () => {
                     </div>
                   </div>
 
-                  <img src={arrowDown} alt='collapsed' className='arrow' />
+                  <img
+                    src={arrowDown}
+                    alt='collapsed'
+                    className={`arrow ${isOpen ? 'rotated' : ''}`}
+                  />
                 </button>
 
                 {isOpen && (
                   <div className='education-accordion-body'>
-                    <div className='education-lesson-summary'>{lesson.summary}</div>
+                    <div className='education-lesson-summary'>
+                      {(lesson.summary || '')
+                        .split('\n')
+                        .filter((line) => line.trim() !== '')
+                        .map((line, index) => (
+                          <p key={index}>{line}</p>
+                        ))}
+                    </div>
 
                     {!lesson.isCompleted && (
                       <button
@@ -358,9 +433,9 @@ const Education = () => {
           })
         ) : (
           <div className='education-empty-box'>
-            {selectedFilter === 'completed'
-              ? '완료한 학습이 없습니다.'
-              : '표시할 학습이 없습니다.'}
+            {selectedStatusFilter === 'completed'
+              ? '조건에 맞는 완료 학습이 없습니다.'
+              : '조건에 맞는 학습이 없습니다.'}
           </div>
         )}
       </div>

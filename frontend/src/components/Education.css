@@ -114,7 +114,24 @@
 
 .education-filter-row {
   display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 1rem;
+  flex-wrap: wrap;
+}
+
+.education-filter-group {
+  display: flex;
   gap: 0.5rem;
+  flex-wrap: wrap;
+}
+
+.education-filter-group.left {
+  justify-content: flex-start;
+}
+
+.education-filter-group.right {
+  justify-content: flex-end;
 }
 
 .education-filter-btn {
@@ -171,7 +188,6 @@
   box-shadow: 0 0.5rem 1rem var(--shadow-1);
 }
 
-
 .education-accordion-item.open .arrow {
   transform: rotate(180deg);
 }
@@ -219,6 +235,7 @@
   display: flex;
   align-items: center;
   gap: 0.5rem;
+  flex-wrap: wrap;
 }
 
 .education-lesson-title {
@@ -236,13 +253,22 @@
   align-items: center;
   justify-content: center;
 
-  background: var(--danger-highlight);
   border-radius: 1.5rem;
-  border: 1px solid var(--danger);
-
-  color: var(--danger);
   font-size: 0.875rem;
   font-weight: 600;
+  white-space: nowrap;
+}
+
+.education-badge-new {
+  background: var(--danger-highlight);
+  border: 1px solid var(--danger);
+  color: var(--danger);
+}
+
+.education-badge-completed {
+  background: color-mix(in oklab, var(--secondary) 8%, var(--bg) 92%);
+  border: 1px solid var(--secondary);
+  color: var(--secondary);
 }
 
 .education-sub-info {
@@ -255,28 +281,41 @@
 
 .education-accordion-body {
   display: flex;
-  align-items: flex-start;
-  justify-content: space-between;
+  flex-direction: column;
+  align-items: stretch;
   gap: 1rem;
 }
 
 .education-lesson-summary {
   width: 100%;
-  min-height: 2.5rem;
-  padding: 0 1rem;
+  min-height: auto;
+  padding: 1rem;
+  box-sizing: border-box;
 
-  display: flex;
-  align-items: center;
+  display: block;
 
   background: var(--box-bg);
   border: 1px solid var(--border);
   border-radius: 0.75rem;
-  
+
   font-size: 1rem;
+  line-height: 1.6;
   color: var(--text);
+
+  white-space: normal;
+  word-break: keep-all;
+}
+
+.education-lesson-summary p {
+  margin: 0 0 0.75rem 0;
+}
+
+.education-lesson-summary p:last-child {
+  margin-bottom: 0;
 }
 
 .education-xp-btn {
+  width: fit-content;
   min-width: fit-content;
   height: 2.5rem;
   padding: 0 0.75rem;
@@ -284,6 +323,9 @@
 
   display: flex;
   align-items: center;
+  justify-content: center;
+  align-self: flex-end;
+  gap: 0.375rem;
 
   background: var(--primary-highlight);
   border: 2px solid var(--primary);
@@ -297,7 +339,7 @@
   transition: all 0.3s ease;
 }
 
-.education-xp-btn:hover{
+.education-xp-btn:hover {
   background: var(--btn-prim);
   border: 2px solid var(--primary);
   box-shadow: 0 0.25rem 1rem var(--shadow-1);
@@ -312,13 +354,22 @@
   background: var(--primary-highlight);
   border: 1px solid var(--border);
   border-radius: 0.75rem;
-  
+
   font-size: 1.125rem;
   font-weight: 600;
   color: var(--text-highlight);
 }
 
 @media (max-width: 1100px) {
+  .education-filter-row {
+    flex-direction: column;
+    align-items: stretch;
+  }
+
+  .education-filter-group.right {
+    justify-content: flex-start;
+  }
+
   .education-accordion-body {
     flex-direction: column;
     align-items: stretch;
@@ -330,5 +381,6 @@
 
   .education-xp-btn {
     width: 100%;
+    align-self: stretch;
   }
 }

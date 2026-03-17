@@ -1,38 +1,66 @@
+const db = require("../../config/db");
 const { educationLessons } = require("../data/educationData");
-
-const userEducationProgress = {};
 
 function getUserKey(req) {
   if (!req.user?.member_id) {
     throw new Error("member_id가 토큰에 없습니다.");
   }
 
-  return String(req.user.member_id);
+  return Number(req.user.member_id);
 }
 
-function getOrCreateUserProgress(userKey) {
-  if (!userEducationProgress[userKey]) {
-    userEducationProgress[userKey] = {
-      completedLessonIds: [],
-      rewardClaimedLessonIds: [],
-      totalEarnedPoints: 0,
-    };
-  }
-
-  return userEducationProgress[userKey];
+function buildLessonReason(lessonId) {
+  return `lesson_complete:${lessonId}`;
 }
 
-function buildEducationResponse(userProgress) {
+async function getUserCompletedLessonIds(memberId) {
+  const [rows] = await db.promise().query(
+    `
+    SELECT reason
+    FROM point_history
+    WHERE member_id = ?
+      AND reason LIKE 'lesson_complete:%'
+    `,
+    [memberId]
+  );
+
+  return rows
+    .map((row) => String(row.reason || ""))
+    .filter((reason) => reason.startsWith("lesson_complete:"))
+    .map((reason) => reason.replace("lesson_complete:", ""));
+}
+
+async function getUserTotalEarnedPoints(memberId) {
+  const [rows] = await db.promise().query(
+    `
+    SELECT COALESCE(SUM(change_amount), 0) AS totalEarnedPoints
+    FROM point_history
+    WHERE member_id = ?
+      AND reason LIKE 'lesson_complete:%'
+    `,
+    [memberId]
+  );
+
+  return Number(rows[0]?.totalEarnedPoints || 0);
+}
+
+async function buildEducationResponse(memberId) {
+  const completedLessonIds = await getUserCompletedLessonIds(memberId);
+  const completedSet = new Set(completedLessonIds);
+
   const lessons = educationLessons.map((lesson) => ({
     ...lesson,
-    isCompleted: userProgress.completedLessonIds.includes(lesson.id),
-    isRewardClaimed: userProgress.rewardClaimedLessonIds.includes(lesson.id),
+    status: lesson.status || "default",
+    isCompleted: completedSet.has(lesson.id),
+    isRewardClaimed: completedSet.has(lesson.id),
   }));
 
   const totalCount = educationLessons.length;
-  const completedCount = userProgress.completedLessonIds.length;
+  const completedCount = completedLessonIds.length;
   const percent =
     totalCount === 0 ? 0 : Math.round((completedCount / totalCount) * 100);
+
+  const totalEarnedPoints = await getUserTotalEarnedPoints(memberId);
 
   return {
     lessons,
@@ -41,19 +69,20 @@ function buildEducationResponse(userProgress) {
       totalCount,
       percent,
     },
-    totalEarnedPoints: userProgress.totalEarnedPoints,
+    totalEarnedPoints,
   };
 }
 
-exports.getEducationData = (req, res) => {
+exports.getEducationData = async (req, res) => {
   try {
-    const userKey = getUserKey(req);
-    const userProgress = getOrCreateUserProgress(userKey);
+    const memberId = getUserKey(req);
+
+    const data = await buildEducationResponse(memberId);
 
     return res.status(200).json({
       success: true,
       message: "교육 데이터 조회 성공",
-      data: buildEducationResponse(userProgress),
+      data,
     });
   } catch (error) {
     console.error("getEducationData error:", error);
@@ -66,11 +95,12 @@ exports.getEducationData = (req, res) => {
   }
 };
 
-exports.completeLesson = (req, res) => {
+exports.completeLesson = async (req, res) => {
+  const connection = await db.promise().getConnection();
+
   try {
     const { lessonId } = req.params;
-    const userKey = getUserKey(req);
-    const userProgress = getOrCreateUserProgress(userKey);
+    const memberId = getUserKey(req);
 
     const lesson = educationLessons.find((item) => item.id === lessonId);
 
@@ -82,21 +112,54 @@ exports.completeLesson = (req, res) => {
       });
     }
 
-    const alreadyCompleted = userProgress.completedLessonIds.includes(lessonId);
-    const alreadyRewardClaimed =
-      userProgress.rewardClaimedLessonIds.includes(lessonId);
+    const reason = buildLessonReason(lessonId);
+    const lessonPoint = Number(lesson.xp || 0);
 
-    if (!alreadyCompleted) {
-      userProgress.completedLessonIds.push(lessonId);
-    }
+    await connection.beginTransaction();
+
+    // 이미 이 학습으로 포인트를 받은 적 있는지 확인
+    const [historyRows] = await connection.query(
+      `
+      SELECT history_id
+      FROM point_history
+      WHERE member_id = ? AND reason = ?
+      LIMIT 1
+      `,
+      [memberId, reason]
+    );
 
     let awardedPoints = 0;
 
-    if (!alreadyRewardClaimed) {
-      userProgress.rewardClaimedLessonIds.push(lessonId);
-      userProgress.totalEarnedPoints += lesson.xp;
-      awardedPoints = lesson.xp;
+    if (historyRows.length === 0) {
+      // members.points 실제 적립
+      const [updateResult] = await connection.query(
+        `
+        UPDATE members
+        SET points = points + ?
+        WHERE member_id = ?
+        `,
+        [lessonPoint, memberId]
+      );
+
+      if (updateResult.affectedRows === 0) {
+        throw new Error("존재하지 않는 회원입니다.");
+      }
+
+      // point_history 기록
+      await connection.query(
+        `
+        INSERT INTO point_history (member_id, change_amount, reason)
+        VALUES (?, ?, ?)
+        `,
+        [memberId, lessonPoint, reason]
+      );
+
+      awardedPoints = lessonPoint;
     }
+
+    await connection.commit();
+
+    const data = await buildEducationResponse(memberId);
 
     return res.status(200).json({
       success: true,
@@ -106,10 +169,11 @@ exports.completeLesson = (req, res) => {
           : "학습 완료 처리 성공",
       data: {
         awardedPoints,
-        ...buildEducationResponse(userProgress),
+        ...data,
       },
     });
   } catch (error) {
+    await connection.rollback();
     console.error("completeLesson error:", error);
 
     return res.status(500).json({
@@ -117,5 +181,7 @@ exports.completeLesson = (req, res) => {
       message: "학습 완료 처리 실패",
       error: error.message,
     });
+  } finally {
+    connection.release();
   }
 };

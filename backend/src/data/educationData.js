@@ -4,8 +4,9 @@ const educationLessons = [
     title: "먼저, 주식이란?",
     xp: 250,
     status: "new",
+    difficulty: "beginner",
     icon: "📘",
-    level: "기초",
+    level: "초급",
     summary: `주식은 회사의 아주 작은 조각을 사는 개념입니다.
 
 내가 그 회사를 믿고 응원하는 만큼, 그 회사의 일부를 가진다고 이해하면 쉽습니다.
@@ -17,8 +18,9 @@ const educationLessons = [
     title: "시가총액이란?",
     xp: 200,
     status: "new",
+    difficulty: "beginner",
     icon: "🧮",
-    level: "기초",
+    level: "초급",
     summary: `시가총액은 기업의 전체 가치를 뜻합니다.
 
 현재 주가 × 발행된 주식 수로 계산합니다.
@@ -30,8 +32,9 @@ const educationLessons = [
     title: "이동평균선 골든크로스?",
     xp: 300,
     status: "new",
+    difficulty: "beginner",
     icon: "📈",
-    level: "기초",
+    level: "초급",
     summary: `단기 이동평균선이 장기 이동평균선을 위로 뚫고 올라가는 신호입니다.
 
 보통 상승 흐름이 시작될 수 있다는 기대 신호로 해석됩니다.
@@ -43,8 +46,9 @@ const educationLessons = [
     title: "데드크로스는 뭘까?",
     xp: 300,
     status: "new",
+    difficulty: "beginner",
     icon: "⚠️",
-    level: "기초",
+    level: "초급",
     summary: `단기 이동평균선이 장기 이동평균선을 아래로 내려가는 신호입니다.
 
 보통 하락 전환의 가능성을 보여주는 신호로 해석됩니다.
@@ -56,8 +60,9 @@ const educationLessons = [
     title: "PER은 왜 볼까?",
     xp: 220,
     status: "new",
+    difficulty: "beginner",
     icon: "💹",
-    level: "기초",
+    level: "초급",
     summary: `PER은 회사가 벌어들이는 이익에 비해 현재 주가가 몇 배로 거래되는지 보여주는 지표입니다.
 
 쉽게 말해 "지금 이 주식이 싼가, 비싼가?"를 볼 때 자주 참고합니다.
@@ -71,8 +76,9 @@ const educationLessons = [
     title: "PBR은 왜 볼까?",
     xp: 220,
     status: "new",
+    difficulty: "beginner",
     icon: "🏢",
-    level: "기초",
+    level: "초급",
     summary: `PBR은 회사가 가진 자산 대비 현재 주가가 어느 정도인지 보여주는 지표입니다.
 
 쉽게 말해 "망해도 본전은 건질까?"라는 관점에서 볼 수 있습니다.
@@ -85,9 +91,9 @@ const educationLessons = [
     id: "eps",
     title: "EPS는 왜 중요할까?",
     xp: 240,
-    status: "basic",
+    difficulty: "beginner",
     icon: "💰",
-    level: "기초",
+    level: "초급",
     summary: `EPS는 회사의 순이익을 전체 주식 수로 나눈 값입니다.
 
 즉, 주식 1주가 1년 동안 얼마의 이익을 냈는지 보여주는 지표입니다.
@@ -100,9 +106,9 @@ EPS가 매년 꾸준히 오르는 회사라면, 회사가 실제로 성장하고
     id: "roe",
     title: "ROE는 무엇을 보여줄까?",
     xp: 240,
-    status: "basic",
+    difficulty: "beginner",
     icon: "📊",
-    level: "기초",
+    level: "초급",
     summary: `ROE는 주주가 투자한 자본으로 회사가 얼마나 효율적으로 이익을 냈는지 보여주는 수익률입니다.
 
 쉽게 말해 "회사가 내 돈을 얼마나 잘 굴리나?"를 보여주는 숫자입니다.
@@ -115,9 +121,9 @@ ROE가 꾸준히 높은 회사는 경영 효율이 좋은 회사로 평가받는
     id: "dividend-yield",
     title: "배당수익률은 어떻게 볼까?",
     xp: 230,
-    status: "basic",
+    difficulty: "beginner",
     icon: "🎁",
-    level: "기초",
+    level: "초급",
     summary: `배당수익률은 현재 주가 대비 1년에 받을 수 있는 배당금의 비율입니다.
 
 은행 예금 이자처럼 생각하면 이해하기 쉽습니다.
@@ -130,9 +136,9 @@ ROE가 꾸준히 높은 회사는 경영 효율이 좋은 회사로 평가받는
     id: "target-price",
     title: "목표주가는 어떻게 봐야 할까?",
     xp: 260,
-    status: "basic",
+    difficulty: "beginner",
     icon: "🎯",
-    level: "기초",
+    level: "초급",
     summary: `목표주가는 증권사 애널리스트가 예상한 1년 뒤 적정 주가입니다.
 
 쉽게 말해 전문가들이 "이 종목이 어느 정도까지 갈 수 있다"고 생각하는 가격입니다.
@@ -145,9 +151,9 @@ ROE가 꾸준히 높은 회사는 경영 효율이 좋은 회사로 평가받는
     id: "fifty-two-week-range",
     title: "52주 최고가와 최저가는 왜 볼까?",
     xp: 260,
-    status: "basic",
+    difficulty: "beginner",
     icon: "📍",
-    level: "기초",
+    level: "초급",
     summary: `52주 최고가와 최저가는 최근 1년 동안 주가가 어느 범위에서 움직였는지 보여줍니다.
 
 이 지표를 보면 지금 가격이 1년 중 바닥 근처인지, 꼭대기 근처인지 감을 잡을 수 있습니다.
@@ -160,9 +166,9 @@ ROE가 꾸준히 높은 회사는 경영 효율이 좋은 회사로 평가받는
     id: "peer-comparison",
     title: "지표는 경쟁사와 비교해야 더 정확해요",
     xp: 280,
-    status: "basic",
+    difficulty: "beginner",
     icon: "⚖️",
-    level: "기초",
+    level: "초급",
     summary: `PER, PBR, ROE 같은 지표는 숫자 하나만 보고 판단하면 위험합니다.
 
 업종마다 평균 기준이 다르기 때문입니다.
@@ -171,8 +177,222 @@ ROE가 꾸준히 높은 회사는 경영 효율이 좋은 회사로 평가받는
 
 그래서 같은 산업의 경쟁사와 함께 비교해야 진짜 저평가인지, 성장 기대가 반영된 것인지 더 정확하게 판단할 수 있습니다.`,
   },
-];
+
+  {
+    id: "hidden-gem",
+    title: "흙 속의 진주 찾기 💎",
+    xp: 320,
+    difficulty: "intermediate",
+    icon: "💎",
+    level: "중급",
+    summary: `조합: PER 낮음 + EPS 꾸준히 상승
+
+주가는 싼데 회사가 벌어들이는 진짜 돈은 매년 늘어나고 있다면, 시장 사람들이 아직 이 회사의 진가를 완전히 반영하지 못했을 가능성이 있습니다.
+
+즉, 저평가 + 성장성이 동시에 보이는 '숨은 꿀 주식' 후보로 해석할 수 있습니다.`,
+  },
+  {
+    id: "iron-defense",
+    title: "절대 안 망하는 철벽 방어 🛡️",
+    xp: 320,
+    status: "new",
+    difficulty: "intermediate",
+    icon: "🛡️",
+    level: "중급",
+    summary: `조합: PBR 1 미만 + 배당수익률 높음
+
+회사가 가진 자산보다 주가가 싸게 거래되고 있고, 들고만 있어도 배당을 받을 수 있다면 방어력이 좋은 종목으로 볼 수 있습니다.
+
+하락장에서 버티는 힘이 있는 안정형 조합으로 이해하면 좋습니다.`,
+  },
+  {
+    id: "golden-goose",
+    title: "워런 버핏의 황금 거위 🦢",
+    xp: 340,
+    status: "new",
+    difficulty: "intermediate",
+    icon: "🦢",
+    level: "중급",
+    summary: `조합: ROE 15% 이상 + EPS 꾸준히 상승
+
+회사가 가진 돈을 잘 굴려 높은 수익을 내고 있고, 그 결과가 주당 이익 증가로 이어지고 있다면 매우 질 좋은 성장주일 수 있습니다.
+
+시간이 지날수록 복리처럼 강해지는 기업을 찾을 때 주목할 수 있는 조합입니다.`,
+  },
+  {
+    id: "fomo-warning",
+    title: "고점 물림 주의보 (FOMO 방지) 🚨",
+    xp: 340,
+    difficulty: "intermediate",
+    icon: "🚨",
+    level: "중급",
+    summary: `조합: 52주 최고가 근처 + 목표주가가 현재가와 비슷하거나 낮음
+
+이미 1년 중 비싼 구간에 와 있는데, 전문가들도 추가 상승 여력을 크게 보지 않는다면 추격 매수는 위험할 수 있습니다.
+
+남들이 다 산다고 덜컥 들어갔다가 상투를 잡을 수 있는 상황으로 해석할 수 있습니다.`,
+  },
+  {
+    id: "value-trap",
+    title: "싼 게 비지떡 (가치 함정) 🪤",
+    xp: 330,
+    difficulty: "intermediate",
+    icon: "🪤",
+    level: "중급",
+    summary: `조합: PER 낮음 + ROE 낮음 또는 하락 중
+
+PER이 낮아서 가성비 좋은 저평가 주식처럼 보여도, 실제로 회사가 돈을 잘 못 벌고 있다면 이야기가 달라집니다.
+
+이 경우는 숨은 진주가 아니라, 시장이 낮게 평가할 만한 이유가 있는 '가치 함정'일 수 있습니다.`,
+  },
+  {
+    id: "rebound-opening",
+    title: "바닥 탈출 반격의 서막 🚀",
+    xp: 350,
+    difficulty: "intermediate",
+    icon: "🚀",
+    level: "중급",
+    summary: `조합: 52주 최저가 근처 + 목표주가가 현재가보다 훨씬 높음 + PER 낮음
+
+주가는 바닥권까지 밀렸지만 전문가 기대는 높고, 가격도 비싸지 않다면 반등 가능성을 점검해볼 만한 조합입니다.
+
+시장이 과하게 실망한 뒤 다시 재평가될 수 있는 초기 반등 후보로 볼 수 있습니다.`,
+  },
+
+  {
+    id: "dividend-trap",
+    title: "빛 좋은 개살구 (배당 함정) ☠️",
+    xp: 360,
+    difficulty: "advanced",
+    icon: "☠️",
+    level: "상급",
+    summary: `조합: 배당수익률 매우 높음 + EPS 계속 하락 중 + 52주 최저가 근처
+
+배당률이 높아 보여도, 실제로는 회사 실적이 나빠지고 주가가 폭락해서 배당수익률만 높아 보이는 착시일 수 있습니다.
+
+배당만 보고 들어갔다가 원금을 크게 잃을 수 있는 함정 조합입니다.`,
+  },
+  {
+    id: "empty-cart",
+    title: "껍데기만 화려한 빈수레 🛒",
+    xp: 360,
+    status: "new",
+    difficulty: "advanced",
+    icon: "🛒",
+    level: "상급",
+    summary: `조합: PBR 높음 + ROE 아주 낮음
+
+주가는 회사 자산보다 비싸게 평가받고 있는데, 정작 그 자산으로 이익을 내는 능력은 떨어진다면 거품 가능성을 의심해야 합니다.
+
+이름값이나 기대감만 있고 실속은 약한 종목일 수 있습니다.`,
+  },
+  {
+    id: "top-student",
+    title: "비싼 값 하는 1등 모범생 👑",
+    xp: 370,
+    difficulty: "advanced",
+    icon: "👑",
+    level: "상급",
+    summary: `조합: PER 높음 + EPS 폭발적 증가 + 목표주가도 계속 상승
+
+PER만 보면 비싸 보이지만, 회사 이익이 빠르게 늘고 있고 전문가 기대도 함께 올라간다면 고평가가 아니라 성장 프리미엄일 수 있습니다.
+
+비싸도 계속 오를 수 있는 진짜 주도주 후보를 해석할 때 쓰는 조합입니다.`,
+  },
+  {
+    id: "value-swamp",
+    title: "만년 저평가의 늪 (시간 낭비) ⏳",
+    xp: 350,
+    status: "new",
+    difficulty: "advanced",
+    icon: "⏳",
+    level: "상급",
+    summary: `조합: PER 낮음 + PBR 낮음 + EPS 제자리
+
+싸고 튼튼해 보이지만 성장성이 없다면, 주가는 오랫동안 제자리일 수 있습니다.
+
+잃을 가능성은 낮아 보여도 수익을 빠르게 내기 어려운, 답답한 종목일 수 있습니다.`,
+  },
+  {
+    id: "falling-knife",
+    title: "떨어지는 칼날 (바닥인 줄 알았지?) 🔪",
+    xp: 380,
+    difficulty: "advanced",
+    icon: "🔪",
+    level: "상급",
+    summary: `조합: 52주 최저가 근처 + EPS 급락 + 목표주가 하향 조정
+
+주가가 많이 내려와 싸 보이지만, 실적도 나빠지고 전문가 전망도 하향되고 있다면 아직 바닥이 아닐 수 있습니다.
+
+섣불리 잡았다가는 더 큰 하락을 맞을 수 있는 위험 구간입니다.`,
+  },
+  {
+    id: "bomb-passing",
+    title: "폭탄 돌리기 (상투 경고보) 💣",
+    xp: 380,
+    difficulty: "advanced",
+    icon: "💣",
+    level: "상급",
+    summary: `조합: 52주 최고가 + PER 비정상적으로 높음 + 목표주가가 현재가보다 낮음
+
+시장은 열광하고 있지만 실적 대비 가격이 너무 비싸고, 전문가들도 현재 주가를 부담스럽게 본다면 위험 신호입니다.
+
+파티가 끝나가는 시점에 들어가 마지막 설거지를 하게 될 수 있는 조합입니다.`,
+  },
+  {
+    id: "comfort-stock",
+    title: "든든한 국밥 같은 주식 🍲",
+    xp: 340,
+    difficulty: "advanced",
+    icon: "🍲",
+    level: "상급",
+    summary: `조합: ROE 10% 이상 꾸준함 + 배당수익률 쏠쏠함 + PBR 1 근처
+
+큰 폭발력은 없더라도 꾸준히 돈을 벌고 배당도 주며 가격도 적당하다면 안정적인 장기 보유 후보가 될 수 있습니다.
+
+시장이 흔들릴 때 포트폴리오를 지켜주는 방어형 핵심 자산처럼 볼 수 있습니다.`,
+  },
+  {
+    id: "turnaround",
+    title: "화려한 부활 (턴어라운드) 🧟‍♂️",
+    xp: 370,
+    difficulty: "advanced",
+    icon: "🧟‍♂️",
+    level: "상급",
+    summary: `조합: 52주 최저가에서 살짝 오름 + 적자이던 EPS가 흑자로 전환 + 목표주가 상향
+
+바닥까지 떨어졌던 회사가 다시 돈을 벌기 시작하면 시장 평가가 급격히 바뀔 수 있습니다.
+
+실적 반전과 기대 회복이 동시에 시작되는 전환점을 읽는 데 유용한 조합입니다.`,
+  },
+  {
+    id: "money-printer",
+    title: "가성비 끝판왕 (돈 복사기) 🖨️",
+    xp: 370,
+    difficulty: "advanced",
+    icon: "🖨️",
+    level: "상급",
+    summary: `조합: ROE 아주 높음 + PBR 낮음
+
+회사가 가진 자산 대비 주가는 싼데, 그 자산으로 돈은 매우 잘 벌고 있다면 시장의 오해나 저평가 가능성을 생각해볼 수 있습니다.
+
+경영 효율과 가격 매력이 동시에 보이는 매우 강한 조합입니다.`,
+  },
+  {
+    id: "analyst-crush",
+    title: "전문가들의 짝사랑 💔",
+    xp: 360,
+    difficulty: "advanced",
+    icon: "💔",
+    level: "상급",
+    summary: `조합: 목표주가는 현재가보다 2배 높음 + 52주 최저가 + EPS 하락 중
+
+전문가들은 좋게 보지만 현실에서는 실적도 약하고 주가도 바닥권이라면, 아직 시장은 그 기대를 믿지 않는 상태일 수 있습니다.
+
+흐름이 실제로 바뀌기 전까지는 섣부른 진입보다 관망이 나을 수 있는 상황입니다.`,
+  },
+]
 
 module.exports = {
   educationLessons,
-};
+}
