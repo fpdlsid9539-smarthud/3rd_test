@@ -5,35 +5,11 @@ const db = require("../../config/db");
 ========================= */
 
 function success(res, message, data = null, status = 200) {
-  return res.status(status).json({
-    success: true,
-    message,
-    data,
-  });
+  return res.status(status).json({ success: true, message, data });
 }
 
 function fail(res, message, error = null, status = 500) {
-  return res.status(status).json({
-    success: false,
-    message,
-    error,
-  });
-}
-
-/* =========================
-   오늘 날짜 범위
-========================= */
-
-function getTodayRange() {
-  const now = new Date();
-
-  const start = new Date(now);
-  start.setHours(0, 0, 0, 0);
-
-  const end = new Date(now);
-  end.setHours(23, 59, 59, 999);
-
-  return { start, end };
+  return res.status(status).json({ success: false, message, error });
 }
 
 /* =========================
@@ -42,7 +18,6 @@ function getTodayRange() {
 
 function extractMemberId(req) {
   if (!req.user || typeof req.user !== "object") return null;
-
   return (
     req.user.member_id ||
     req.user.id ||
@@ -65,6 +40,18 @@ function isTableMissingError(err) {
 }
 
 /* =========================
+   포인트 테이블
+========================= */
+
+const POINT_TABLE = {
+  하: { correct: 1000, wrong: -500  },
+  중: { correct: 2000, wrong: -1000 },
+  상: { correct: 3000, wrong: -1500 },
+};
+
+const PERFECT_BONUS = { 하: 5000, 중: 10000, 상: 20000 };
+
+/* =========================
    전체 퀴즈 조회
 ========================= */
 
@@ -83,7 +70,6 @@ exports.getAllQuizzes = async (req, res) => {
     sql += " ORDER BY quiz_id ASC";
 
     const [rows] = await db.promise().query(sql, params);
-
     return success(res, "퀴즈 조회 성공", rows);
   } catch (err) {
     console.error("getAllQuizzes error =", err);
@@ -147,80 +133,58 @@ exports.getQuizById = async (req, res) => {
 };
 
 /* =========================
-   정답 체크
+   정답 체크 (난이도별 포인트)
 ========================= */
 
 exports.checkAnswer = async (req, res) => {
   try {
     const memberId = extractMemberId(req);
-    const { quiz_id, answer } = req.body;
+    const { quiz_id, answer, difficulty } = req.body;
 
-    if (!memberId) {
-      return fail(res, "사용자 인증 필요", null, 401);
-    }
-
-    if (!quiz_id || answer === undefined) {
+    if (!memberId) return fail(res, "사용자 인증 필요", null, 401);
+    if (!quiz_id || answer === undefined)
       return fail(res, "quiz_id, answer 필요", null, 400);
-    }
 
     const [rows] = await db.promise().query(
       "SELECT quiz_id, answer, explanation FROM quizzes WHERE quiz_id = ?",
       [quiz_id]
     );
 
-    if (rows.length === 0) {
-      return fail(res, "퀴즈 없음", null, 404);
-    }
+    if (rows.length === 0) return fail(res, "퀴즈 없음", null, 404);
 
-    const correctAnswer = Number(rows[0].answer);
+    const correctAnswer  = Number(rows[0].answer);
     const selectedAnswer = Number(answer);
+    const isCorrect      = correctAnswer === selectedAnswer;
 
-    const isCorrect = correctAnswer === selectedAnswer;
+    // 난이도별 포인트 (없으면 기존 100/0 fallback)
+    const pts = POINT_TABLE[difficulty]?.[isCorrect ? "correct" : "wrong"] ??
+                (isCorrect ? 100 : 0);
 
     /* 기록 저장 */
-
     let historySaved = false;
-
     try {
       await db.promise().query(
-        `
-        INSERT INTO member_quiz_history
-        (member_id, quiz_id, selected_answer, is_correct)
-        VALUES (?, ?, ?, ?)
-        `,
+        `INSERT INTO member_quiz_history
+         (member_id, quiz_id, selected_answer, is_correct)
+         VALUES (?, ?, ?, ?)`,
         [memberId, quiz_id, selectedAnswer, isCorrect ? 1 : 0]
       );
-
       historySaved = true;
     } catch (err) {
       console.error("quiz history error =", err);
-
       if (!isTableMissingError(err)) {
         return fail(res, "퀴즈 기록 저장 실패", err.message);
       }
     }
 
-    /* 정답이면 포인트 지급 */
-
-    if (isCorrect) {
-      await db.promise().query(
-        `
-        UPDATE members
-        SET points = points + 100
-        WHERE member_id = ?
-        `,
-        [memberId]
-      );
-    }
-
-    /* 유저 정보 */
+    /* 포인트 적용 — 0 미만으로 내려감 */
+    await db.promise().query(
+      `UPDATE members SET points = points + ? WHERE member_id = ?`,
+      [pts, memberId]
+    );
 
     const [memberRows] = await db.promise().query(
-      `
-      SELECT member_id,nickname,points
-      FROM members
-      WHERE member_id = ?
-      `,
+      `SELECT member_id, nickname, points FROM members WHERE member_id = ?`,
       [memberId]
     );
 
@@ -228,7 +192,7 @@ exports.checkAnswer = async (req, res) => {
       isCorrect,
       correctAnswer,
       explanation: rows[0].explanation,
-      rewardPoints: isCorrect ? 100 : 0,
+      rewardPoints: pts,
       historySaved,
       member: memberRows[0] || null,
     });
@@ -239,73 +203,83 @@ exports.checkAnswer = async (req, res) => {
 };
 
 /* =========================
+   퍼펙트 보너스 지급
+========================= */
+
+exports.bonusReward = async (req, res) => {
+  try {
+    const memberId = extractMemberId(req);
+    const { difficulty } = req.body;
+    if (!memberId) return fail(res, "사용자 인증 필요", null, 401);
+
+    await db.promise().query(
+      `UPDATE members SET points = points + ? WHERE member_id = ?`,
+      [PERFECT_BONUS[difficulty] ?? 5000, memberId]
+    );
+
+    const [memberRows] = await db.promise().query(
+      `SELECT member_id, nickname, points FROM members WHERE member_id = ?`,
+      [memberId]
+    );
+
+    return success(res, "퍼펙트 보너스 지급 완료", {
+      bonusPoints: PERFECT_BONUS[difficulty] ?? 5000,
+      member: memberRows[0] || null,
+    });
+  } catch (err) {
+    console.error("bonusReward error =", err);
+    return fail(res, "보너스 지급 실패", err.message);
+  }
+};
+
+/* =========================
    퀘스트 현황
 ========================= */
 
 exports.getMyQuestStatus = async (req, res) => {
   try {
     const memberId = extractMemberId(req);
-
-    if (!memberId) {
-      return fail(res, "사용자 인증 필요", null, 401);
-    }
-
-    const { start, end } = getTodayRange();
+    if (!memberId) return fail(res, "사용자 인증 필요", null, 401);
 
     const [totalQuizRows] = await db.promise().query(
       "SELECT COUNT(*) AS totalCount FROM quizzes"
     );
 
     const [todaySolvedRows] = await db.promise().query(
-      `
-      SELECT COUNT(*) AS todaySolved
-      FROM member_quiz_history
-      WHERE member_id = ?
-      AND solved_at BETWEEN ? AND ?
-      `,
-      [memberId, start, end]
+      `SELECT COUNT(*) AS todaySolved
+       FROM member_quiz_history
+       WHERE member_id = ? AND DATE(solved_at) = CURDATE()`,
+      [memberId]
     );
 
     const [todayCorrectRows] = await db.promise().query(
-      `
-      SELECT COUNT(*) AS todayCorrect
-      FROM member_quiz_history
-      WHERE member_id = ?
-      AND is_correct = 1
-      AND solved_at BETWEEN ? AND ?
-      `,
-      [memberId, start, end]
+      `SELECT COUNT(*) AS todayCorrect
+       FROM member_quiz_history
+       WHERE member_id = ? AND is_correct = 1 AND DATE(solved_at) = CURDATE()`,
+      [memberId]
     );
 
     const [totalSolvedRows] = await db.promise().query(
-      `
-      SELECT COUNT(*) AS totalSolved
-      FROM member_quiz_history
-      WHERE member_id = ?
-      `,
+      `SELECT COUNT(*) AS totalSolved FROM member_quiz_history WHERE member_id = ?`,
       [memberId]
     );
 
     const [accuracyRows] = await db.promise().query(
-      `
-      SELECT
-      ROUND(
-      (SUM(CASE WHEN is_correct = 1 THEN 1 ELSE 0 END) /
-      NULLIF(COUNT(*),0))*100,2) AS accuracy
-      FROM member_quiz_history
-      WHERE member_id = ?
-      `,
+      `SELECT ROUND(
+         (SUM(CASE WHEN is_correct = 1 THEN 1 ELSE 0 END) / NULLIF(COUNT(*), 0)) * 100,
+         2
+       ) AS accuracy
+       FROM member_quiz_history WHERE member_id = ?`,
       [memberId]
     );
 
-    const totalCount = Number(totalQuizRows[0].totalCount || 0);
-    const todaySolved = Number(todaySolvedRows[0].todaySolved || 0);
+    const totalCount   = Number(totalQuizRows[0].totalCount   || 0);
+    const todaySolved  = Number(todaySolvedRows[0].todaySolved  || 0);
     const todayCorrect = Number(todayCorrectRows[0].todayCorrect || 0);
-    const totalSolved = Number(totalSolvedRows[0].totalSolved || 0);
-    const accuracy = Number(accuracyRows[0].accuracy || 0);
+    const totalSolved  = Number(totalSolvedRows[0].totalSolved  || 0);
+    const accuracy     = Number(accuracyRows[0].accuracy        || 0);
 
-    const dailyGoal = 3;
-
+    const dailyGoal    = 3;
     const dailyPercent = Math.min(
       100,
       Number(((todaySolved / dailyGoal) * 100).toFixed(2))

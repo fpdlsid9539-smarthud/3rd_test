@@ -129,6 +129,7 @@ async function grantDefaultAchievementIfMissing(memberId) {
 
 /* =========================
    기본 찜/보유 주식 시드
+   - 신규 회원 생성 시에만 사용
 ========================= */
 async function seedDefaultStocksForMember(memberId, conn = null) {
   const executor = conn || db.promise();
@@ -185,7 +186,6 @@ async function seedDefaultGameLogForMember(memberId, conn = null) {
   );
 }
 
-
 async function createMember(provider, providerId, nickname, profile_image) {
   const safeNickname =
     nickname && nickname.trim()
@@ -209,7 +209,10 @@ async function createMember(provider, providerId, nickname, profile_image) {
       [newMemberId]
     );
 
+    /* 신규 회원에게만 기본 주식 시드 지급 */
     await seedDefaultStocksForMember(newMemberId, conn);
+
+    /* 신규 회원에게만 기본 gameLog 시드 지급 */
     await seedDefaultGameLogForMember(newMemberId, conn);
 
     const [rows] = await conn.query(
@@ -236,11 +239,21 @@ async function loginOrRegister(provider, providerId, nickname, profile_image) {
         "UPDATE members SET profile_image = ? WHERE member_id = ?",
         [profile_image, member.member_id]
       );
-      member.profile_image = profile_image; // 프론트로 보낼 객체도 최신 프사로 갱신
+      member.profile_image = profile_image;
     }
 
     await grantDefaultAchievementIfMissing(member.member_id);
-    await seedDefaultStocksForMember(member.member_id);
+
+    /*
+      기존 회원 로그인 시에는 기본 주식 자동 지급 금지
+      원인:
+      로그인할 때마다 삼성전자/하이닉스/NAVER가 다시 들어갔음
+    */
+
+    /*
+      gameLog는 비어있을 때만 시드되므로 유지 가능
+      원치 않으면 아래 한 줄도 제거 가능
+    */
     await seedDefaultGameLogForMember(member.member_id);
 
     const refreshedMember = await findMemberById(member.member_id);
@@ -289,7 +302,7 @@ exports.getMe = async (req, res) => {
 
     return success(res, "현재 로그인 사용자 조회 성공", {
       member: buildMemberPayload(member),
-      recentAchievements: await getRecentAchievements(member),
+      recentAchievements: await getRecentAchievements(member.member_id),
     });
   } catch (err) {
     return fail(res, "회원 조회 실패", err.message, 500);
@@ -408,13 +421,12 @@ async function getKakaoAccessToken(code) {
 
 async function getKakaoUserInfo(accessToken) {
   const response = await axios.get("https://kapi.kakao.com/v2/user/me", {
-    headers: { Authorization: `Bearer ${accessToken}`, },
+    headers: { Authorization: `Bearer ${accessToken}` },
   });
 
   const data = response.data;
 
-  const profileNeedsAgreement =
-    data?.kakao_account?.profile_needs_agreement;
+  const profileNeedsAgreement = data?.kakao_account?.profile_needs_agreement;
 
   if (profileNeedsAgreement) {
     console.warn("카카오 프로필 동의 필요 - 콘솔에서 동의항목 설정 확인 필요");
@@ -431,7 +443,8 @@ async function getKakaoUserInfo(accessToken) {
     providerId: String(data.id),
     nickname:
       data?.properties?.nickname ||
-      data?.kakao_account?.profile?.nickname || "kakao_user",
+      data?.kakao_account?.profile?.nickname ||
+      "kakao_user",
     profile_image,
   };
 }
@@ -455,7 +468,7 @@ exports.kakaoCallback = async (req, res) => {
       user.provider,
       user.providerId,
       user.nickname,
-      user.profile_image,
+      user.profile_image
     );
 
     const token = createToken(result.member);
@@ -555,7 +568,7 @@ exports.googleCallback = async (req, res) => {
       user.provider,
       user.providerId,
       user.nickname,
-      user.profile_image,
+      user.profile_image
     );
 
     const token = createToken(result.member);

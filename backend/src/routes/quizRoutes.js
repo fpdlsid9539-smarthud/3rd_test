@@ -6,18 +6,6 @@ const authMiddleware = require("../../middlewares/authMiddleware");
 
 /* API 확인 페이지 */
 
-router.get("/", (req, res) => {
-  res.send(`
-    <h1>Quiz API</h1>
-    <ul>
-      <li>/api/quiz/all</li>
-      <li>/api/quiz/random</li>
-      <li>/api/quiz/1</li>
-      <li>/api/quiz/status/me</li>
-    </ul>
-  `);
-});
-
 router.get("/all", quizController.getAllQuizzes);
 
 router.get("/random", quizController.getRandomQuiz);
