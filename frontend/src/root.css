@@ -4,7 +4,7 @@
 :root {
   --primary: #4775ff;
   --bg: #FFFFFF;
-  --secondary: hsl(144, 100%, 36%);
+  --secondary: #00b849;
   --text: #0B1532;
   --danger: #FF4766;
   --warning: #FFBF47;
@@ -18,7 +18,7 @@
   --danger-highlight: color-mix(in oklab, var(--danger) 4%, var(--bg) 96%);
   --warning-highlight:  color-mix(in oklab, var(--warning) 24%, var(--bg));
   
-  --box-bg: color-mix(in oklab, var(--bg) 96%, var(--primary));
+  --box-bg: color-mix(in oklab, var(--bg) 96%, var(--text));
   --bg-trans: color-mix(in oklab, var(--bg) 30%, transparent);
   --primary-70: color-mix(in oklab, var(--primary) 70%, var(--bg)100%);
 
@@ -47,6 +47,8 @@ body {
 }
 
 .description-top {
+  padding: 0 0.5rem;
+
   font-size: 0.875rem;
   font-weight: 400;
   color: var(--text-highlight);
@@ -63,14 +65,18 @@ body {
 }
 
 .achievment-item {
+  width: 3.5rem;
+
   display: flex;
+  flex-direction: column;
+  justify-content: center;
   align-items: center;
   gap: 0.5rem;
 }
 
 .img-block {
-  width: 2.5rem;
-  height: 2.5rem;
+  width: 3.5rem;
+  height: 3.5rem;
 
   border-radius: 1rem;
   background-color: var(--border);

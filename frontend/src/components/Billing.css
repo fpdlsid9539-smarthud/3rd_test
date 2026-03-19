@@ -1,0 +1,296 @@
+.billing-container {
+  width: 100%;
+  min-height: 100%;
+  padding: 2rem;
+  box-sizing: border-box;
+}
+
+.billing-page {
+  width: 100%;
+  display: flex;
+  flex-direction: column;
+  gap: 1.5rem;
+}
+
+.billing-hero-card,
+.billing-section {
+  background: var(--box-bg);
+  border: 1px solid var(--border);
+  border-radius: 1.5rem;
+  box-sizing: border-box;
+}
+
+.billing-hero-card {
+  padding: 2rem;
+}
+
+.billing-section {
+  padding: 1.5rem;
+}
+
+.billing-hero-badge {
+  width: fit-content;
+  padding: 0.45rem 0.85rem;
+  border-radius: 999px;
+  background: rgba(255, 193, 7, 0.14);
+  color: #c78700;
+  font-size: 0.75rem;
+  font-weight: 800;
+  letter-spacing: 0.08em;
+}
+
+.billing-title {
+  margin: 1rem 0 0;
+  font-size: 2rem;
+  font-weight: 800;
+  color: var(--text);
+}
+
+.billing-subtitle {
+  margin: 0.75rem 0 0;
+  color: var(--text-sub);
+  font-size: 1rem;
+  line-height: 1.6;
+}
+
+.billing-price-area {
+  margin-top: 1.5rem;
+  display: flex;
+  align-items: flex-end;
+  gap: 0.35rem;
+}
+
+.billing-price {
+  font-size: 2.75rem;
+  font-weight: 800;
+  line-height: 1;
+  color: var(--text);
+}
+
+.billing-price-unit {
+  font-size: 1rem;
+  color: var(--text-sub);
+  padding-bottom: 0.25rem;
+}
+
+.billing-status-box {
+  margin-top: 1.25rem;
+  padding: 1rem 1.1rem;
+  border-radius: 1rem;
+  background: var(--btn-sec, #f6f7fb);
+  border: 1px solid var(--border);
+}
+
+.billing-status-text {
+  font-size: 0.95rem;
+  font-weight: 600;
+  color: var(--text-sub);
+}
+
+.billing-status-text.free {
+  color: #2b5cff;
+}
+
+.billing-status-text.premium {
+  color: #c78700;
+}
+
+.billing-section-head {
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+}
+
+.billing-section-title {
+  margin: 0;
+  font-size: 1.25rem;
+  font-weight: 800;
+  color: var(--text);
+}
+
+.billing-section-note {
+  margin: 0;
+  color: var(--text-sub);
+  font-size: 0.95rem;
+  line-height: 1.5;
+}
+
+.billing-benefit-list {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 1rem;
+}
+
+.billing-benefit-item {
+  padding: 1.1rem;
+  border-radius: 1rem;
+  border: 1px solid var(--border);
+  background: #fffdf7;
+  box-sizing: border-box;
+}
+
+.billing-benefit-title {
+  font-size: 1rem;
+  font-weight: 700;
+  color: var(--text);
+}
+
+.billing-benefit-desc {
+  margin-top: 0.5rem;
+  color: var(--text-sub);
+  font-size: 0.92rem;
+  line-height: 1.5;
+}
+
+.payment-grid {
+  margin-top: 1rem;
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 1rem;
+}
+
+.payment-card {
+  padding: 1rem 1.1rem;
+  border: 1px solid var(--border);
+  border-radius: 1rem;
+  background: #ffffff;
+  box-sizing: border-box;
+  text-align: left;
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+
+.payment-card:hover {
+  transform: translateY(-2px);
+  border-color: #d6b04d;
+  box-shadow: 0 8px 20px rgba(0, 0, 0, 0.06);
+}
+
+.payment-card.selected {
+  border-color: #d6b04d;
+  background: #fff9e8;
+  box-shadow: 0 10px 24px rgba(214, 176, 77, 0.12);
+}
+
+.payment-card.disabled {
+  opacity: 0.65;
+}
+
+.payment-card-top {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 0.75rem;
+}
+
+.payment-name {
+  font-size: 1rem;
+  font-weight: 700;
+  color: var(--text);
+}
+
+.payment-badge {
+  flex-shrink: 0;
+  padding: 0.35rem 0.6rem;
+  border-radius: 999px;
+  font-size: 0.75rem;
+  font-weight: 700;
+}
+
+.payment-badge.enabled {
+  background: rgba(43, 92, 255, 0.12);
+  color: #2b5cff;
+}
+
+.payment-badge.soon {
+  background: rgba(120, 128, 140, 0.14);
+  color: #666f7f;
+}
+
+.payment-description {
+  margin: 0.75rem 0 0;
+  color: var(--text-sub);
+  font-size: 0.9rem;
+  line-height: 1.5;
+}
+
+.billing-action-section {
+  display: flex;
+  flex-direction: column;
+  gap: 1rem;
+}
+
+.billing-summary-card {
+  padding: 1rem 1.1rem;
+  border-radius: 1rem;
+  background: #fafbff;
+  border: 1px solid var(--border);
+}
+
+.billing-summary-row {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 1rem;
+  padding: 0.55rem 0;
+  color: var(--text-sub);
+  font-size: 0.95rem;
+}
+
+.billing-summary-row strong {
+  color: var(--text);
+}
+
+.billing-summary-row.total {
+  margin-top: 0.3rem;
+  padding-top: 0.9rem;
+  border-top: 1px solid var(--border);
+  font-size: 1rem;
+}
+
+.billing-upgrade-button {
+  width: 100%;
+  height: 3.5rem;
+  border: none;
+  border-radius: 1rem;
+  background: linear-gradient(90deg, #ffd54a 0%, #ffb300 100%);
+  color: #1d1d1d;
+  font-size: 1rem;
+  font-weight: 800;
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+
+.billing-upgrade-button:hover {
+  transform: translateY(-1px);
+  filter: brightness(1.02);
+}
+
+.billing-upgrade-button:disabled {
+  opacity: 0.7;
+  cursor: not-allowed;
+  transform: none;
+}
+
+.billing-message {
+  margin: 0;
+  text-align: center;
+  color: var(--text-sub);
+  font-size: 0.92rem;
+  line-height: 1.5;
+}
+
+.billing-page.premium-locked .payment-card,
+.billing-page.premium-locked .billing-benefit-item {
+  filter: grayscale(0.08);
+}
+
+@media (max-width: 1100px) {
+  .billing-benefit-list {
+    grid-template-columns: 1fr;
+  }
+
+  .payment-grid {
+    grid-template-columns: 1fr;
+  }
+}

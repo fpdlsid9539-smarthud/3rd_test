@@ -390,7 +390,7 @@ const Dashboard = () => {
                       <span>{rankMember.nickname || '사용자'}</span>
                     </div>
                     <div className='rank-num'>
-                      {Number(rankMember.isrScore || 0).toFixed(2)}
+                      {formatNumber(rankMember.points)}
                     </div>
                   </li>
                 ))

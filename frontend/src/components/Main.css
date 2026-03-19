@@ -1,7 +1,61 @@
 .main-body {
-  height: 100%;
-
+  min-height: 100vh;
   display: grid;
-  grid-template-columns: 1fr 4fr 1fr;
+  grid-template-columns: minmax(220px, 280px) minmax(0, 1fr) minmax(240px, 320px);
   gap: 2rem;
+  align-items: start;
+}
+
+.navigation-area,
+.content-area,
+.profile-area {
+  min-width: 0;
+}
+
+/* =========================
+   Tablet
+   - 프로필을 가장 위로
+========================= */
+@media (max-width: 1200px) {
+  .main-body {
+    display: grid;
+    grid-template-columns: 1fr;
+    gap: 1rem;
+  }
+
+  .profile-area {
+    order: 1;
+  }
+
+  .navigation-area {
+    order: 2;
+  }
+
+  .content-area {
+    order: 3;
+  }
+}
+
+/* =========================
+   Mobile
+   - 프로필 최상단 유지
+========================= */
+@media (max-width: 768px) {
+  .main-body {
+    display: flex;
+    flex-direction: column;
+    gap: 1rem;
+  }
+
+  .profile-area {
+    order: 1;
+  }
+
+  .navigation-area {
+    order: 2;
+  }
+
+  .content-area {
+    order: 3;
+  }
 }

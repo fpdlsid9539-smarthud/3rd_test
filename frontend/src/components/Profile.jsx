@@ -10,6 +10,7 @@ import { api } from '../config/api.js'
 const Profile = () => {
 
   const [member, setMember] = useState(null)
+  const [ownedStocks, setOwnedStocks] = useState([])
   const [recentAchievements, setRecentAchievements] = useState([])
   const [gameLog, setGameLog] = useState([])
   const [loading, setLoading] = useState(true)
@@ -27,35 +28,47 @@ const Profile = () => {
 
   const loadProfile = async () => {
     try {
-      const data = await api.get('/api/auth/me');
-      setMember(data.data.member);
-      setRecentAchievements(data.data.recentAchievements || []);
-      setGameLog(data.data.gameLog);
+      const [memberRes, ownedRes] = await Promise.allSettled([
+        api.get('/api/auth/me'),
+        api.get('/api/stocks/owned'),
+      ])
+
+      if (memberRes.status === 'fulfilled') {
+        const payload = memberRes.value
+        setMember(payload?.data?.member || payload?.data || null)
+        setRecentAchievements(payload?.data?.recentAchievements || [])
+        setGameLog(payload?.data?.gameLog || [])
+      } else {
+        setError(memberRes.reason?.message || '프로필 로딩 실패')
+      }
+
+      if (ownedRes.status === 'fulfilled') {
+        const payload = ownedRes.value
+        const ownedData = payload?.data || payload?.stocks || []
+        setOwnedStocks(Array.isArray(ownedData) ? ownedData : [])
+      } else {
+        setOwnedStocks([])
+      }
     } catch (err) {
-      setError(err.message);
+      setError(err.message)
     } finally {
-      setLoading(false);
+      setLoading(false)
     }
-  };
+  }
+
   useEffect(() => {
-    // Initial load
     loadProfile()
 
-    // Listen for the custom event
     const handleRefresh = () => {
       console.log('Refreshing profile due to points update...')
       loadProfile()
     }
 
     window.addEventListener('pointsUpdated', handleRefresh)
-
-    // Clean up listener on unmount
-    return () => {
-      window.removeEventListener('pointsUpdated', handleRefresh)
-    }
+    return () => window.removeEventListener('pointsUpdated', handleRefresh)
   }, [])
 
-  const profileImg = member?.profile_image || defaultProfile
+  const profileImg = member?.profile_image2 || member?.profile_image
   const displayImg = editPreviewUrl || profileImg
 
   const openEdit = () => {
@@ -104,6 +117,25 @@ const Profile = () => {
     }
   }
 
+
+
+  const formatNumber = (value) => {
+    const num = Number(value || 0)
+    return num.toLocaleString('ko-KR')
+  }
+
+  const formatSignedNumber = (value) => {
+    const num = Number(value || 0)
+    const prefix = num > 0 ? '+' : ''
+    return `${prefix}${num.toLocaleString('ko-KR')}`
+  }
+
+  const formatSignedPercent = (value) => {
+    const num = Number(value || 0)
+    const prefix = num > 0 ? '+' : ''
+    return `${prefix}${num.toFixed(2)}%`
+  }
+  
   const handleLogout = () => {
     if (!confirm("로그아웃 하시겠어요?")) return;
 
@@ -224,7 +256,7 @@ const Profile = () => {
         </div>
 
         <div className='total-description'>
-          <span className='description-top'>시즌 누적 포인트</span>
+          <span className='description-top'>보유 포인트</span>
           <p className='description-slave'>
             {member?.points ?? 0}
             <span>pt</span>
@@ -236,11 +268,11 @@ const Profile = () => {
           <div className='stock-list'>
             <div className='stock-content'>
               <span className='description-top'>원금</span>
-              <p className='description-slave'>{member?.bet_amount?? 0}<span>pt</span></p>
+              <p className='description-slave'>{member?.bet_amount ?? 0}<span>pt</span></p>
             </div>
             <div className='stock-content'>
               <span className='description-top'>총순익</span>
-              <p className='description-slave gain'>{member?.pnl_amount?? 0}<span>pt</span></p>
+              <p className='description-slave gain'>{member?.pnl_amount ?? 0}<span>pt</span></p>
             </div>
             <div className='stock-content'>
               <span className='description-top'>변동률</span>
