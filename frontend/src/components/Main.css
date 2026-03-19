@@ -3,5 +3,5 @@
 
   display: grid;
   grid-template-columns: 1fr 4fr 1fr;
-  gap: 2.5rem;
+  gap: 2rem;
 }

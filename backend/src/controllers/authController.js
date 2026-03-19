@@ -19,50 +19,43 @@ function fail(res, message, error = null, status = 500) {
   });
 }
 
-/* 업적 데이터 */
-const ACHIEVEMENTS = [
-  "Winning Streak",
-  "Drawdown Survivor",
-  "Risk Manager",
-  "Chart Reader",
-  "Trend Rider",
-];
-
-/* 칭호/티어 계산 */
+/* 칭호/티어 계산 — achievements 테이블의 실제 name 값 사용 */
 function getTitle(member) {
   const isr = Number(member.isr_score || 0);
   const points = Number(member.points || 0);
 
-  if (isr >= 80) return "철벽의 방어자";
-  if (isr >= 60) return "리스크 전략가";
-  if (points >= 100000) return "야수의 심장";
-  return "시장 입문자";
+  if (isr >= 90) return "💎 전설의 투자자";
+  if (isr >= 80) return "🛡️ 철벽의 방어자";
+  if (points >= 100000) return "🦁 야수의 심장";
+  return "🌱 Vivere 주린이";
 }
 
 function getTier(member) {
   const isr = Number(member.isr_score || 0);
 
-  if (isr >= 90) return "다이아 I";
-  if (isr >= 80) return "플래티넘 II";
-  if (isr >= 65) return "골드 III";
-  if (isr >= 50) return "실버 IV";
-  return "브론즈 V";
+  if (isr >= 90) return "다이아";
+  if (isr >= 70) return "골드";
+  if (isr >= 50) return "실버";
+  return "브론즈";
 }
 
-function getRecentAchievements(member) {
-  const result = [];
-  const isr = Number(member.isr_score || 0);
-  const points = Number(member.points || 0);
+/* DB 에서 회원의 실제 업적 목록을 조회 (최근 획득순 3개) */
+async function getRecentAchievements(memberId) {
+  const [rows] = await db.promise().query(
+    `SELECT a.name
+     FROM member_achievements ma
+     JOIN achievements a ON ma.ach_id = a.ach_id
+     WHERE ma.member_id = ?
+     ORDER BY ma.obtained_at DESC
+     LIMIT 3`,
+    [memberId]
+  );
 
-  if (points >= 10000) result.push("Winning Streak");
-  if (isr >= 50) result.push("Risk Manager");
-  if (points >= 5000) result.push("Chart Reader");
-
-  if (result.length === 0) {
-    result.push("Getting Started");
+  if (!rows.length) {
+    return ["🌱 Vivere 주린이"];
   }
 
-  return result.slice(0, 3);
+  return rows.map((r) => r.name);
 }
 
 function buildMemberPayload(member) {
@@ -80,11 +73,11 @@ function buildMemberPayload(member) {
   };
 }
 
-function buildLoginResponseData(result, token) {
+async function buildLoginResponseData(result, token) {
   return {
     isNewUser: result.isNewUser,
     member: buildMemberPayload(result.member),
-    recentAchievements: getRecentAchievements(result.member),
+    recentAchievements: await getRecentAchievements(result.member.member_id),
     token,
   };
 }
@@ -134,6 +127,65 @@ async function grantDefaultAchievementIfMissing(memberId) {
   }
 }
 
+/* =========================
+   기본 찜/보유 주식 시드
+========================= */
+async function seedDefaultStocksForMember(memberId, conn = null) {
+  const executor = conn || db.promise();
+
+  await executor.query(
+    `
+    INSERT IGNORE INTO liked_stocks (member_id, stock_code)
+    VALUES (?, '005930'), (?, '035420')
+    `,
+    [memberId, memberId]
+  );
+
+  await executor.query(
+    `
+    INSERT IGNORE INTO owned_stocks (member_id, stock_code, quantity, avg_price)
+    VALUES (?, '000660', 3, 210000), (?, '005930', 10, 73000)
+    `,
+    [memberId, memberId]
+  );
+}
+
+/* =========================
+   테스트용 기본 gameLog 시드
+   - 원치 않으면 이 함수 호출만 빼면 됨
+========================= */
+async function seedDefaultGameLogForMember(memberId, conn = null) {
+  const executor = conn || db.promise();
+
+  const [rows] = await executor.query(
+    `SELECT COUNT(*) AS cnt FROM gameLog WHERE member_id = ?`,
+    [memberId]
+  );
+
+  const count = Number(rows[0]?.cnt || 0);
+
+  if (count > 0) {
+    return;
+  }
+
+  await executor.query(
+    `
+    INSERT INTO gameLog
+    (
+      member_id, stock_code, prediction, bet_amount, pnl_amount, penalty_amount, status, created_at,
+      strategy_type_user, strategy_type_actual, holding_time, market_trend
+    )
+    VALUES
+    (?, '005930', 'UP',   100000, 12000, 0,    'SUCCESS', NOW(), 'SWING', 'SWING', 5,  'BULL'),
+    (?, '000660', 'DOWN',  80000, -10000, 2000,'FAIL',    NOW(), 'SHORT', 'SHORT', 2,  'BEAR'),
+    (?, '035420', 'UP',    50000, 7000,  0,    'SUCCESS', NOW(), 'LONG',  'LONG',  14, 'SIDEWAYS'),
+    (?, '005930', 'UP',    60000, 0,     0,    'PENDING', NOW(), 'SWING', 'SWING', 3,  'BULL')
+    `,
+    [memberId, memberId, memberId, memberId]
+  );
+}
+
+
 async function createMember(provider, providerId, nickname, profile_image) {
   const safeNickname =
     nickname && nickname.trim()
@@ -156,6 +208,9 @@ async function createMember(provider, providerId, nickname, profile_image) {
       "INSERT INTO member_achievements (member_id, ach_id, is_equipped) VALUES (?, 1, TRUE)",
       [newMemberId]
     );
+
+    await seedDefaultStocksForMember(newMemberId, conn);
+    await seedDefaultGameLogForMember(newMemberId, conn);
 
     const [rows] = await conn.query(
       "SELECT * FROM members WHERE member_id = ?",
@@ -185,9 +240,14 @@ async function loginOrRegister(provider, providerId, nickname, profile_image) {
     }
 
     await grantDefaultAchievementIfMissing(member.member_id);
+    await seedDefaultStocksForMember(member.member_id);
+    await seedDefaultGameLogForMember(member.member_id);
+
+    const refreshedMember = await findMemberById(member.member_id);
+
     return {
       isNewUser: false,
-      member,
+      member: refreshedMember,
     };
   }
 
@@ -229,7 +289,7 @@ exports.getMe = async (req, res) => {
 
     return success(res, "현재 로그인 사용자 조회 성공", {
       member: buildMemberPayload(member),
-      recentAchievements: getRecentAchievements(member),
+      recentAchievements: await getRecentAchievements(member),
     });
   } catch (err) {
     return fail(res, "회원 조회 실패", err.message, 500);
@@ -254,7 +314,7 @@ exports.updateMe = async (req, res) => {
 
     return success(res, "회원 정보 수정 성공", {
       member: buildMemberPayload(updatedMember),
-      recentAchievements: getRecentAchievements(updatedMember),
+      recentAchievements: await getRecentAchievements(updatedMember.member_id),
       token: newToken,
     });
   } catch (err) {
@@ -283,8 +343,7 @@ exports.getProfileMeta = async (req, res) => {
     return success(res, "프로필 메타 조회 성공", {
       title: getTitle(member),
       tier: getTier(member),
-      recentAchievements: getRecentAchievements(member),
-      availableAchievements: ACHIEVEMENTS,
+      recentAchievements: await getRecentAchievements(member.member_id),
     });
   } catch (err) {
     return fail(res, "프로필 메타 조회 실패", err.message, 500);
@@ -400,7 +459,7 @@ exports.kakaoCallback = async (req, res) => {
     );
 
     const token = createToken(result.member);
-    const responseData = buildLoginResponseData(result, token);
+    const responseData = await buildLoginResponseData(result, token);
 
     return res.redirect(buildFrontendRedirectUrl(responseData));
   } catch (err) {
@@ -424,12 +483,13 @@ exports.googleLogin = (req, res) => {
     return fail(res, "구글 환경변수가 설정되지 않았습니다.", null, 500);
   }
 
+  const scope = encodeURIComponent("openid email profile");
   const url =
     `https://accounts.google.com/o/oauth2/v2/auth` +
     `?client_id=${process.env.GOOGLE_CLIENT_ID}` +
     `&redirect_uri=${encodeURIComponent(process.env.GOOGLE_REDIRECT_URI)}` +
     `&response_type=code` +
-    `&scope=openid%20email%20profile` +
+    `&scope=${scope}` +
     `&prompt=consent%20select_account`;
 
   return res.redirect(url);
@@ -499,7 +559,7 @@ exports.googleCallback = async (req, res) => {
     );
 
     const token = createToken(result.member);
-    const responseData = buildLoginResponseData(result, token);
+    const responseData = await buildLoginResponseData(result, token);
 
     return res.redirect(buildFrontendRedirectUrl(responseData));
   } catch (err) {

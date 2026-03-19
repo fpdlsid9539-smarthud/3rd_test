@@ -59,29 +59,31 @@ const Landing = () => {
           </div>
 
           <div>
-            <div className='ad-title'>
-              <h2>게임처럼 성장하세요</h2>
-              <div className='intro-description'>
-                <p>이 플랫폼은 단순한 학습 사이트가 아닙니다.</p>
-                <ul>
-                  <li>포인트를 모으고,</li>
-                  <li>투자 판단을 연습하고,</li>
-                  <li>랭킹에 도전할 수 있습니다.</li>
-                </ul>
-                <p>목표는 단 하나, <strong>더 나은 투자 판단 능력 만들기.</strong></p>
+            <div className='ad-flex'>
+              <div className='ad-title'>
+                <h2>게임처럼 성장하세요</h2>
+                <div className='intro-description'>
+                  <p>이 플랫폼은 단순한 학습 사이트가 아닙니다.</p>
+                  <ul>
+                    <li>포인트를 모으고,</li>
+                    <li>투자 판단을 연습하고,</li>
+                    <li>랭킹에 도전할 수 있습니다.</li>
+                  </ul>
+                  <p>목표는 단 하나, <strong>더 나은 투자 판단 능력 만들기.</strong></p>
+                </div>
               </div>
-            </div>
 
-            <div className='ad-title-r'>
-              <h2>실제 돈은 사용하지 않습니다!</h2>
-              <div className='intro-description'>
-                <p>이 플랫폼은 투자 연습을 위한 트레이닝 공간입니다.</p>
-                <ul>
-                  <li>실제 돈 사용 없음.</li>
-                  <li>위험 없는 투자 연습하기.</li>
-                  <li>데이터 기반 학습하기.</li>
-                </ul>
-                <p>실수를 통해 배우고 투자 감각을 키워보세요.</p>
+              <div className='ad-title'>
+                <h2>실제 돈은 사용하지 않습니다!</h2>
+                <div className='intro-description'>
+                  <p>이 플랫폼은 투자 연습을 위한 트레이닝 공간입니다.</p>
+                  <ul>
+                    <li>실제 돈 사용 없음.</li>
+                    <li>위험 없는 투자 연습하기.</li>
+                    <li>데이터 기반 학습하기.</li>
+                  </ul>
+                  <p>실수를 통해 배우고 투자 감각을 키워보세요.</p>
+                </div>
               </div>
             </div>
 

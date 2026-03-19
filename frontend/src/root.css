@@ -14,6 +14,7 @@
   
   --text-highlight: color-mix(in oklab, var(--text) 48%, var(--bg));
   --primary-highlight: color-mix(in oklab, var(--primary) 4%, var(--bg) 96%);
+  --primary-highlight2: color-mix(in oklab, var(--primary) 24%, var(--bg) 96%);
   --danger-highlight: color-mix(in oklab, var(--danger) 4%, var(--bg) 96%);
   --warning-highlight:  color-mix(in oklab, var(--warning) 24%, var(--bg));
   
@@ -24,7 +25,7 @@
   --progress-bar: linear-gradient(90deg, color-mix(in oklab, var(--primary), transparent 0%), color-mix(in oklab, #001F7A, transparent 0%));
   --btn-prim: linear-gradient(90deg, var(--primary-70) 25%, hsla(225, 100%, 88%, 0.70) 100%);
   
-  --shadow-1: color-mix(in oklab, var(--text) 12%, transparent);
+  --shadow-1: color-mix(in oklab, var(--text) 24%, transparent);
   --shadow-2: color-mix(in oklab, var(--text) 8%, transparent);
 }
 
@@ -52,7 +53,8 @@ body {
 }
 
 .achievment-list {
-  height: 10rem;
+  min-height: fit-content;
+  max-height: 9.5rem;
   overflow-y: scroll;
 
   display: flex;

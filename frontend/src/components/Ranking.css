@@ -49,47 +49,54 @@
   color: #4f7cff;
 }
 
+.ranking-empty-box {
+  padding: 1rem;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+
+  background: var(--primary-highlight);
+  border: 1px solid var(--border);
+  border-radius: 0.75rem;
+
+  font-size: 1rem;
+  font-weight: 600;
+  color: var(--text-highlight);
+}
+
 .league-grid {
   display: grid;
   grid-template-columns: repeat(4, minmax(0, 1fr));
   gap: 16px;
   align-items: start;
-
-  margin-top: 40px; 
+  margin-top: 40px;
 }
 
 .league-card {
   position: relative;
   min-height: 540px;
   max-height: 540px;
-  padding: 2rem 1rem 1rem;
+  padding: 2.4rem 1rem 1rem;
   overflow: visible;
 }
 
-.league-emblem {
+.league-emblem-wrap {
   position: absolute;
-  top: -30px;
+  top: -34px;
   left: 50%;
   transform: translateX(-50%);
-  width: 58px;
-  height: 58px;
-  border-radius: 999px;
+  width: 72px;
+  height: 72px;
+
+  display: flex;
+  align-items: center;
+  justify-content: center;
 }
 
-.league-emblem.bronze {
-  background-color: #cd8a3c;
-}
-
-.league-emblem.silver {
-  background-color: #b8b8b8;
-}
-
-.league-emblem.gold {
-  background-color: #d7b233;
-}
-
-.league-emblem.diamond {
-  background-color: #dbd9d6;
+.league-emblem-badge {
+  width: 72px;
+  height: 72px;
+  object-fit: contain;
 }
 
 .league-user-list {

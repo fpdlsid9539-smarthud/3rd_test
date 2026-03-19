@@ -1,7 +1,7 @@
 import React, { useEffect, useMemo, useState } from 'react'
 import './Education.css'
 import arrowDown from '../assets/icons/arrow-down-line.svg'
-import play from '../assets/icons/play.svg'
+import check from '../assets/icons/check.svg'
 
 const API_BASE_URL = 'http://localhost:5000'
 
@@ -206,10 +206,10 @@ const Education = () => {
       )
       setTotalEarnedPoints(data.totalEarnedPoints || 0)
 
+      window.dispatchEvent(new Event('pointsUpdated'));
+      
       if ((data.awardedPoints || 0) > 0) {
         setActionMessage(`학습 완료! ${data.awardedPoints}pt를 획득했습니다.`)
-      } else {
-        setActionMessage('학습 완료! 이미 포인트를 받은 학습입니다.')
       }
 
       const nextVisibleLessons = getVisibleLessons(
@@ -422,8 +422,8 @@ const Education = () => {
                         onClick={() => handleCompleteLesson(lesson.id)}
                         disabled={processingLessonId === lesson.id}
                       >
-                        <img src={play} alt='play' className='icons' />
                         {processingLessonId === lesson.id ? '처리 중...' : '학습 완료'}
+                        <img src={check} alt='check' className='icons' />
                       </button>
                     )}
                   </div>

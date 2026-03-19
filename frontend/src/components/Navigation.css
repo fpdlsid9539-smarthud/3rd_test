@@ -2,7 +2,7 @@
   position: sticky;
   top: 0;
   height: 100vh;
-  padding: 1.5rem;
+  padding: 1rem;
 
   background-color: var(--box-bg);
   border-right: 1px solid var(--border);
@@ -56,6 +56,11 @@
 }
 
 .nav-menu:hover {
+  background: var(--btn-prim);
+  border: 2px solid var(--border-prim);
+}
+
+.nav-menu.active {
   background: var(--btn-prim);
   border: 2px solid var(--border-prim);
 }

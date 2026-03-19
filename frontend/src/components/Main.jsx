@@ -64,7 +64,7 @@ const Main = () => {
 
   return (
     <div className='main-body'>
-      <Navigation setActiveMenu={handleMenuChange} />
+      <Navigation setActiveMenu={handleMenuChange} activeMenu={activeMenu}/>
 
       <div className="content-area">
         {renderContent()}
