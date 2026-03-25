@@ -1,5 +1,6 @@
 const db = require("../../config/db");
 const { calculateISR } = require("../engines/isrEngine");
+const achievementService = require("../services/achievementService");
 
 function success(res, message, data = null, status = 200) {
   return res.status(status).json({
@@ -129,6 +130,7 @@ exports.calculateMyISR = async (req, res) => {
 
     const result = calculateISR({ logs, quizRows });
     await saveISR(memberId, result);
+    await achievementService.checkAndGrantAchievements(memberId);
 
     return success(res, "내 ISR 계산 완료", result);
   } catch (err) {
@@ -172,6 +174,7 @@ exports.calculateUserISR = async (req, res) => {
 
     const result = calculateISR({ logs, quizRows });
     await saveISR(memberId, result);
+    await achievementService.checkAndGrantAchievements(memberId);
 
     return success(res, "ISR 계산 완료", result);
   } catch (err) {
@@ -219,6 +222,7 @@ exports.calculateAllISR = async (req, res) => {
 
       const result = calculateISR({ logs, quizRows });
       await saveISR(memberId, result);
+      await achievementService.checkAndGrantAchievements(memberId);
 
       results.push({
         memberId,

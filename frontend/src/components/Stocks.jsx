@@ -96,17 +96,13 @@ const Stocks = () => {
         .filter((item) => {
           const type = String(item.type || '');
           return (
-            type.includes('매수') ||
-            type.includes('매도') ||
-            type.includes('찜하기') ||
-            type.includes('찜 해제')
+            type.includes('매수') || type.includes('매도')
           );
         })
         .map((item) => {
           const typeText = String(item.type || '');
           const isBuy = typeText.includes('매수');
           const isSell = typeText.includes('매도');
-          const isLike = typeText.includes('찜');
 
           const match = typeText.match(/^(.*)\s(\d+)주\s(매수|매도)$/);
 
@@ -117,17 +113,6 @@ const Stocks = () => {
           const hh = String(dateObj.getHours()).padStart(2, '0');
           const mm = String(dateObj.getMinutes()).padStart(2, '0');
           const dateStr = `${y}. ${m}. ${d} ${hh}:${mm}`;
-
-          if (isLike) {
-            return {
-              id: item.history_id,
-              stockName: typeText.replace(' 찜하기', '').replace(' 찜 해제', ''),
-              type: typeText.includes('찜 해제') ? 'unlike' : 'like',
-              quantity: '',
-              price: Math.abs(Number(item.changeAmount || 0)),
-              date: dateStr,
-            };
-          }
 
           if (!match) return null;
 
@@ -710,23 +695,12 @@ const Stocks = () => {
                         <p>{stock.stockName}</p>
                         <p>
                           {stock.price !== null && stock.price !== undefined
-                            ? `${Number(stock.price).toLocaleString()}원`
+                            ? `현재가 ${Number(stock.price).toLocaleString()}원`
                             : '-'}
                         </p>
                       </div>
 
-                      <div className='side-stock-mid'>
-                        <span>{stock.stockCode}</span>
-                        <span
-                          className={Number(stock.changeRate || 0) >= 0 ? 'stocks-up' : 'stocks-down'}
-                        >
-                          {stock.changeRate !== null && stock.changeRate !== undefined
-                            ? `${Number(stock.changeRate) >= 0 ? '+' : ''}${Number(
-                                stock.changeRate
-                              ).toFixed(2)}%`
-                            : '-'}
-                        </span>
-                      </div>
+                      <div className='side-stock-mid'></div>
 
                       <div className='side-liked-actions'>
                         <button
@@ -739,11 +713,11 @@ const Stocks = () => {
 
                         <button
                           type='button'
-                          className={`side-like-btn liked-small ${liked ? 'liked' : ''}`}
+                          className='side-like-btn liked'
                           onClick={(e) => handleToggleLike(stock, e)}
-                          title={liked ? '찜 해제' : '찜하기'}
+                          title='찜 해제'
                         >
-                          {liked ? '♥ 찜 해제' : '♡ 찜하기'}
+                          ♥
                         </button>
                       </div>
                     </div>

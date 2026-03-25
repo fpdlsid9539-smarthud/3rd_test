@@ -148,13 +148,103 @@ exports.equipTitle = async (memberId, achId) => {
   return this.getEquippedTitle(memberId);
 };
 
-/* 업적 점검
-   - 추후 퀴즈 로직 연결 예정
-*/
-exports.checkAndGrantAchievements = async () => {
+exports.checkAndGrantAchievements = async (memberId) => {
+  const grantedIds = [];
+
+  const [[memberRow]] = await db.promise().query(
+    `
+    SELECT points, isr_score
+    FROM members
+    WHERE member_id = ?
+    LIMIT 1
+    `,
+    [memberId]
+  );
+
+  const points = Number(memberRow?.points || 0);
+  const isr = Number(memberRow?.isr_score || 0);
+
+  // 퀴즈 누적 통계
+  const [[quizStats]] = await db.promise().query(
+    `
+    SELECT
+      COUNT(*) AS total_quiz_count,
+      COALESCE(SUM(CASE WHEN is_correct = 1 THEN 1 ELSE 0 END), 0) AS correct_quiz_count
+    FROM member_quiz_history
+    WHERE member_id = ?
+    `,
+    [memberId]
+  );
+
+  const totalQuizCount = Number(quizStats?.total_quiz_count || 0);
+  const correctQuizCount = Number(quizStats?.correct_quiz_count || 0);
+  const quizAccuracy =
+    totalQuizCount > 0 ? (correctQuizCount / totalQuizCount) * 100 : 0;
+
+  // 11. 첫걸음 - 퀴즈 1회 참여
+  if (totalQuizCount >= 1) {
+    const granted = await grantAchievementIfNotExists(memberId, 11);
+    if (granted) grantedIds.push(11);
+  }
+
+  // 12. 차트 리더 - 퀴즈 누적 10회 정답 달성
+  if (correctQuizCount >= 10) {
+    const granted = await grantAchievementIfNotExists(memberId, 12);
+    if (granted) grantedIds.push(12);
+  }
+
+  // 13. 금융 박사 - 퀴즈 누적 50회 정답 달성
+  if (correctQuizCount >= 50) {
+    const granted = await grantAchievementIfNotExists(memberId, 13);
+    if (granted) grantedIds.push(13);
+  }
+
+  // 26. 퀴즈왕 - 퀴즈 100회 참여
+  if (totalQuizCount >= 100) {
+    const granted = await grantAchievementIfNotExists(memberId, 26);
+    if (granted) grantedIds.push(26);
+  }
+
+  // 2. 퀴즈 정답률 업적 - 정답률 80% 이상
+  // 너무 적은 표본에서 바로 열리지 않게 10회 이상 참여 조건 추가
+  if (totalQuizCount >= 10 && quizAccuracy >= 80) {
+    const granted = await grantAchievementIfNotExists(memberId, 2);
+    if (granted) grantedIds.push(2);
+  }
+
+  // 23. 시드 머니 - 보유 포인트 50,000pt 달성
+  if (points >= 50000) {
+    const granted = await grantAchievementIfNotExists(memberId, 23);
+    if (granted) grantedIds.push(23);
+  }
+
+  // 19. 리스크 매니저 - ISR 50점 달성
+  if (isr >= 50) {
+    const granted = await grantAchievementIfNotExists(memberId, 19);
+    if (granted) grantedIds.push(19);
+  }
+
+  // 20. 포트폴리오 마스터 - ISR 80점 달성
+  if (isr >= 80) {
+    const granted = await grantAchievementIfNotExists(memberId, 20);
+    if (granted) grantedIds.push(20);
+  }
+  // 10. 전설의 투자자 - ISR 90점 이상 달성
+  if (isr >= 90) {
+    const granted = await grantAchievementIfNotExists(memberId, 10);
+    if (granted) grantedIds.push(10);
+  }
+
+  // 29. 리스크 지배자 - ISR 95점 달성
+  if (isr >= 95) {
+    const granted = await grantAchievementIfNotExists(memberId, 29);
+    if (granted) grantedIds.push(29);
+  }
+
   return {
-    grantedCount: 0,
-    grantedIds: [],
-    grantedAchievements: [],
+    grantedCount: grantedIds.length,
+    grantedIds,
   };
 };
+
+exports.grantAchievementIfNotExists = grantAchievementIfNotExists;

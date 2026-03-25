@@ -1,5 +1,6 @@
 const db = require("../../config/db");
 const { getTierKeyByRankingPoint } = require("../utils/tier");
+const achievementService = require("../services/achievementService");
 
 function success(res, message, data = null, status = 200) {
   return res.status(status).json({
@@ -63,6 +64,15 @@ exports.getLeaderboard = async (req, res) => {
         overallRank: index + 1,
       };
     });
+
+    const currentUserRow = rankedRows.find(
+      (row) => Number(row.memberId) === memberId
+    );
+
+    if (memberId && currentUserRow?.overallRank === 1) {
+      await achievementService.grantAchievementIfNotExists(memberId, 30);
+    }
+
 
     const leagues = {
       bronze: [],

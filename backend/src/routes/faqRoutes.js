@@ -1,87 +1,98 @@
-const express = require('express');
-const router = express.Router();
+const express = require('express')
+const router = express.Router()
+const db = require('../../config/db')
+const authMiddleware = require('../../middlewares/authMiddleware')
+const adminMiddleware = require('../../middlewares/adminMiddleware')
 
-const faqController = require('../controllers/faqController');
-const authMiddleware = require('../../middlewares/authMiddleware');
-const adminMiddleware = require('../../middlewares/adminMiddleware');
+/* FAQ 기본 리스트 */
+router.get('/', async (req, res) => {
+  try {
+    const [rows] = await db.promise().query(
+      `SELECT * FROM faq WHERE is_visible = 1 ORDER BY sort_order ASC`
+    )
+    res.json({ success: true, data: rows })
+  } catch (err) {
+    res.status(500).json({ success: false })
+  }
+})
 
-/* =========================
-   공개용 FAQ / 질문 조회
-========================= */
-router.get('/', faqController.getFaqList);
+/* 질문 목록 */
+router.get('/questions', async (req, res) => {
+  try {
+    const [rows] = await db.promise().query(
+      `SELECT * FROM faq_questions WHERE is_deleted = 0 ORDER BY question_id DESC`
+    )
+    res.json({ success: true, data: rows })
+  } catch (err) {
+    res.status(500).json({ success: false })
+  }
+})
 
-/* 공개 질문 목록 / 등록
-   ※ 반드시 /:faqId 보다 먼저 와야 함
-*/
-router.get('/questions/list/public', faqController.getQuestionList);
-router.post('/questions', faqController.createQuestion);
+/* 질문 등록 */
+router.post('/questions', async (req, res) => {
+  try {
+    const { title, content, nickname, is_anonymous } = req.body
 
-/* FAQ 단건 조회 */
-router.get('/:faqId', faqController.getFaqById);
+    await db.promise().query(
+      `INSERT INTO faq_questions (title, content, nickname, is_anonymous)
+       VALUES (?, ?, ?, ?)`,
+      [
+        title,
+        content,
+        is_anonymous ? null : nickname,
+        is_anonymous ? 1 : 0,
+      ]
+    )
 
-/* =========================
-   관리자 전용 FAQ 전체 조회
-========================= */
-router.get(
-  '/all',
-  authMiddleware,
-  adminMiddleware,
-  faqController.getAllFaq
-);
+    res.json({ success: true })
+  } catch (err) {
+    res.status(500).json({ success: false })
+  }
+})
 
-/* =========================
-   관리자 전용 FAQ 관리
-========================= */
-router.post(
-  '/',
-  authMiddleware,
-  adminMiddleware,
-  faqController.createFaq
-);
-
-router.put(
-  '/:faqId',
-  authMiddleware,
-  adminMiddleware,
-  faqController.updateFaq
-);
-
+/* 관리자 답변 */
 router.patch(
-  '/:faqId/visibility',
+  '/questions/:id/answer',
   authMiddleware,
   adminMiddleware,
-  faqController.toggleFaqVisibility
-);
+  async (req, res) => {
+    try {
+      const { id } = req.params
+      const { answer } = req.body
 
+      await db.promise().query(
+        `UPDATE faq_questions 
+         SET admin_answer = ?, status = 'answered'
+         WHERE question_id = ?`,
+        [answer, id]
+      )
+
+      res.json({ success: true })
+    } catch (err) {
+      res.status(500).json({ success: false })
+    }
+  }
+)
+
+/* 관리자 삭제 */
 router.delete(
-  '/:faqId',
+  '/questions/:id',
   authMiddleware,
   adminMiddleware,
-  faqController.deleteFaq
-);
+  async (req, res) => {
+    try {
+      const { id } = req.params
 
-/* =========================
-   관리자 전용 질문 관리
-========================= */
-router.get(
-  '/questions',
-  authMiddleware,
-  adminMiddleware,
-  faqController.getAllQuestions
-);
+      await db.promise().query(
+        `UPDATE faq_questions SET is_deleted = 1 WHERE question_id = ?`,
+        [id]
+      )
 
-router.patch(
-  '/questions/:questionId/answer',
-  authMiddleware,
-  adminMiddleware,
-  faqController.answerQuestion
-);
+      res.json({ success: true })
+    } catch (err) {
+      res.status(500).json({ success: false })
+    }
+  }
+)
 
-router.delete(
-  '/questions/:questionId',
-  authMiddleware,
-  adminMiddleware,
-  faqController.deleteQuestion
-);
-
-module.exports = router;
+module.exports = router

@@ -1,4 +1,6 @@
-import React, { useEffect, useMemo, useState, useRef } from 'react'
+// frontend/src/components/Profile.jsx
+
+import React, { useEffect, useMemo, useRef, useState } from 'react'
 import './Profile.css'
 import notification from '../assets/icons/notification.svg'
 import account from '../assets/icons/account.svg'
@@ -20,6 +22,44 @@ const extractObjectData = (payload) => {
   return null
 }
 
+const normalizeOwnedStocks = (payload) => {
+  if (Array.isArray(payload?.stocks)) return payload.stocks
+  if (Array.isArray(payload?.data)) return payload.data
+  if (Array.isArray(payload)) return payload
+  return []
+}
+
+const getStockPrincipal = (stock) => {
+  const directTotalPrice = Number(
+    stock?.totalPrice ??
+      stock?.total_price ??
+      stock?.principal ??
+      stock?.originPrice ??
+      stock?.origin_price ??
+      0
+  )
+
+  if (directTotalPrice > 0) return directTotalPrice
+
+  const quantity = Number(stock?.quantity || 0)
+  const avgPrice = Number(stock?.avgPrice ?? stock?.avg_price ?? 0)
+  return quantity * avgPrice
+}
+
+const getStockProfit = (stock) => {
+  return Number(
+    stock?.changeAmount ??
+      stock?.change_amount ??
+      stock?.profit ??
+      stock?.pnl_amount ??
+      0
+  )
+}
+
+const getTooltipText = (item, fallback = '설명이 없습니다.') => {
+  return item?.description || item?.desc || item?.detail || fallback
+}
+
 const Profile = () => {
   const [member, setMember] = useState(null)
   const [ownedStocks, setOwnedStocks] = useState([])
@@ -39,9 +79,15 @@ const Profile = () => {
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState('')
   const [hasUnreadNotification, setHasUnreadNotification] = useState(false)
+
   const [showAllAchievements, setShowAllAchievements] = useState(false)
+  const [showPointHistory, setShowPointHistory] = useState(false)
+  const [visibleHistoryCount, setVisibleHistoryCount] = useState(10)
+
   const [achievementLoading, setAchievementLoading] = useState(false)
-  const [rankingPoint, setRankingPoint] = useState(0)
+  // const [rankingPoint, setRankingPoint] = useState(0)
+  const [displayTier, setDisplayTier] = useState('브론즈')
+  const [tierRank, setTierRank] = useState(null)
 
   const [titles, setTitles] = useState([])
   const [equippedTitle, setEquippedTitle] = useState(null)
@@ -59,6 +105,12 @@ const Profile = () => {
   const notificationRef = useRef(null)
 
   useEffect(() => {
+    if (showPointHistory) {
+      setVisibleHistoryCount(10)
+    }
+  }, [showPointHistory])
+
+  useEffect(() => {
     const handleClickOutside = (event) => {
       if (
         notificationRef.current &&
@@ -74,6 +126,14 @@ const Profile = () => {
       document.removeEventListener('mousedown', handleClickOutside)
     }
   }, [])
+
+  useEffect(() => {
+    return () => {
+      if (editPreviewUrl) {
+        URL.revokeObjectURL(editPreviewUrl)
+      }
+    }
+  }, [editPreviewUrl])
 
   const normalizeRecentAchievements = (list) => {
     if (!Array.isArray(list)) return []
@@ -94,7 +154,7 @@ const Profile = () => {
             ach_id: item.ach_id ?? item.id ?? `obj-${index}`,
             name: item.name ?? item.title ?? '업적',
             ach_img: item.ach_img ?? null,
-            obtained_at: item.obtained_at ?? null,
+            obtained_at: item.obtained_at ?? item.obtainedAt ?? null,
           }
         }
 
@@ -123,6 +183,8 @@ const Profile = () => {
       year: 'numeric',
       month: 'long',
       day: 'numeric',
+      hour: 'numeric',
+      minute: 'numeric',
     })
   }
 
@@ -182,12 +244,7 @@ const Profile = () => {
 
       if (ownedRes.status === 'fulfilled') {
         const payload = ownedRes.value?.data ?? ownedRes.value
-        const ownedData =
-          payload?.stocks ??
-          payload?.data ??
-          payload ??
-          []
-
+        const ownedData = normalizeOwnedStocks(payload)
         setOwnedStocks(Array.isArray(ownedData) ? ownedData : [])
       } else {
         setOwnedStocks([])
@@ -220,25 +277,47 @@ const Profile = () => {
           const rankingRaw = rankingRes?.data ?? rankingRes
           const rankingData = rankingRaw?.data ?? rankingRaw
 
-          const allUsers = [
-            ...(rankingData?.leagues?.bronze || []),
-            ...(rankingData?.leagues?.silver || []),
-            ...(rankingData?.leagues?.gold || []),
-            ...(rankingData?.leagues?.diamond || []),
+          const currentUserId = rankingData?.currentUserId
+          const leagues = rankingData?.leagues || {}
+
+          const tierOrder = [
+            { key: 'diamond', label: '다이아' },
+            { key: 'gold', label: '골드' },
+            { key: 'silver', label: '실버' },
+            { key: 'bronze', label: '브론즈' },
           ]
 
-          const me = allUsers.find(
-            (user) => Number(user.memberId) === Number(currentMember.member_id)
-          )
+          let foundTierLabel = currentMember?.tier || '브론즈'
+          let foundTierRank = null
 
-          setRankingPoint(Number(me?.rankingPoint || 0))
+          for (const tierInfo of tierOrder) {
+            const leagueUsers = Array.isArray(leagues?.[tierInfo.key])
+              ? leagues[tierInfo.key]
+              : []
+
+            const myRow = leagueUsers.find(
+              (user) => Number(user.memberId) === Number(currentUserId)
+            )
+
+            if (myRow) {
+              foundTierLabel = tierInfo.label
+              foundTierRank = Number(myRow.leagueRank || 0) || null
+              break
+            }
+          }
+
+          setDisplayTier(foundTierLabel)
+          setTierRank(foundTierRank)
         } catch (err) {
-          console.error('랭킹 점수 조회 실패 =', err)
-          setRankingPoint(0)
+          console.error('티어 내 등수 조회 실패 =', err)
+          setDisplayTier(currentMember?.tier || '브론즈')
+          setTierRank(null)
         }
       } else {
-        setRankingPoint(0)
+        setTierRank(null)
       }
+
+
     } catch (err) {
       setError(err.message || '프로필 로딩 실패')
     } finally {
@@ -314,6 +393,7 @@ const Profile = () => {
   }
 
   const handleOpenAchievements = async () => {
+    setShowPointHistory(false)
     setShowAllAchievements(true)
 
     await Promise.all([
@@ -324,6 +404,7 @@ const Profile = () => {
 
   const handleBackToProfile = () => {
     setShowAllAchievements(false)
+    setShowPointHistory(false)
   }
 
   const loadNotifications = async () => {
@@ -334,8 +415,8 @@ const Profile = () => {
       const list = Array.isArray(raw?.data)
         ? raw.data
         : Array.isArray(raw)
-        ? raw
-        : []
+          ? raw
+          : []
 
       setNotifications(list)
       setHasUnreadNotification(list.length > 0)
@@ -353,6 +434,7 @@ const Profile = () => {
     const handleRefresh = () => {
       loadProfile()
       loadNotifications()
+
       if (showAllAchievements) {
         loadAllAchievements()
         loadMyTitles()
@@ -365,8 +447,14 @@ const Profile = () => {
 
   const profileImg = member?.profile_image2 || member?.profile_image || defaultProfile
   const displayImg = editPreviewUrl || profileImg
+
   const membershipType = String(member?.membership_type || '').trim().toLowerCase()
-  const isPremium = membershipType === 'premium'
+  const isPremium =
+    membershipType === 'premium' ||
+    membershipType === 'premium_member' ||
+    membershipType === 'paid'
+
+  const membershipLabel = isPremium ? '👑' : 'Free'
 
   const openEdit = () => {
     setEditNickname(member?.nickname || '')
@@ -378,13 +466,20 @@ const Profile = () => {
 
   const closeEdit = () => {
     setEditMode(false)
-    setEditPreviewUrl(null)
     setSaveError('')
+    if (editPreviewUrl) {
+      URL.revokeObjectURL(editPreviewUrl)
+    }
+    setEditPreviewUrl(null)
   }
 
   const handleImageChange = (e) => {
-    const file = e.target.files[0]
+    const file = e.target.files?.[0]
     if (!file) return
+
+    if (editPreviewUrl) {
+      URL.revokeObjectURL(editPreviewUrl)
+    }
     setEditPreviewUrl(URL.createObjectURL(file))
   }
 
@@ -399,16 +494,15 @@ const Profile = () => {
     setSaveError('')
 
     try {
-      if (fileInputRef.current?.files[0]) {
+      if (fileInputRef.current?.files?.[0]) {
         const formData = new FormData()
         formData.append('profile_image', fileInputRef.current.files[0])
 
-        await fetch('http://localhost:5000/api/auth/me/image', {
-          method: 'PATCH',
+        await api.patch('/api/auth/me/image', formData, {
           headers: {
             Authorization: `Bearer ${localStorage.getItem('token')}`,
+            'Content-Type': 'multipart/form-data',
           },
-          body: formData,
         })
       }
 
@@ -416,9 +510,12 @@ const Profile = () => {
       await loadProfile()
 
       setEditMode(false)
+      if (editPreviewUrl) {
+        URL.revokeObjectURL(editPreviewUrl)
+      }
       setEditPreviewUrl(null)
     } catch (err) {
-      setSaveError(err.message || '저장 실패')
+      setSaveError(err?.response?.data?.message || err.message || '저장 실패')
     } finally {
       setSaving(false)
     }
@@ -439,22 +536,27 @@ const Profile = () => {
   const investmentSummary = useMemo(() => {
     return ownedStocks.reduce(
       (acc, stock) => {
-        const quantity = Number(stock?.quantity || 0)
-        const avgPrice = Number(stock?.avgPrice || stock?.avg_price || 0)
-        const invested = avgPrice * quantity
-        const profit = Number(stock?.changeAmount || stock?.change_amount || 0)
-
-        acc.totalInvested += invested
-        acc.totalProfit += profit
+        acc.totalInvested += getStockPrincipal(stock)
+        acc.totalProfit += getStockProfit(stock)
         return acc
       },
       { totalInvested: 0, totalProfit: 0 }
     )
   }, [ownedStocks])
 
+  const displayTotalInvested =
+    Number(investmentSummary.totalInvested || 0) > 0
+      ? investmentSummary.totalInvested
+      : Number(member?.bet_amount || 0)
+
+  const displayTotalProfit =
+    Number(investmentSummary.totalProfit || 0) !== 0
+      ? investmentSummary.totalProfit
+      : Number(member?.pnl_amount || 0)
+
   const totalProfitRate =
-    investmentSummary.totalInvested > 0
-      ? (investmentSummary.totalProfit / investmentSummary.totalInvested) * 100
+    Number(displayTotalInvested) > 0
+      ? (Number(displayTotalProfit) / Number(displayTotalInvested)) * 100
       : 0
 
   const obtainedAchievements = useMemo(
@@ -465,6 +567,24 @@ const Profile = () => {
   const inProgressAchievements = useMemo(
     () => allAchievements.filter((item) => Number(item.is_obtained) !== 1),
     [allAchievements]
+  )
+
+  const pointHistory7Days = useMemo(() => {
+    const sevenDaysAgo = new Date()
+    sevenDaysAgo.setDate(sevenDaysAgo.getDate() - 7)
+
+    return notifications.filter((item) => {
+      const itemDate = new Date(item.createdAt)
+      return !Number.isNaN(itemDate.getTime()) && itemDate >= sevenDaysAgo
+    })
+  }, [notifications])
+
+  const currentTitleName =
+    equippedTitle?.name || member?.title || '🌱 Vivere 주린이'
+
+  const currentTitleDescription = getTooltipText(
+    equippedTitle,
+    '칭호 설명이 없습니다.'
   )
 
   if (loading) {
@@ -479,6 +599,64 @@ const Profile = () => {
     return (
       <div className='profile'>
         <div className='profile-content'>오류: {error}</div>
+      </div>
+    )
+  }
+
+  if (showPointHistory) {
+      const visibleHistory = pointHistory7Days.slice(0, visibleHistoryCount);
+    return (
+      <div className='profile'>
+        <div className='profile-content'>
+          <div className='achievement-page-top'>
+            <button className='achievement-back-btn' onClick={handleBackToProfile}>
+              ← 뒤로가기
+            </button>
+          </div>
+
+          <div className='profile-stock title-summary-card'>
+            <div className='achievement-title-row'>
+              <h2>포인트 변동 내역 (최근 7일)</h2>
+              <span className='achievement-count'>{pointHistory7Days.length}건</span>
+            </div>
+
+            <div className='point-history-list'>
+              {visibleHistory.length > 0 ? (
+                visibleHistory.map((item) => (
+                  <div className='point-history-item' key={item.history_id}>
+                    <div className='notification-item-left'>
+                      <div className='notification-name'>{item.type}</div>
+                      <div className='notification-date'>
+                        {formatNoticeDate(item.createdAt)}
+                      </div>
+                    </div>
+                    <div
+                      className={`notification-amount ${
+                        Number(item.changeAmount) >= 0 ? 'positive' : 'negative'
+                      }`}
+                    >
+                      {Number(item.changeAmount) >= 0 ? '+' : ''}
+                      {Number(item.changeAmount).toLocaleString('ko-KR')}pt
+                    </div>
+                  </div>
+                ))
+              ) : (
+                <div className='achievement-empty-block'>
+                  최근 7일간 포인트 변동 내역이 없습니다.
+                </div>
+              )}
+                {visibleHistoryCount < pointHistory7Days.length && (
+                  <button
+                    className='title-equip-btn'
+                    style={{ width: '100%', marginTop: '0.5rem', padding: '0.8rem' }}
+                    onClick={() => setVisibleHistoryCount(prev => prev + 10)}
+                  >
+                    더보기 ({visibleHistoryCount} / {pointHistory7Days.length})
+                  </button>
+                )}
+            </div>
+          </div>
+        </div>
       </div>
     )
   }
@@ -500,8 +678,18 @@ const Profile = () => {
 
             <div className='title-current-box'>
               <div className='title-current-label'>장착 중</div>
-              <div className='title-current-name'>
-                {equippedTitle?.name || '칭호 없음'}
+
+              <div className='title-current-name-row'>
+                <div className='title-current-name'>
+                  {equippedTitle?.name || '칭호 없음'}
+                </div>
+
+                <div className='isr-tooltip-wrap'>
+                  <span className='isr-tooltip-icon'>ⓘ</span>
+                  <span className='isr-tooltip-text'>
+                    {getTooltipText(equippedTitle, '칭호 설명이 없습니다.')}
+                  </span>
+                </div>
               </div>
             </div>
           </div>
@@ -530,7 +718,7 @@ const Profile = () => {
                           <div className='isr-tooltip-wrap'>
                             <span className='isr-tooltip-icon'>ⓘ</span>
                             <span className='isr-tooltip-text'>
-                              {item.description || '칭호 설명이 없습니다.'}
+                              {getTooltipText(item, '칭호 설명이 없습니다.')}
                             </span>
                           </div>
                         </div>
@@ -581,12 +769,6 @@ const Profile = () => {
               ) : obtainedAchievements.length > 0 ? (
                 obtainedAchievements.map((item) => (
                   <div className='achievement-grid-card' key={item.ach_id}>
-                    <img
-                      src={item.ach_img || vivereBeginner}
-                      alt='achievement'
-                      className='achievement-grid-img'
-                    />
-
                     <div className='achievement-grid-name'>{item.name}</div>
 
                     <div className='achievement-grid-date'>
@@ -606,27 +788,31 @@ const Profile = () => {
               <span className='achievement-count'>{inProgressAchievements.length}개</span>
             </div>
 
-            <div className='achievement-progress-list'>
+           <div className='achievement-progress-tooltip-grid'>
               {achievementLoading ? (
                 <div className='achievement-empty-block'>불러오는 중...</div>
               ) : inProgressAchievements.length > 0 ? (
                 inProgressAchievements.map((item) => (
-                  <div className='achievement-progress-card' key={item.ach_id}>
-                    <img
-                      src={item.ach_img || vivereBeginner}
-                      alt='achievement'
-                      className='achievement-progress-img'
-                    />
+                  /* hover의 대상이 되는 트리거 요소 */
+                  <div className='achievement-trigger-item' key={item.ach_id}>
+                    
+                    {/* 1. 평소에 보여줄 초소형 Identifier (예: 이름 앞글자 또는 별도 디자인) */}
+                    <div className='achievement-mini-icon'>
+                      {item.name.substring(0, 1)} {/* 이름 첫 글자만 표시 */}
+                    </div>
 
-                    <div className='achievement-progress-body'>
-                      <div className='achievement-name-row'>
-                        <span className='achievement-name'>{item.name}</span>
-                        <span className='achievement-state achievement-state--pending'>
-                          진행 중
-                        </span>
+                    {/* 2. hover 시 나타날 CSS 기반 말풍선 (Tooltip) */}
+                    <div className='achievement-speech-bubble'>
+                      {/* 말풍선 꼬리 */}
+                      <div className='bubble-arrow'></div>
+                      
+                      {/* 말풍선 내용 */}
+                      <div className='bubble-content'>
+                        <strong className='bubble-name'>{item.name}</strong>
+                        <p className='bubble-desc'>
+                          {getTooltipText(item, '업적 설명이 없습니다.')}
+                        </p>
                       </div>
-
-                      <p className='achievement-desc'>{item.description}</p>
                     </div>
                   </div>
                 ))
@@ -645,18 +831,15 @@ const Profile = () => {
       <div className='profile-content'>
         <div className='profile-set'>
           <div className='notification-wrap' ref={notificationRef}>
-            <img
-              src={notification}
-              alt='notification'
-              className={`icons set-icons ${isNotificationOpen ? 'set-icons--active' : ''}`}
+            <button
+              type='button'
+              className={`icon-container set-icons ${isNotificationOpen ? 'set-icons--active' : ''}`}
               onClick={(e) => {
                 const rect = e.currentTarget.getBoundingClientRect()
-
                 setNotificationPosition({
                   top: rect.bottom + 8,
                   right: window.innerWidth - rect.right,
                 })
-
                 setIsNotificationOpen((prev) => {
                   const next = !prev
                   if (next) setHasUnreadNotification(false)
@@ -664,9 +847,10 @@ const Profile = () => {
                 })
               }}
               title='최근 포인트 변동 알림'
-            />
-
-            {hasUnreadNotification && <span className='notification-dot' />}
+            >
+              <img src={notification} alt='notification' className='icons' />
+              {hasUnreadNotification && <span className='notification-dot' />}
+            </button>
 
             {isNotificationOpen && (
               <div
@@ -676,7 +860,18 @@ const Profile = () => {
                   right: `${notificationPosition.right}px`,
                 }}
               >
-                <div className='notification-dropdown-title'>최근 알림 목록</div>
+                <div className='notification-dropdown-header'>
+                  <div className='notification-dropdown-title'>최근 알림 목록</div>
+                  <button
+                    className='achievement-more-btn'
+                    onClick={() => {
+                      setIsNotificationOpen(false)
+                      setShowPointHistory(true)
+                    }}
+                  >
+                    더보기
+                  </button>
+                </div>
 
                 {notifications.length === 0 ? (
                   <div className='notification-empty'>알림이 없습니다.</div>
@@ -705,20 +900,23 @@ const Profile = () => {
             )}
           </div>
 
-          <img
-            src={account}
-            alt='account'
-            className={`icons set-icons ${editMode ? 'set-icons--active' : ''}`}
+          <button
+            type='button'
+            className={`icon-container set-icons ${editMode ? 'set-icons--active' : ''}`}
             onClick={editMode ? closeEdit : openEdit}
             title={editMode ? '편집 취소' : '프로필 편집'}
-          />
+          >
+            <img src={account} alt='account' className='icons' />
+          </button>
 
-          <img
-            src={logout}
-            alt='logout'
-            className='icons set-icons'
+          <button
+            type='button'
+            className='icon-container set-icons'
             onClick={handleLogout}
-          />
+            title='로그아웃'
+          >
+            <img src={logout} alt='logout' className='icons' />
+          </button>
         </div>
 
         <div className='profile-master'>
@@ -742,7 +940,7 @@ const Profile = () => {
                 isPremium ? 'profile-membership--premium' : 'profile-membership--free'
               }`}
             >
-              {isPremium ? '👑' : 'Free'}
+              {membershipLabel}
             </div>
 
             <input
@@ -792,25 +990,23 @@ const Profile = () => {
           ) : (
             <>
               <h2 className='profile-name'>{member?.nickname || '사용자'}</h2>
-              <div className='profile-title-badge'>
-                <span>
-                  {equippedTitle?.name || member?.title || '🌱 Vivere 주린이'}
-                </span>
 
-                <div className='isr-tooltip-wrap'>
-                  <span className='isr-tooltip-icon'>ⓘ</span>
-                  <span className='isr-tooltip-text'>
-                    {equippedTitle?.description || '칭호 설명이 없습니다.'}
+              <div className='profile-title-badge'>
+                <span className='profile-title-text-hover'>
+                  {currentTitleName}
+                  <span className='profile-title-text-tooltip'>
+                    {currentTitleDescription}
                   </span>
-                </div>
+                </span>
               </div>
             </>
           )}
 
           <div className='profile-stats'>
             <div className='stats-description'>
-              <span className='description-top'>{member?.tier || '브론즈'}</span>
-              <p>{Number(rankingPoint || member?.rank_num || 0).toFixed(1)}</p>
+              {/* <span className='description-top'>{member?.tier || '브론즈'}</span> */}
+              <span className='description-top'>{displayTier || '브론즈'}</span>
+              <p>{tierRank ? `${tierRank}위` : '-'}</p>
             </div>
             <hr />
             <div className='stats-description'>
@@ -822,9 +1018,15 @@ const Profile = () => {
 
         <div className='total-description'>
           <span className='description-top'>보유 포인트</span>
-          <p className='description-slave'>
-            {formatNumber(member?.points ?? 0)}
-            <span>pt</span>
+          <p
+            className='description-slave'
+            onClick={() => setShowPointHistory(true)}
+            style={{ cursor: 'pointer' }}
+          >
+            <span className='clickable-points'>
+              {formatNumber(member?.points ?? 0)}
+            </span>
+            <span className='point-unit'>pt</span>
           </p>
         </div>
 
@@ -834,25 +1036,21 @@ const Profile = () => {
             <div className='stock-content'>
               <span className='description-top'>원금</span>
               <p className='description-slave'>
-                {formatNumber(investmentSummary.totalInvested)}
+                {formatNumber(displayTotalInvested)}
                 <span>pt</span>
               </p>
             </div>
 
             <div className='stock-content'>
               <span
-                className={`description-top ${
-                  Number(investmentSummary.totalProfit) >= 0 ? '' : 'loss'
-                }`}
+                className={`description-top ${Number(displayTotalProfit) >= 0 ? '' : 'loss'}`}
               >
                 총순익
               </span>
               <p
-                className={`description-slave ${
-                  Number(investmentSummary.totalProfit) >= 0 ? 'gain' : 'loss'
-                }`}
+                className={`description-slave ${Number(displayTotalProfit) >= 0 ? 'gain' : 'loss'}`}
               >
-                {formatSignedNumber(investmentSummary.totalProfit)}
+                {formatSignedNumber(displayTotalProfit)}
                 <span>pt</span>
               </p>
             </div>
@@ -860,9 +1058,7 @@ const Profile = () => {
             <div className='stock-content'>
               <span className='description-top'>변동률</span>
               <p
-                className={`description-slave ${
-                  Number(totalProfitRate) >= 0 ? 'gain' : 'loss'
-                }`}
+                className={`description-slave ${Number(totalProfitRate) >= 0 ? 'gain' : 'loss'}`}
               >
                 {Number(totalProfitRate).toFixed(2)}
                 <span>%</span>
@@ -886,15 +1082,7 @@ const Profile = () => {
                   className='achievement-recent-card'
                   key={`${item?.ach_id || item?.name || item || 'achievement'}-${index}`}
                 >
-                  <img
-                    src={
-                      typeof item === 'object' && item?.ach_img
-                        ? item.ach_img
-                        : vivereBeginner
-                    }
-                    alt='achievement'
-                    className='achievement-recent-img'
-                  />
+                 
 
                   <div className='achievement-recent-name'>
                     {typeof item === 'string' ? item : item?.name}

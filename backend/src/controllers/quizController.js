@@ -346,6 +346,54 @@ async function getYahooFinance() {
 const POPULAR_STOCKS = [
   { code: "005930", name: "삼성전자" },
   { code: "000660", name: "SK하이닉스" },
+  { code: "373220", name: "LG에너지솔루션" },
+  { code: "207940", name: "삼성바이오로직스" },
+  { code: "005380", name: "현대차" },
+  { code: "000270", name: "기아" },
+  { code: "068270", name: "셀트리온" },
+  { code: "005490", name: "POSCO홀딩스" },
+  { code: "035420", name: "NAVER" },
+  { code: "006400", name: "삼성SDI" },
+  { code: "051910", name: "LG화학" },
+  { code: "028260", name: "삼성물산" },
+  { code: "035720", name: "카카오" },
+  { code: "105560", name: "KB금융" },
+  { code: "012330", name: "현대모비스" },
+  { code: "055550", name: "신한지주" },
+  { code: "066570", name: "LG전자" },
+  { code: "032830", name: "삼성생명" },
+  { code: "003670", name: "포스코퓨처엠" },
+  { code: "033780", name: "KT&G" },
+  { code: "086790", name: "하나금융지주" },
+  { code: "003550", name: "LG" },
+  { code: "034020", name: "두산에너빌리티" },
+  { code: "323410", name: "카카오뱅크" },
+  { code: "015760", name: "한국전력" },
+  { code: "329180", name: "HD현대중공업" },
+  { code: "034730", name: "SK" },
+  { code: "018260", name: "삼성SDS" },
+  { code: "011200", name: "HMM" },
+  { code: "316140", name: "우리금융지주" },
+  { code: "009150", name: "삼성전기" },
+  { code: "004020", name: "현대제철" },
+  { code: "010950", name: "S-Oil" },
+  { code: "010130", name: "고려아연" },
+  { code: "096770", name: "SK이노베이션" },
+  { code: "005830", name: "DB손해보험" },
+  { code: "036570", name: "엔씨소프트" },
+  { code: "090430", name: "아모레퍼시픽" },
+  { code: "011170", name: "롯데케미칼" },
+  { code: "259960", name: "크래프톤" },
+  { code: "000100", name: "유한양행" },
+  { code: "008770", name: "호텔신라" },
+  { code: "011070", name: "LG이노텍" },
+  { code: "024110", name: "기업은행" },
+  { code: "028050", name: "삼성엔지니어링" },
+  { code: "000810", name: "삼성화재" },
+  { code: "029780", name: "삼성카드" },
+  { code: "006800", name: "미래에셋증권" },
+  { code: "012450", name: "한화에어로스페이스" },
+  { code: "010140", name: "삼성중공업" }
 ];
 
 const activeOxQuizzes = new Map();
@@ -359,26 +407,125 @@ exports.getDailyOxQuiz = async (req, res) => {
       return fail(res, "사용자 인증 필요", null, 401);
     }
 
-    const stock =
-      POPULAR_STOCKS[Math.floor(Math.random() * POPULAR_STOCKS.length)];
+    // 🟢 1. 오늘 이미 참여했는지 확인
+    const log = oxParticipationLog.get(memberId);
+    const todayStr = new Date().toDateString();
+    
+    if (log && log.lastQuizAt.toDateString() === todayStr && log.completed) {
+      return success(res, "이미 참여함", {
+        isLimitReached: true, 
+        todayCount: 1,
+        quiz: null
+      });
+    }
 
     const yf = await getYahooFinance();
-    await yf.quote(`${stock.code}.KS`);
 
-    const isUp = Math.random() > 0.5;
-    const answer = isUp ? "O" : "X";
+    // 🟢 2. 에러 발생 시 다른 종목으로 재시도하기 위한 안전장치 (최대 5번 재시도)
+    let historicalData = null;
+    let stock = null;
+    let selectedPeriod = null;
+    let pastPrice = 0;
+    let currentPrice = 0;
 
-    activeOxQuizzes.set(memberId, { answer });
+    const periods = [
+      { label: '일주일', days: 7 },
+      { label: '1달', days: 30 },
+      { label: '3달', days: 90 }
+    ];
+
+    for (let attempt = 0; attempt < 5; attempt++) {
+      stock = POPULAR_STOCKS[Math.floor(Math.random() * POPULAR_STOCKS.length)];
+      selectedPeriod = periods[Math.floor(Math.random() * periods.length)];
+
+      // 🟢 1. 기준일을 '오늘'이 아닌 '어제'로 확실하게 설정합니다.
+      const targetDate = new Date();
+      targetDate.setDate(targetDate.getDate() - 1); 
+
+      // 🟢 2. '어제'를 기준으로 1주/1달/3달 전의 날짜를 계산합니다.
+      const pastDate = new Date(targetDate);
+      pastDate.setDate(pastDate.getDate() - selectedPeriod.days);
+
+      const formatDate = (date) => {
+        const d = new Date(date);
+        let month = '' + (d.getMonth() + 1);
+        let day = '' + d.getDate();
+        const year = d.getFullYear();
+        if (month.length < 2) month = '0' + month;
+        if (day.length < 2) day = '0' + day;
+        return [year, month, day].join('-');
+      };
+
+      try {
+        // 야후 파이낸스에서 과거 주가 가져오기 (과거일 ~ 어제)
+        historicalData = await yf.historical(`${stock.code}.KS`, {
+          period1: formatDate(pastDate),
+          period2: formatDate(targetDate), // 👈 어제 날짜로 요청!
+          interval: '1d'
+        });
+
+        // 데이터가 정상적으로 들어왔는지 꼼꼼하게 확인
+        if (historicalData && historicalData.length >= 2) {
+          // null 값이 섞여 있을 수 있으므로 정상적인(close가 있는) 데이터만 추려냅니다.
+          const validData = historicalData.filter(d => d.close != null);
+
+          if (validData.length >= 2) {
+            pastPrice = validData[0]?.close;
+            currentPrice = validData[validData.length - 1].close; // 👈 이제 이게 '어제'의 종가입니다!
+          }
+
+          // 종가가 정상적으로 세팅되었다면 루프 탈출
+          if (pastPrice && currentPrice) {
+            break; 
+          }
+        }
+      } catch (yfErr) {
+        // null 에러 등이 발생하면 무시하고 다음 루프로 넘어가 다른 종목을 뽑습니다.
+        console.log(`[OX퀴즈] ${stock.name} 데이터 불량 (다른 종목으로 재시도 중...)`);
+      }
+    }
+
+    // 5번이나 시도했는데도 데이터를 못 가져왔다면 에러 처리
+    if (!historicalData || !pastPrice || !currentPrice) {
+      throw new Error("시장 주가 데이터를 가져오지 못했습니다. 잠시 후 다시 시도해주세요.");
+    }
+
+    // 🟢 3. 과거 가격과 현재(최근) 가격 비교해서 등락률 계산
+    const changeRate = ((currentPrice - pastPrice) / pastPrice) * 100;
+    const isUpActual = changeRate >= 0; // 실제 올랐는지 여부
+
+    // 🟢 4. 질문 및 정답/해설 생성
+    const isAskingUp = Math.random() > 0.5; // true면 '올랐을까요?', false면 '내렸을까요?'
+    const question = `${selectedPeriod.label} 전보다 ${stock.name} 주식은 ${isAskingUp ? '올랐을까요' : '내렸을까요'}?`;
+
+    // 실제 올랐는데 올랐냐고 물어보면 O, 내렸냐고 물어보면 X
+    const answer = (isUpActual === isAskingUp) ? "O" : "X";
+    const changeText = isUpActual ? '올랐' : '내렸';
+    
+    // 해설 작성
+    const explanation = `${stock.name}은(는) ${selectedPeriod.label} 대비 ${Math.abs(changeRate).toFixed(2)}% ${changeText}어요.`;
+
+    // 🟢 5. 메모리에 임시 저장 (제출 시 확인용)
+    activeOxQuizzes.set(memberId, { 
+      answer, 
+      correctAnswer: answer,
+      explanation 
+    });
+
     oxParticipationLog.set(memberId, {
-      ...(oxParticipationLog.get(memberId) || {}),
       lastQuizAt: new Date(),
       stockCode: stock.code,
+      completed: false // 아직 문제는 풀지 않은 상태
     });
 
+    // 🟢 6. 프론트엔드로 문제 전송
     return success(res, "OX 퀴즈", {
-      question: `${stock.name} 상승 여부 맞추기`,
+      isLimitReached: false,
+      todayCount: 0,
+      quiz: { question }
     });
   } catch (err) {
+    console.error("OX 퀴즈 출제 오류:", err);
     return fail(res, "OX 퀴즈 실패", err.message);
   }
 };
@@ -414,11 +561,22 @@ exports.submitOxQuiz = async (req, res) => {
     );
 
     await refreshMemberAchievements(memberId);
+    
+    const log = oxParticipationLog.get(memberId) || {};
+    oxParticipationLog.set(memberId, {
+      ...log,
+      lastQuizAt: new Date(),
+      completed: true // 이제 오늘 참여 완료!
+    });
+
     activeOxQuizzes.delete(memberId);
 
+    // 🟢 4. 프론트엔드 모달창에 띄워줄 결과 데이터 꽉꽉 채워서 전송
     return success(res, "OX 결과", {
       isCorrect,
       rewardPoints: pts,
+      correctAnswer: quiz.correctAnswer,
+      explanation: quiz.explanation
     });
   } catch (err) {
     return fail(res, "OX 제출 실패", err.message);

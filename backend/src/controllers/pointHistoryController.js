@@ -37,7 +37,6 @@ exports.getPointNotifications = async (req, res) => {
       WHERE member_id = ?
         AND created_at >= DATE_SUB(NOW(), INTERVAL 7 DAY)
       ORDER BY created_at DESC
-      LIMIT 10
     `;
 
     const [rows] = await db.promise().query(sql, [memberId]);

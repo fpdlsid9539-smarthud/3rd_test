@@ -155,7 +155,9 @@ const Navigation = ({
 
             <li
               className={`nav-menu ${activeMenu === 'FAQ' ? 'active' : ''}`}
-              onClick={() => setActiveMenu('FAQ')}
+              onClick={() => {
+                window.location.hash = 'FAQ'
+              }}
               title={collapsed ? 'FAQ' : undefined}
             >
               <div className='nav-line'>

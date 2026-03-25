@@ -1,5 +1,6 @@
 const db = require("../../config/db");
 const { educationLessons } = require("../data/educationData");
+const achievementService = require("../services/achievementService");
 
 function getUserKey(req) {
   if (!req.user?.member_id) {
@@ -159,6 +160,10 @@ exports.completeLesson = async (req, res) => {
 
     await connection.commit();
 
+
+    const achievementResult =
+      await achievementService.checkAndGrantAchievements(memberId);
+
     const data = await buildEducationResponse(memberId);
 
     return res.status(200).json({
@@ -169,6 +174,7 @@ exports.completeLesson = async (req, res) => {
           : "학습 완료 처리 성공",
       data: {
         awardedPoints,
+        achievements: achievementResult,
         ...data,
       },
     });

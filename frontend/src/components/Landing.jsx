@@ -12,7 +12,7 @@ import BackgroundGrid from './BackgroundGrid'
 
 const BACKEND_URL = 'http://localhost:5000'
 
-const Landing = () => {
+const Landing = ({ setPage }) => {
   const [faqList, setFaqList] = useState([])
   const [searchKeyword, setSearchKeyword] = useState('')
   const [selectedCategory, setSelectedCategory] = useState('전체')
@@ -87,19 +87,14 @@ const Landing = () => {
   }
 
   const goToFaqPage = (focusTarget = 'top') => {
-    const token = localStorage.getItem('token')
-
-    if (!token) {
-      scrollToSection(faqRef)
-      if (focusTarget === 'question') {
-        alert('질문 남기기는 로그인 후 FAQ 페이지에서 이용할 수 있습니다.')
-      }
-      return
-    }
-
     sessionStorage.setItem('faq_scroll_target', focusTarget)
     window.location.hash = 'FAQ'
-    window.location.reload()
+
+    if (typeof setPage === 'function') {
+      setPage('faq')
+    }
+
+    window.dispatchEvent(new HashChangeEvent('hashchange'))
   }
 
   useEffect(() => {
@@ -201,7 +196,9 @@ const Landing = () => {
       <div className='container'>
         <div>
           <div className='title'>
-            <h1 className='hero-title'>투자를 <span className='text-gradient'>게임처럼</span> 배우다</h1>
+            <h1 className='hero-title'>
+              투자를 <span className='text-gradient'>게임처럼</span> 배우다
+            </h1>
           </div>
           <div className='title-description'>
             <p>주식 차트 분석, 투자 판단, 그리고 나만의 투자 성향 분석까지.</p>
@@ -215,22 +212,26 @@ const Landing = () => {
             <p>어디서부터 시작해야 할지 모르고...</p>
             <p>차트와 용어가 어렵고...</p>
             <p>그래서 우리는 투자를 안전하게 연습할 수 있는 공간을 만들었습니다.</p>
-            <p ref={serviceRef} >여기서는 실제 시장 데이터를 기반으로 투자 판단을 연습하고 자신의 투자 스타일을 분석할 수 있습니다.</p>
+            <p ref={serviceRef}>
+              여기서는 실제 시장 데이터를 기반으로 투자 판단을 연습하고 자신의 투자 스타일을
+              분석할 수 있습니다.
+            </p>
           </div>
         </div>
 
         <div className='ad-grid'>
-
           <div className='intro-container span-first-two'>
             <div className='image-container'>
               <div className='image-cover' />
-              <img src={idk} alt="ikd" className='landing-idk' />
+              <img src={idk} alt='ikd' className='landing-idk' />
             </div>
             <div className='intro-title'>
               <h2>"투자가 무서우신가요?"</h2>
               <div className='intro-description'>
-                <p>어렵고 복잡한 차트, 잃을까 봐 두려운 내 자산. <br />
-                  FinSight는 실제 데이터를 활용한 가상 환경을 제공합니다.</p>
+                <p>
+                  어렵고 복잡한 차트, 잃을까 봐 두려운 내 자산. <br />
+                  FinSight는 실제 데이터를 활용한 가상 환경을 제공합니다.
+                </p>
                 <ul>
                   <li>포인트를 모으는 재미</li>
                   <li>리스크 제로의 투자 연습</li>
@@ -280,7 +281,6 @@ const Landing = () => {
               <p>지금 시작하고 나의 투자 실력을 확인해보세요.</p>
             </div>
           </div>
-
         </div>
 
         <section id='faq-section' className='landing-faq-section' ref={faqRef}>
@@ -309,8 +309,9 @@ const Landing = () => {
                 <button
                   key={category}
                   type='button'
-                  className={`landing-faq-chip ${selectedCategory === category ? 'active' : ''
-                    }`}
+                  className={`landing-faq-chip ${
+                    selectedCategory === category ? 'active' : ''
+                  }`}
                   onClick={() => setSelectedCategory(category)}
                 >
                   {category}
