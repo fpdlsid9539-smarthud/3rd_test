@@ -2,6 +2,7 @@ import React, { useEffect, useMemo, useState } from 'react'
 import './Education.css'
 import arrowDown from '../assets/icons/arrow-down-line.svg'
 import check from '../assets/icons/check.svg'
+import finsightLogo from '../assets/finsight.svg'
 
 const API_BASE_URL = 'http://localhost:5000'
 
@@ -12,6 +13,14 @@ const getAccessToken = () => {
 const Education = () => {
   const [searchText, setSearchText] = useState('')
   const [openLessonId, setOpenLessonId] = useState(null)
+  
+  const [countdown, setCountdown] = useState(0)
+
+  const [dailyCounts, setDailyCounts] = useState({
+    beginner: 0,
+    intermediate: 0,
+    advanced: 0
+  })
 
   const [selectedStatusFilter, setSelectedStatusFilter] = useState('all')
   const [selectedDifficultyFilter, setSelectedDifficultyFilter] = useState('all')
@@ -28,29 +37,25 @@ const Education = () => {
   const [actionMessage, setActionMessage] = useState('')
   const [processingLessonId, setProcessingLessonId] = useState(null)
 
+  useEffect(() => {
+    const today = new Date().toDateString()
+    const storedData = JSON.parse(localStorage.getItem('educationDailyCounts') || '{}')
+
+    if (storedData.date === today) {
+      setDailyCounts(storedData.counts)
+    } else {
+      const resetCounts = { beginner: 0, intermediate: 0, advanced: 0 }
+      setDailyCounts(resetCounts)
+      localStorage.setItem('educationDailyCounts', JSON.stringify({ date: today, counts: resetCounts }))
+    }
+  }, [])
+
   const getVisibleLessons = (lessons, statusFilter, difficultyFilter) => {
     let visible = [...lessons]
-
-    if (statusFilter === 'all') {
-      visible = visible.filter((lesson) => !lesson.isCompleted)
-    }
-
-    if (statusFilter === 'new') {
-      visible = visible.filter(
-        (lesson) => !lesson.isCompleted && lesson.status === 'new'
-      )
-    }
-
-    if (statusFilter === 'completed') {
-      visible = visible.filter((lesson) => lesson.isCompleted)
-    }
-
-    if (difficultyFilter !== 'all') {
-      visible = visible.filter(
-        (lesson) => lesson.difficulty === difficultyFilter
-      )
-    }
-
+    if (statusFilter === 'all') visible = visible.filter((lesson) => !lesson.isCompleted)
+    if (statusFilter === 'new') visible = visible.filter((lesson) => !lesson.isCompleted && lesson.status === 'new')
+    if (statusFilter === 'completed') visible = visible.filter((lesson) => lesson.isCompleted)
+    if (difficultyFilter !== 'all') visible = visible.filter((lesson) => lesson.difficulty === difficultyFilter)
     return visible
   }
 
@@ -62,58 +67,26 @@ const Education = () => {
         setActionMessage('')
 
         const token = getAccessToken()
-
-        if (!token) {
-          throw new Error('UNAUTHORIZED')
-        }
+        if (!token) throw new Error('UNAUTHORIZED')
 
         const res = await fetch(`${API_BASE_URL}/api/education`, {
           method: 'GET',
-          headers: {
-            Authorization: `Bearer ${token}`,
-          },
+          headers: { Authorization: `Bearer ${token}` },
         })
 
-        if (res.status === 401) {
-          throw new Error('UNAUTHORIZED')
-        }
-
-        if (!res.ok) {
-          throw new Error(`HTTP ${res.status}`)
-        }
+        if (res.status === 401) throw new Error('UNAUTHORIZED')
+        if (!res.ok) throw new Error(`HTTP ${res.status}`)
 
         const result = await res.json()
         const data = result?.data || {}
 
-        const lessons = data.lessons || []
-        const progressData = data.progress || {
-          completedCount: 0,
-          totalCount: 0,
-          percent: 0,
-        }
-
-        setEducationLessons(lessons)
-        setProgress(progressData)
+        setEducationLessons(data.lessons || [])
+        setProgress(data.progress || { completedCount: 0, totalCount: 0, percent: 0 })
         setTotalEarnedPoints(data.totalEarnedPoints || 0)
-
         setOpenLessonId(null)
       } catch (err) {
         console.error('교육 데이터 조회 실패:', err)
-
-        if (err.message === 'UNAUTHORIZED') {
-          setError('로그인이 필요합니다.')
-        } else {
-          setError('교육 데이터를 불러오지 못했습니다.')
-        }
-
-        setEducationLessons([])
-        setProgress({
-          completedCount: 0,
-          totalCount: 0,
-          percent: 0,
-        })
-        setTotalEarnedPoints(0)
-        setOpenLessonId(null)
+        setError(err.message === 'UNAUTHORIZED' ? '로그인이 필요합니다.' : '교육 데이터를 불러오지 못했습니다.')
       } finally {
         setLoading(false)
       }
@@ -122,24 +95,35 @@ const Education = () => {
     fetchEducationData()
   }, [])
 
+  useEffect(() => {
+    let timer;
+    if (openLessonId && countdown > 0) {
+      timer = setInterval(() => {
+        setCountdown((prev) => {
+          if (prev <= 1) {
+            clearInterval(timer);
+            return 0;
+          }
+          return prev - 1;
+        });
+      }, 1000);
+    }
+    return () => {
+      if (timer) clearInterval(timer);
+    };
+  }, [openLessonId, countdown]);
+
   const filteredLessons = useMemo(() => {
     const keyword = searchText.trim().toLowerCase()
-
-    let filtered = getVisibleLessons(
-      educationLessons,
-      selectedStatusFilter,
-      selectedDifficultyFilter
-    )
+    let filtered = getVisibleLessons(educationLessons, selectedStatusFilter, selectedDifficultyFilter)
 
     if (keyword) {
       filtered = filtered.filter((lesson) => {
         const title = (lesson.title || '').toLowerCase()
         const summary = (lesson.summary || '').toLowerCase()
-
         return title.includes(keyword) || summary.includes(keyword)
       })
     }
-
     return filtered
   }, [searchText, selectedStatusFilter, selectedDifficultyFilter, educationLessons])
 
@@ -148,20 +132,29 @@ const Education = () => {
       setOpenLessonId(null)
       return
     }
-
-    if (openLessonId === null) {
-      return
-    }
-
+    if (openLessonId === null) return
     const stillExists = filteredLessons.some((lesson) => lesson.id === openLessonId)
-
-    if (!stillExists) {
-      setOpenLessonId(filteredLessons[0].id)
-    }
+    if (!stillExists) setOpenLessonId(filteredLessons.id)
   }, [filteredLessons, openLessonId])
 
   const handleToggleLesson = (lessonId) => {
-    setOpenLessonId((prev) => (prev === lessonId ? null : lessonId))
+    if (openLessonId === lessonId) {
+      setOpenLessonId(null);
+      setCountdown(0);
+    } else {
+      setOpenLessonId(lessonId);
+      const lesson = educationLessons.find(l => l.id === lessonId);
+      
+      if (lesson && !lesson.isCompleted) {
+        if (dailyCounts[lesson.difficulty] >= 5) {
+          setCountdown(0); 
+        } else {
+          setCountdown(5); 
+        }
+      } else {
+        setCountdown(0);
+      }
+    }
   }
 
   const handleCompleteLesson = async (lessonId) => {
@@ -171,10 +164,7 @@ const Education = () => {
       setError('')
 
       const token = getAccessToken()
-
-      if (!token) {
-        throw new Error('UNAUTHORIZED')
-      }
+      if (!token) throw new Error('UNAUTHORIZED')
 
       const res = await fetch(`${API_BASE_URL}/api/education/${lessonId}/complete`, {
         method: 'POST',
@@ -184,49 +174,38 @@ const Education = () => {
         },
       })
 
-      if (res.status === 401) {
-        throw new Error('UNAUTHORIZED')
-      }
-
-      if (!res.ok) {
-        throw new Error(`HTTP ${res.status}`)
-      }
+      if (res.status === 401) throw new Error('UNAUTHORIZED')
+      if (!res.ok) throw new Error(`HTTP ${res.status}`)
 
       const result = await res.json()
       const data = result?.data || {}
-      const nextLessons = data.lessons || []
+      
+      const completedLesson = educationLessons.find(l => l.id === lessonId);
+      if (completedLesson) {
+        const difficulty = completedLesson.difficulty;
+        const newCounts = { ...dailyCounts, [difficulty]: dailyCounts[difficulty] + 1 };
+        
+        setDailyCounts(newCounts);
+        localStorage.setItem('educationDailyCounts', JSON.stringify({
+          date: new Date().toDateString(),
+          counts: newCounts
+        }));
+      }
 
-      setEducationLessons(nextLessons)
-      setProgress(
-        data.progress || {
-          completedCount: 0,
-          totalCount: 0,
-          percent: 0,
-        }
-      )
+      setEducationLessons(data.lessons || [])
+      setProgress(data.progress || { completedCount: 0, totalCount: 0, percent: 0 })
       setTotalEarnedPoints(data.totalEarnedPoints || 0)
-
+      
       window.dispatchEvent(new Event('pointsUpdated'));
       
       if ((data.awardedPoints || 0) > 0) {
         setActionMessage(`학습 완료! ${data.awardedPoints}pt를 획득했습니다.`)
       }
 
-      const nextVisibleLessons = getVisibleLessons(
-        nextLessons,
-        selectedStatusFilter,
-        selectedDifficultyFilter
-      )
-
-      setOpenLessonId(nextVisibleLessons.length > 0 ? nextVisibleLessons[0].id : null)
+      const nextVisibleLessons = getVisibleLessons(data.lessons || [], selectedStatusFilter, selectedDifficultyFilter)
+      setOpenLessonId(nextVisibleLessons.length > 0 ? nextVisibleLessons.id : null)
     } catch (err) {
-      console.error('학습 완료 처리 실패:', err)
-
-      if (err.message === 'UNAUTHORIZED') {
-        setError('로그인이 필요합니다.')
-      } else {
-        setError('학습 완료 처리에 실패했습니다.')
-      }
+      setError(err.message === 'UNAUTHORIZED' ? '로그인이 필요합니다.' : '학습 완료 처리에 실패했습니다.')
     } finally {
       setProcessingLessonId(null)
     }
@@ -238,12 +217,8 @@ const Education = () => {
 
       <div className='education-top-card'>
         <div className='education-title-wrap'>
-          <h1>
-            주식의 <strong>기초를 알아가자!</strong>
-          </h1>
-          <p>
-            기초를 알아야 <span className='daily-percent'>발전</span>해요!
-          </p>
+          <h1>주식의 <strong>기초를 알아가자!</strong></h1>
+          <p>기초를 알아야 <span className='daily-percent'>발전</span>해요!</p>
         </div>
 
         <div className='education-top-meta'>
@@ -254,16 +229,10 @@ const Education = () => {
         <div className='education-progress-wrap'>
           <div className='education-progress-top'>
             <span>학습 진행도</span>
-            <span>
-              {progress.completedCount}/{progress.totalCount}
-            </span>
+            <span>{progress.completedCount}/{progress.totalCount}</span>
           </div>
-
           <div className='education-progress-bar'>
-            <div
-              className='education-progress-fill'
-              style={{ width: `${progress.percent}%` }}
-            />
+            <div className='education-progress-fill' style={{ width: `${progress.percent}%` }} />
           </div>
         </div>
       </div>
@@ -276,81 +245,23 @@ const Education = () => {
           onChange={(e) => setSearchText(e.target.value)}
           className='education-search-input'
         />
-
         <div className='education-filter-row'>
           <div className='education-filter-group left'>
-            <button
-              type='button'
-              className={`education-filter-btn ${selectedStatusFilter === 'all' ? 'active' : ''}`}
-              onClick={() => setSelectedStatusFilter('all')}
-            >
-              전체
-            </button>
-
-            <button
-              type='button'
-              className={`education-filter-btn ${selectedStatusFilter === 'new' ? 'active' : ''}`}
-              onClick={() => setSelectedStatusFilter('new')}
-            >
-              신규
-            </button>
-
-            <button
-              type='button'
-              className={`education-filter-btn ${selectedStatusFilter === 'completed' ? 'active' : ''}`}
-              onClick={() => setSelectedStatusFilter('completed')}
-            >
-              완료
-            </button>
+            <button type='button' className={`education-filter-btn ${selectedStatusFilter === 'all' ? 'active' : ''}`} onClick={() => setSelectedStatusFilter('all')}>전체</button>
+            <button type='button' className={`education-filter-btn ${selectedStatusFilter === 'new' ? 'active' : ''}`} onClick={() => setSelectedStatusFilter('new')}>신규</button>
+            <button type='button' className={`education-filter-btn ${selectedStatusFilter === 'completed' ? 'active' : ''}`} onClick={() => setSelectedStatusFilter('completed')}>완료</button>
           </div>
-
           <div className='education-filter-group right'>
-            <button
-              type='button'
-              className={`education-filter-btn ${selectedDifficultyFilter === 'all' ? 'active' : ''}`}
-              onClick={() => setSelectedDifficultyFilter('all')}
-            >
-              전체 난이도
-            </button>
-
-            <button
-              type='button'
-              className={`education-filter-btn ${selectedDifficultyFilter === 'beginner' ? 'active' : ''}`}
-              onClick={() => setSelectedDifficultyFilter('beginner')}
-            >
-              초급
-            </button>
-
-            <button
-              type='button'
-              className={`education-filter-btn ${selectedDifficultyFilter === 'intermediate' ? 'active' : ''}`}
-              onClick={() => setSelectedDifficultyFilter('intermediate')}
-            >
-              중급
-            </button>
-
-            <button
-              type='button'
-              className={`education-filter-btn ${selectedDifficultyFilter === 'advanced' ? 'active' : ''}`}
-              onClick={() => setSelectedDifficultyFilter('advanced')}
-            >
-              상급
-            </button>
+            <button type='button' className={`education-filter-btn ${selectedDifficultyFilter === 'all' ? 'active' : ''}`} onClick={() => setSelectedDifficultyFilter('all')}>전체 난이도</button>
+            <button type='button' className={`education-filter-btn ${selectedDifficultyFilter === 'beginner' ? 'active' : ''}`} onClick={() => setSelectedDifficultyFilter('beginner')}>초급</button>
+            <button type='button' className={`education-filter-btn ${selectedDifficultyFilter === 'intermediate' ? 'active' : ''}`} onClick={() => setSelectedDifficultyFilter('intermediate')}>중급</button>
+            <button type='button' className={`education-filter-btn ${selectedDifficultyFilter === 'advanced' ? 'active' : ''}`} onClick={() => setSelectedDifficultyFilter('advanced')}>상급</button>
           </div>
         </div>
       </div>
 
-      {actionMessage && (
-        <div className='education-empty-box' style={{ marginBottom: '12px' }}>
-          {actionMessage}
-        </div>
-      )}
-
-      {error && (
-        <div className='education-empty-box' style={{ marginBottom: '12px' }}>
-          {error}
-        </div>
-      )}
+      {actionMessage && <div className='education-empty-box education-message-box'>{actionMessage}</div>}
+      {error && <div className='education-empty-box education-message-box'>{error}</div>}
 
       <div className='education-list'>
         {loading ? (
@@ -358,73 +269,65 @@ const Education = () => {
         ) : filteredLessons.length > 0 ? (
           filteredLessons.map((lesson) => {
             const isOpen = openLessonId === lesson.id
+            const isQuotaFull = dailyCounts[lesson.difficulty] >= 5;
 
             return (
-              <div
-                className={`education-accordion-item ${isOpen ? 'open' : ''}`}
-                key={lesson.id}
-              >
-                <button
-                  type='button'
-                  className='education-accordion-header'
-                  onClick={() => handleToggleLesson(lesson.id)}
-                >
+              <div className={`education-accordion-item ${isOpen ? 'open' : ''}`} key={lesson.id}>
+                <button type='button' className='education-accordion-header' onClick={() => handleToggleLesson(lesson.id)}>
                   <div className='education-header-main'>
-                    <div className='education-icon-box'>{lesson.icon}</div>
-
+                    <div className='education-icon-box'>
+                      <img src={finsightLogo} alt="Finsight Logo" className="education-logo" />
+                    </div>
                     <div className='education-header-text'>
                       <div className='education-header-title-row'>
                         <span className='education-lesson-title'>{lesson.title}</span>
-
-                        {lesson.status === 'new' && !lesson.isCompleted && (
-                          <span className='education-badge education-badge-new'>
-                            신규
-                          </span>
-                        )}
-
-                        {lesson.isCompleted && (
-                          <span className='education-badge education-badge-completed'>
-                            완료
-                          </span>
-                        )}
+                        {lesson.status === 'new' && !lesson.isCompleted && <span className='education-badge education-badge-new'>신규</span>}
+                        {lesson.isCompleted && <span className='education-badge education-badge-completed'>완료</span>}
                       </div>
-
                       <div className='education-sub-info'>
                         <span>{lesson.level}</span>
                         <span>•</span>
                         <span>+{lesson.xp}pt</span>
+                        {!lesson.isCompleted && <span>(오늘 {dailyCounts[lesson.difficulty] || 0}/5)</span>}
                       </div>
                     </div>
                   </div>
-
-                  <img
-                    src={arrowDown}
-                    alt='collapsed'
-                    className={`arrow ${isOpen ? 'rotated' : ''}`}
-                  />
+                  <img src={arrowDown} alt='collapsed' className={`arrow ${isOpen ? 'rotated' : ''}`} />
                 </button>
 
                 {isOpen && (
                   <div className='education-accordion-body'>
                     <div className='education-lesson-summary'>
-                      {(lesson.summary || '')
-                        .split('\n')
-                        .filter((line) => line.trim() !== '')
-                        .map((line, index) => (
-                          <p key={index}>{line}</p>
-                        ))}
+                      {(lesson.summary || '').split('\n').filter((line) => line.trim() !== '').map((line, index) => (
+                        <p key={index}>{line}</p>
+                      ))}
                     </div>
 
                     {!lesson.isCompleted && (
-                      <button
-                        type='button'
-                        className='education-xp-btn'
-                        onClick={() => handleCompleteLesson(lesson.id)}
-                        disabled={processingLessonId === lesson.id}
-                      >
-                        {processingLessonId === lesson.id ? '처리 중...' : '학습 완료'}
-                        <img src={check} alt='check' className='icons' />
-                      </button>
+                      isQuotaFull ? (
+                        <button
+                          type='button'
+                          className='education-xp-btn quota-full'
+                          disabled
+                        >
+                          오늘은 교육할당량이 충분합니다. 내일 교육해주세요.
+                        </button>
+                      ) : (
+                        <button
+                          type='button'
+                          className={`education-xp-btn ${countdown > 0 ? 'counting' : ''}`}
+                          onClick={() => handleCompleteLesson(lesson.id)}
+                          disabled={processingLessonId === lesson.id || countdown > 0} 
+                        >
+                          {countdown > 0 
+                            ? `${countdown}초 후 완료` 
+                            : processingLessonId === lesson.id 
+                              ? '처리 중...' 
+                              : '학습 완료'
+                          }
+                          {countdown === 0 && <img src={check} alt='check' className='icons' />}
+                        </button>
+                      )
                     )}
                   </div>
                 )}
@@ -433,9 +336,7 @@ const Education = () => {
           })
         ) : (
           <div className='education-empty-box'>
-            {selectedStatusFilter === 'completed'
-              ? '조건에 맞는 완료 학습이 없습니다.'
-              : '조건에 맞는 학습이 없습니다.'}
+            {selectedStatusFilter === 'completed' ? '조건에 맞는 완료 학습이 없습니다.' : '조건에 맞는 학습이 없습니다.'}
           </div>
         )}
       </div>

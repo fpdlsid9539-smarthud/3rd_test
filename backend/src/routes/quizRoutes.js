@@ -10,10 +10,14 @@ router.get("/all", quizController.getAllQuizzes);
 
 router.get("/random", quizController.getRandomQuiz);
 
-router.get("/:quiz_id", quizController.getQuizById);
-
 router.post("/check", authMiddleware, quizController.checkAnswer);
 
 router.get("/status/me", authMiddleware, quizController.getMyQuestStatus);
+
+router.get("/ox", authMiddleware, quizController.getDailyOxQuiz);
+
+router.post("/ox/submit", authMiddleware, quizController.submitOxQuiz);
+
+router.get("/:quiz_id", quizController.getQuizById);
 
 module.exports = router;

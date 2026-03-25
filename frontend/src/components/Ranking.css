@@ -16,7 +16,8 @@
 }
 
 .ranking-summary-card,
-.league-card {
+.league-card,
+.ranking-guide-card {
   background-color: var(--box-bg);
   border: 1px solid var(--border);
   border-radius: 1.5rem;
@@ -74,8 +75,8 @@
 
 .league-card {
   position: relative;
-  min-height: 540px;
-  max-height: 540px;
+  min-height: 610px;
+  max-height: 610px;
   padding: 2.4rem 1rem 1rem;
   overflow: visible;
 }
@@ -104,7 +105,7 @@
   margin: 0;
   padding: 0;
 
-  height: 430px;
+  height: 505px;
   overflow-y: auto;
 
   display: flex;
@@ -114,23 +115,25 @@
 
 .league-user-item {
   min-height: 48px;
-  padding: 0 8px;
+  padding: 0 10px;
 
   display: grid;
-  grid-template-columns: 24px 1fr auto;
+  grid-template-columns: 28px 1fr auto;
   align-items: center;
   gap: 10px;
 
   border-radius: 0.9rem;
 }
 
-.league-user-item.my-row {
-  background-color: #ececec;
+.pinned-my-row {
+  background: linear-gradient(90deg, #fff4bf 0%, #ffe89a 100%);
+  border: 1px solid #f1cf55;
+  box-shadow: 0 2px 8px rgba(241, 207, 85, 0.2);
 }
 
 .league-rank {
   font-size: 1rem;
-  font-weight: 500;
+  font-weight: 600;
   color: var(--text);
   text-align: center;
 }
@@ -166,18 +169,88 @@
   color: var(--text);
 }
 
+.ranking-guide-card {
+  margin-top: 8px;
+  padding: 1.3rem 1.4rem;
+}
+
+.ranking-guide-card h2 {
+  margin: 0 0 0.9rem 0;
+  font-size: 1.15rem;
+  font-weight: 700;
+  color: var(--text);
+}
+
+.ranking-guide-text {
+  margin: 0 0 0.8rem 0;
+  font-size: 0.98rem;
+  line-height: 1.7;
+  color: var(--text);
+}
+
+.guide-highlight-blue {
+  color: #4f7cff;
+  font-weight: 700;
+}
+
+.ranking-guide-formula {
+  margin: 0 0 1rem 0;
+  padding: 0.8rem 1rem;
+  border-radius: 0.9rem;
+  background: #f7f9ff;
+  border: 1px solid #d9e4ff;
+
+  font-size: 0.98rem;
+  font-weight: 600;
+  color: #2a4fb8;
+}
+
+.ranking-guide-formula span {
+  font-weight: 800;
+}
+
+.ranking-guide-example {
+  margin-bottom: 0.95rem;
+  padding: 0.95rem 1rem;
+  border-radius: 0.9rem;
+  background-color: #fafafa;
+  border: 1px solid var(--border);
+}
+
+.guide-example-title {
+  margin-bottom: 0.45rem;
+  font-size: 0.95rem;
+  font-weight: 700;
+  color: var(--text);
+}
+
+.ranking-guide-example p {
+  margin: 0.2rem 0;
+  font-size: 0.95rem;
+  line-height: 1.6;
+  color: var(--text);
+}
+
+.ranking-guide-warning {
+  margin: 0;
+  font-size: 0.96rem;
+  line-height: 1.7;
+  font-weight: 700;
+  color: #e14b4b;
+}
+
 @media (max-width: 1500px) {
   .league-grid {
     grid-template-columns: repeat(2, minmax(0, 1fr));
   }
 
   .league-card {
-    min-height: 500px;
-    max-height: 500px;
+    min-height: 590px;
+    max-height: 590px;
   }
 
   .league-user-list {
-    height: 390px;
+    height: 485px;
   }
 }
 
@@ -196,5 +269,14 @@
 
   .ranking-summary-card strong {
     font-size: 1.9rem;
+  }
+
+  .ranking-guide-card {
+    padding: 1.1rem 1rem;
+  }
+
+  .ranking-guide-formula,
+  .ranking-guide-example {
+    padding: 0.8rem;
   }
 }

@@ -98,6 +98,23 @@ const Ranking = () => {
     return leagueConfig.some((league) => (leagueData[league.id] || []).length > 0)
   }, [leagueData])
 
+  const getDisplayRows = (rows) => {
+    const myRow = rows.find((row) => row.memberId === currentUserId)
+    const top10 = rows.slice(0, 10)
+
+    if (!myRow) {
+      return {
+        pinnedMyRow: null,
+        normalRows: top10,
+      }
+    }
+
+    return {
+      pinnedMyRow: myRow,
+      normalRows: top10.filter((row) => row.memberId !== currentUserId),
+    }
+  }
+
   return (
     <main className='ranking-container'>
       <div className='ranking-breadcrumb'>대시보드 &gt; 랭킹</div>
@@ -119,29 +136,44 @@ const Ranking = () => {
       ) : !hasAnyRows ? (
         <div className='ranking-empty-box'>표시할 랭킹 데이터가 없습니다.</div>
       ) : (
-        <section className='league-grid'>
-          {leagueConfig.map((league) => {
-            const rows = leagueData[league.id] || []
+        <>
+          <section className='league-grid'>
+            {leagueConfig.map((league) => {
+              const rows = leagueData[league.id] || []
+              const { pinnedMyRow, normalRows } = getDisplayRows(rows)
 
-            return (
-              <article className='league-card' key={league.id}>
-                <div className='league-emblem-wrap'>
-                  <img
-                    src={league.badge}
-                    alt={`${league.title} 티어`}
-                    className='league-emblem-badge'
-                  />
-                </div>
+              return (
+                <article className='league-card' key={league.id}>
+                  <div className='league-emblem-wrap'>
+                    <img
+                      src={league.badge}
+                      alt={`${league.title} 티어`}
+                      className='league-emblem-badge'
+                    />
+                  </div>
 
-                <ul className='league-user-list'>
-                  {rows.slice(0, 10).map((row) => {
-                    const isMe = row.memberId === currentUserId
+                  <ul className='league-user-list'>
+                    {pinnedMyRow && (
+                      <li className='league-user-item pinned-my-row' key={`me-${pinnedMyRow.memberId}`}>
+                        <span className='league-rank'>{pinnedMyRow.leagueRank}</span>
 
-                    return (
-                      <li
-                        className={`league-user-item ${isMe ? 'my-row' : ''}`}
-                        key={row.memberId}
-                      >
+                        <div className='league-user-main'>
+                          <img
+                            src={pinnedMyRow.profileImage || defaultProfile}
+                            alt={`${pinnedMyRow.nickname} 프로필`}
+                            className='league-profile'
+                          />
+                          <span className='league-name'>{pinnedMyRow.nickname}</span>
+                        </div>
+
+                        <span className='league-score'>
+                          {Number(pinnedMyRow.rankingPoint || 0).toFixed(1)}
+                        </span>
+                      </li>
+                    )}
+
+                    {normalRows.map((row) => (
+                      <li className='league-user-item' key={row.memberId}>
                         <span className='league-rank'>{row.leagueRank}</span>
 
                         <div className='league-user-main'>
@@ -157,13 +189,38 @@ const Ranking = () => {
                           {Number(row.rankingPoint || 0).toFixed(1)}
                         </span>
                       </li>
-                    )
-                  })}
-                </ul>
-              </article>
-            )
-          })}
-        </section>
+                    ))}
+                  </ul>
+                </article>
+              )
+            })}
+          </section>
+
+          <section className='ranking-guide-card'>
+            <h2>시즌 랭킹 안내</h2>
+
+            <p className='ranking-guide-text'>
+              현재 랭킹 점수는 <span className='guide-highlight-blue'>포인트 보유량</span>을
+              기준으로 산정되며, 현재 전체 1등 유저의 포인트를{' '}
+              <span className='guide-highlight-blue'>100점 기준</span>으로 계산합니다.
+            </p>
+
+            <p className='ranking-guide-formula'>
+              랭킹 점수 = <span>내 포인트 ÷ 현재 1등 포인트 × 100</span>
+            </p>
+
+            <div className='ranking-guide-example'>
+              <div className='guide-example-title'>예시</div>
+              <p>1등 유저 포인트가 100,000pt라면 1등 점수는 100점입니다.</p>
+              <p>내 포인트가 80,000pt라면 내 랭킹 점수는 80점으로 반영됩니다.</p>
+            </div>
+
+            <p className='ranking-guide-warning'>
+              ※ 이 랭킹은 절대 점수가 아닌 상대 평가 방식이며, 1등 유저의 포인트가
+              변동되면 다른 유저의 랭킹 점수도 함께 변동될 수 있습니다.
+            </p>
+          </section>
+        </>
       )}
     </main>
   )

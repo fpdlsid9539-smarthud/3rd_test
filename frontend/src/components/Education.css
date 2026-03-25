@@ -212,8 +212,8 @@
 }
 
 .education-icon-box {
-  height: 3rem;
-  width: 3rem;
+  height: 2.5rem;
+  width: 2.5rem;
   min-width: 2.5rem;
 
   display: flex;
@@ -221,7 +221,7 @@
   justify-content: center;
 
   background: var(--btn-prim);
-  border-radius: 0.75rem;
+  border-radius: 50%;
   font-size: 1rem;
 }
 
@@ -314,6 +314,7 @@
   margin-bottom: 0;
 }
 
+/* 🟢 기본 버튼 스타일 */
 .education-xp-btn {
   width: fit-content;
   min-width: fit-content;
@@ -339,25 +340,52 @@
   transition: all 0.3s ease;
 }
 
-.education-xp-btn:hover {
+/* ============================================================
+   새로 추가된 클래스들 및 수정된 선택자 부분
+   ============================================================ */
+
+.education-logo {
+  width: 24px;
+  height: 24px;
+}
+
+.education-message-box {
+  margin-bottom: 0.75rem;
+}
+
+/* ❌ 할당량을 모두 채웠을 때 (회색 글씨 적용 + 비활성화 시각 효과) */
+.education-xp-btn.quota-full {
+  opacity: 0.6;
+  color: var(--text-highlight);
+ 
+}
+
+/* ❌ 5초 타이머 카운트다운 중일 때 (연하게 + 비활성화 시각 효과) */
+.education-xp-btn.counting {
+  opacity: 0.5;
+  cursor: default;
+}
+
+/* 🟢 이미지 2번: 클릭 가능한 '정상 버튼'에만 Hover 효과 적용
+   (.counting과 .quota-full 클래스가 '없는' 버튼에만 적용됩니다) */
+.education-xp-btn:not(.counting):not(.quota-full):hover {
   background: var(--btn-prim);
   border: 2px solid var(--primary);
   box-shadow: 0 0.25rem 1rem var(--shadow-1);
+  transform: none; /* 기존에 transform 효과가 있었다면 초기화 */
 }
 
-.education-empty-box {
-  padding: 1rem;
-
-  display: flex;
-  justify-content: center;
-
+/* ❌ 이미지 1번: 비활성화 상태인 버튼에 Hover 했을 때 원래 상태 유지 (아무 효과 없음)
+   (.counting이나 .quota-full 클래스가 '있는' 버튼) */
+.education-xp-btn.counting:hover,
+.education-xp-btn.quota-full:hover,
+.education-xp-btn:disabled:hover {
+  /* 기존 버튼 스타일과 동일하게 맞춰서 아무 변화 없게 만듦 */
   background: var(--primary-highlight);
-  border: 1px solid var(--border);
-  border-radius: 0.75rem;
-
-  font-size: 1.125rem;
-  font-weight: 600;
-  color: var(--text-highlight);
+  border: 2px solid var(--primary);
+  box-shadow: none;
+  transform: none;
+  cursor: default;
 }
 
 @media (max-width: 1100px) {

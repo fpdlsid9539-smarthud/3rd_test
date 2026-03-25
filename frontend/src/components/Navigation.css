@@ -2,7 +2,7 @@
   position: sticky;
   top: 0;
   height: 100vh;
-  padding: 1rem;
+  width: 100%;
   background-color: var(--box-bg);
   border-right: 1px solid var(--border);
   box-sizing: border-box;
@@ -10,24 +10,78 @@
 }
 
 .nav-content {
+  height: 100%;
+  padding: 1rem;
   box-sizing: border-box;
+
   display: flex;
   flex-direction: column;
+  justify-content: space-between;
+  align-items: center;
+}
+
+.nav-wrapper {
+  width: 100%;
+
+  display: flex;
+  flex-direction: column;
+  justify-content: space-between;
   align-items: center;
   gap: 3rem;
 }
 
+.nav-header {
+  width: 100%;
+  height: fit-content;
+
+  display: flex;
+  justify-content: space-between;
+  align-content: center;
+}
+
 .nav-logo-button {
-  margin-top: 3rem;
-  padding: 0;
+  height: 3.5rem;
+
   border: none;
   background: transparent;
   cursor: pointer;
 }
 
+.collapse-button {
+  width: 3.5rem;
+  height: 3.5rem;
+  padding: 1rem;
+  box-sizing: border-box;
+
+  display: flex;
+  align-items: center;
+  justify-content: center;
+
+  border: 2px solid transparent;
+  border-radius: 0.75rem;
+  background: transparent;
+  cursor: pointer;
+}
+
+.collapse-button:hover {
+  background: var(--btn-prim);
+  border: 2px solid var(--border-prim);
+}
+
+.collapse-menu {
+  width: 1.5rem;
+  height: 1.5rem;
+  padding: 0;
+  box-sizing: border-box;
+
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
 .nav-logo {
-  height: 2.5rem;
-  display: block;
+  height: 2rem;
+  padding: 0 1rem;
 }
 
 .nav-list {
@@ -38,16 +92,17 @@
   justify-content: start;
   gap: 1.5rem;
   list-style-type: none;
+  padding: 0;
+  margin: 0;
 }
 
 .nav-menu {
-  min-height: 3.5rem;
-  width: 100%;
-  padding: 1rem 0;
-  box-sizing: border-box;
+  height: 3.5rem;
+
   display: flex;
   align-items: center;
   justify-content: space-between;
+
   font-size: 1.125rem;
   font-weight: 500;
   border-radius: 0.75rem;
@@ -81,124 +136,67 @@
   padding: 1rem;
 }
 
-.nav-mixed {
-  display: flex;
-  flex-direction: column;
-}
-
-.sub-list {
+.billing-nav {
   width: 100%;
-  margin-top: 0rem;
-  max-height: 0;
+
   display: flex;
   flex-direction: column;
+  justify-content: center;
   align-items: center;
-  overflow: hidden;
-  opacity: 0;
-  transform: translate(-2.5rem, -3.5rem);
-  gap: 1rem;
-  list-style-type: none;
-  font-size: 1.125rem;
-  transition: all 0.3s ease;
-}
-
-.nav-mixed.open .sub-list {
-  max-height: 12rem;
-  margin-top: 1rem;
-  opacity: 1;
-  transform: translate(-2.5rem, 0);
-}
-
-.arrow {
-  width: 1.5rem;
-  height: 1.5rem;
-  padding: 0 1rem;
-  transition: all 0.3s ease;
-}
-
-.nav-mixed.open .arrow {
-  transform: rotate(180deg);
-}
-
-.line-item {
-  width: fit-content;
-  min-height: 3rem;
-  margin-left: 1.5rem;
-  padding: 0 1rem;
-  box-sizing: border-box;
-  display: flex;
-  align-items: center;
-  gap: 1.5rem;
-  background: transparent;
-  border: 2px solid transparent;
-  border-radius: 0.875rem;
-  cursor: pointer;
-}
-
-.sub-item {
-  width: 0.5rem;
-  height: 0.25rem;
-  background-color: var(--text);
-  border-radius: 0rem 0.25rem;
-}
-
-.line-item:hover,
-.line-item.active {
-  background: var(--btn-prim);
-  border: 2px solid var(--border-prim);
+  gap: 0.5rem;
 }
 
 .billing-action-wrap {
+  width: 100%;
+
   display: flex;
   flex-direction: column;
-  gap: 0.5rem;
+  align-items: center;
+  justify-content: center;
+  border-radius: 0.875rem;
 }
 
 .billing-nav-button {
   width: 100%;
-  height: 3.25rem;
+  padding: 1rem;
+  height: 3.5rem;
+
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  gap: 0.5rem;
+
   border: none;
   border-radius: 0.875rem;
-  background: linear-gradient(90deg, #ffd54a 0%, #ffb300 100%);
-  color: #1d1d1d;
-  font-size: 1rem;
+  background: linear-gradient(90deg, #ffd54a, #ffb300);
+  color: var(--text);
+
+  font-size: 0.875rem;
   font-weight: 700;
   cursor: pointer;
-  transition: all 0.25s ease;
 }
 
-.billing-nav-button:not(:disabled):hover {
-  transform: translateY(-0.125rem);
-  filter: brightness(1.03);
+.billing-action-wrap:not(.premium):hover {
+  transform: translateY(-0.25rem);
+  box-shadow: 0 0.25rem 0.5rem var(--shadow-1);
 }
 
-.billing-nav-button.disabled,
+.billing-action-wrap:hover .billing-nav-button.disabled,
 .billing-nav-button:disabled {
-  background: #3a3f4d;
-  color: #bfc6d9;
+  background: var(--text-highlight);
+  color: var(--box-bg);
   cursor: not-allowed;
   transform: none;
   filter: none;
 }
 
-.billing-nav-message {
-  margin: 0;
-  padding: 0 0.25rem;
-  color: #aeb7cc;
-  font-size: 0.8125rem;
-  line-height: 1.4;
-}
-
 .billing-cancel-mini-btn {
-  margin-top: 0.25rem;
-  padding: 0.4rem 0;
-  font-size: 0.8rem;
+  font-size: 0.875rem;
   background: transparent;
   border: none;
-  color: #9aa3b2;
+  color: var(--text-highlight);
   cursor: pointer;
-  transition: all 0.2s ease;
-  text-align: left;
+  transition: all 0.3s ease;
 }
 
 .billing-cancel-mini-btn:hover {
@@ -292,4 +290,111 @@
     height: 3rem;
     font-size: 0.95rem;
   }
+}
+
+/* =========================
+   Collapsed state
+========================= */
+
+.navigation {
+  transition:
+    width 0.4s cubic-bezier(0.4, 0, 0.2, 1),
+    min-width 0.4s cubic-bezier(0.4, 0, 0.2, 1),
+    padding 0.4s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+.navigation.collapsed {
+  width: 5.5rem;
+  padding: 0rem;
+}
+
+.navigation.collapsed .nav-wrapper {
+  width: fit-content;
+  height: fit-content;
+  box-sizing: border-box;
+}
+
+/* Logo fades + collapses */
+.nav-logo-button {
+  overflow: hidden;
+  max-width: 200px;
+  opacity: 1;
+  transition:
+    max-width 0.4s cubic-bezier(0.4, 0, 0.2, 1),
+    opacity 0.25s ease;
+}
+
+.navigation.collapsed .nav-logo-button {
+  max-width: 0;
+  opacity: 0;
+  pointer-events: none;
+}
+
+/* Header re-centres */
+.navigation.collapsed .nav-header {
+  justify-content: center;
+}
+
+/* Menu icons centre */
+.navigation.collapsed .nav-menu {
+  justify-content: center;
+}
+
+.navigation.collapsed .nav-line {
+  justify-content: center;
+}
+
+/* Text labels slide out then fade */
+.nav-line span {
+  display: inline-block;
+  overflow: hidden;
+  white-space: nowrap;
+  max-width: 200px;
+  opacity: 1;
+  transition:
+    max-width 0.3s cubic-bezier(0.2, 0, 0.2, 1),
+    opacity 0.3s ease;
+}
+
+.navigation.collapsed .nav-line span {
+  max-width: 0;
+  opacity: 0;
+}
+
+.navigation.collapsed .nav-content {
+  padding: 1rem;
+}
+
+.navigation.collapsed .billing-nav-button {
+  gap: 0;
+}
+
+.navigation.collapsed .billing-nav-button span {
+  max-width: 0;
+  opacity: 0;
+}
+
+/* Billing collapses smoothly */
+.billing-action-wrap {
+  overflow: hidden;
+  max-height: 300px;
+  opacity: 1;
+  transition:
+    max-height 0.4s cubic-bezier(0.4, 0, 0.2, 1),
+    opacity 0.25s ease;
+}
+
+.navigation.collapsed .billing-action-wrap {
+  max-height: 3.5rem;
+  max-width: 3.5rem;
+  opacity: 1;
+}
+
+/* Icon padding tightens */
+.icon-btn {
+  transition: padding 0.4s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+.navigation.collapsed .icon-btn {
+  padding: 0.75rem;
 }

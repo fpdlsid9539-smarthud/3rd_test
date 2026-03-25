@@ -1,4 +1,4 @@
-import React, { useEffect, useMemo, useState } from 'react'
+import React, { useCallback, useEffect, useMemo, useState } from 'react'
 import profile from '../assets/chicken running machine.gif'
 import './Dashboard.css'
 import { api } from '../config/api'
@@ -37,118 +37,177 @@ const Dashboard = () => {
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState('')
 
-  useEffect(() => {
-    const loadDashboard = async () => {
-      try {
-        const [
-          memberRes,
-          likedRes,
-          ownedRes,
-          isrRes,
-          rankingRes,
-          questRes,
-        ] = await Promise.allSettled([
-          api.get('/api/auth/me'),
-          api.get('/api/stocks/liked'),
-          api.get('/api/stocks/owned'),
-          api.get('/api/isr/me'),
-          api.get('/api/ranking'),
-          api.get('/api/quiz/status/me'),
-        ])
+  const getResponseData = (response) => {
+    return response?.data?.data ?? response?.data ?? null
+  }
 
-        if (memberRes.status === 'fulfilled') {
-          const payload = memberRes.value
-          const memberData =
-            payload?.data?.member ||
-            payload?.data ||
-            payload?.member ||
-            null
+  const toArray = (response) => {
+    const data = getResponseData(response)
+    return Array.isArray(data) ? data : []
+  }
 
-          setMember(memberData)
-        } else {
-          setMember(null)
-        }
+  const toObject = (response, fallback = {}) => {
+    const data = getResponseData(response)
+    return data && typeof data === 'object' && !Array.isArray(data) ? data : fallback
+  }
 
-        if (likedRes.status === 'fulfilled') {
-          const payload = likedRes.value
-          const likedData = payload?.data || payload?.stocks || []
-          setLikedStocks(Array.isArray(likedData) ? likedData : [])
-        } else {
-          setLikedStocks([])
-        }
-
-        if (ownedRes.status === 'fulfilled') {
-          const payload = ownedRes.value
-          const ownedData = payload?.data || payload?.stocks || []
-          setOwnedStocks(Array.isArray(ownedData) ? ownedData : [])
-        } else {
-          setOwnedStocks([])
-        }
-
-        if (isrRes.status === 'fulfilled') {
-          const payload = isrRes.value
-          const rawIsr = payload?.data || payload?.isr || EMPTY_ISR
-
-          setIsrData({
-            accuracy: Number(rawIsr?.accuracy || 0),
-            risk: Number(rawIsr?.risk || 0),
-            stability: Number(rawIsr?.stability || 0),
-            discipline: Number(rawIsr?.discipline || 0),
-            strategy: Number(rawIsr?.strategy || 0),
-            adaptability: Number(rawIsr?.adaptability || 0),
-            isr: Number(rawIsr?.isr || 0),
-          })
-        } else {
-          setIsrData(EMPTY_ISR)
-        }
-
-        if (rankingRes.status === 'fulfilled') {
-          const payload = rankingRes.value
-          const rankingData = payload?.data || {}
-          const leagues = rankingData?.leagues || {}
-
-          const mergedRanking = [
-            ...(leagues.diamond || []),
-            ...(leagues.gold || []),
-            ...(leagues.silver || []),
-            ...(leagues.bronze || []),
-          ]
-
-          setRankingList(Array.isArray(mergedRanking) ? mergedRanking : [])
-        } else {
-          setRankingList([])
-        }
-
-        if (questRes.status === 'fulfilled') {
-          const payload = questRes.value
-          const questData = payload?.data || {}
-
-          setQuestStatus({
-            todaySolved: Number(questData.todaySolved || 0),
-            todayCorrect: Number(questData.todayCorrect || 0),
-            totalSolved: Number(questData.totalSolved || 0),
-            totalCount: Number(questData.totalCount || 0),
-            accuracy: Number(questData.accuracy || 0),
-            dailyGoal: Number(questData.dailyGoal || 3),
-            dailyPercent: Number(questData.dailyPercent || 0),
-          })
-        } else {
-          setQuestStatus(EMPTY_QUEST)
-        }
-
-        if (memberRes.status === 'rejected') {
-          throw memberRes.reason
-        }
-      } catch (err) {
-        console.error('대시보드 로딩 에러 =', err)
-        setError(err.message || '대시보드 로딩 실패')
-      } finally {
-        setLoading(false)
+  const loadDashboard = useCallback(async (showLoading = false) => {
+    try {
+      if (showLoading) {
+        setLoading(true)
       }
+
+      const [
+        memberRes,
+        likedRes,
+        ownedRes,
+        isrRes,
+        rankingRes,
+        questRes,
+      ] = await Promise.allSettled([
+        api.get('/api/auth/me'),
+        api.get('/api/stocks/liked'),
+        api.get('/api/stocks/owned'),
+        api.get('/api/isr/me'),
+        api.get('/api/ranking'),
+        api.get('/api/quiz/status/me'),
+      ])
+
+      if (memberRes.status === 'fulfilled') {
+        const raw = getResponseData(memberRes.value) || {}
+        const memberData =
+          raw?.member ||
+          raw?.data?.member ||
+          raw ||
+          null
+
+        setMember(memberData)
+      } else {
+        setMember(null)
+      }
+
+      if (likedRes.status === 'fulfilled') {
+        const likedData = toArray(likedRes.value).map((stock) => ({
+          ...stock,
+          stockCode: String(stock?.stockCode ?? stock?.symbol ?? ''),
+          stockName: stock?.stockName ?? stock?.name ?? '',
+          price: Number(stock?.price ?? 0),
+          change: Number(stock?.change ?? stock?.changeAmount ?? 0),
+          changeRate: Number(stock?.changeRate ?? stock?.rate ?? 0),
+        }))
+
+        setLikedStocks(likedData)
+      } else {
+        setLikedStocks([])
+      }
+
+      if (ownedRes.status === 'fulfilled') {
+        const ownedData = toArray(ownedRes.value).map((stock) => {
+          const quantity = Number(stock?.quantity ?? 0)
+          const avgPrice = Number(stock?.avgPrice ?? stock?.avg_price ?? 0)
+          const price = Number(stock?.price ?? 0)
+
+          const principal =
+            Number(stock?.principal ?? stock?.principalAmount ?? 0) || (avgPrice * quantity)
+
+          const totalPrice =
+            Number(stock?.totalPrice ?? stock?.currentAmount ?? 0) || (price * quantity)
+
+          const changeAmount =
+            Number(stock?.changeAmount ?? stock?.profitLoss ?? 0) || ((price - avgPrice) * quantity)
+
+          const changeRate = Number(stock?.changeRate ?? stock?.rate ?? 0)
+
+          return {
+            ...stock,
+            stockCode: String(stock?.stockCode ?? stock?.symbol ?? ''),
+            stockName: stock?.stockName ?? stock?.name ?? '',
+            quantity,
+            avgPrice,
+            price,
+            principal,
+            totalPrice,
+            changeAmount,
+            changeRate,
+          }
+        })
+
+        setOwnedStocks(ownedData)
+      } else {
+        setOwnedStocks([])
+      }
+
+      if (isrRes.status === 'fulfilled') {
+        const rawIsr = toObject(isrRes.value, EMPTY_ISR)
+
+        setIsrData({
+          accuracy: Number(rawIsr?.accuracy || 0),
+          risk: Number(rawIsr?.risk || 0),
+          stability: Number(rawIsr?.stability || 0),
+          discipline: Number(rawIsr?.discipline || 0),
+          strategy: Number(rawIsr?.strategy || 0),
+          adaptability: Number(rawIsr?.adaptability || 0),
+          isr: Number(rawIsr?.isr || 0),
+        })
+      } else {
+        setIsrData(EMPTY_ISR)
+      }
+
+      if (rankingRes.status === 'fulfilled') {
+        const rankingData = toObject(rankingRes.value, {})
+        const leagues = rankingData?.leagues || {}
+
+        const mergedRanking = [
+          ...(leagues.diamond || []),
+          ...(leagues.gold || []),
+          ...(leagues.silver || []),
+          ...(leagues.bronze || []),
+        ]
+
+        setRankingList(Array.isArray(mergedRanking) ? mergedRanking : [])
+      } else {
+        setRankingList([])
+      }
+
+      if (questRes.status === 'fulfilled') {
+        const questData = toObject(questRes.value, {})
+
+        setQuestStatus({
+          todaySolved: Number(questData.todaySolved || 0),
+          todayCorrect: Number(questData.todayCorrect || 0),
+          totalSolved: Number(questData.totalSolved || 0),
+          totalCount: Number(questData.totalCount || 0),
+          accuracy: Number(questData.accuracy || 0),
+          dailyGoal: Number(questData.dailyGoal || 3),
+          dailyPercent: Number(questData.dailyPercent || 0),
+        })
+      } else {
+        setQuestStatus(EMPTY_QUEST)
+      }
+
+      if (memberRes.status === 'rejected') {
+        throw memberRes.reason
+      }
+
+      setError('')
+    } catch (err) {
+      console.error('대시보드 로딩 에러 =', err)
+      setError(err?.message || '대시보드 로딩 실패')
+    } finally {
+      setLoading(false)
+    }
+  }, [])
+
+  useEffect(() => {
+    loadDashboard(true)
+
+    const handleDashboardRefresh = () => {
+      loadDashboard(false)
     }
 
-    loadDashboard()
-  }, [])
+    window.addEventListener('pointsUpdated', handleDashboardRefresh)
+    return () => window.removeEventListener('pointsUpdated', handleDashboardRefresh)
+  }, [loadDashboard])
 
   const formatNumber = (value) => {
     const num = Number(value || 0)
@@ -171,14 +230,46 @@ const Dashboard = () => {
     return Number(value || 0).toFixed(2)
   }
 
+  const isrDescription = '사용자의 투자 과정과 행동의 질을 평가하는 기준.'
+
   const isrItems = useMemo(
     () => [
-      { key: 'accuracy', label: 'Accuracy', value: isrData.accuracy },
-      { key: 'risk', label: 'Risk', value: isrData.risk },
-      { key: 'stability', label: 'Stability', value: isrData.stability },
-      { key: 'discipline', label: 'Discipline', value: isrData.discipline },
-      { key: 'strategy', label: 'Strategy', value: isrData.strategy },
-      { key: 'adaptability', label: 'Adaptability', value: isrData.adaptability },
+      {
+        key: 'accuracy',
+        label: 'Accuracy',
+        value: isrData.accuracy,
+        description: '사용자의 판단력의 정확도를 수치화. (수치가 높으면 능숙 / 낮으면 숙지 필요)',
+      },
+      {
+        key: 'risk',
+        label: 'Risk',
+        value: isrData.risk,
+        description: '손실 대비 베팅 규모, 무리한 투자 여부 수치화. (수치 높을수록 손실 관리 잘함)',
+      },
+      {
+        key: 'stability',
+        label: 'Stability',
+        value: isrData.stability,
+        description: '투자 자본 변동성, 수익 안전성을 수치화. (높은 점수일수록 증가율 안전적으로 오름, 낮음은 변동 심함)',
+      },
+      {
+        key: 'discipline',
+        label: 'Discipline',
+        value: isrData.discipline,
+        description: '손절 여부 및 목표 전햑 준수 여부, 미완료 행동을 수치화. (규칙적으로 투자를 하는지(높음), 아니면 랜덤으로 하는지(낮음))',
+      },
+      {
+        key: 'strategy',
+        label: 'Strategy',
+        value: isrData.strategy,
+        description: '주식을 어떤 목적으로 구매. (초단타, 며칠 ~ 몇 주, 장기 투자)',
+      },
+      {
+        key: 'adaptability',
+        label: 'Adaptability',
+        value: isrData.adaptability,
+        description: '사용자가 주식의 변동에 적응하는지 수치화. (높으면 잘 따름, 낮으면 한가지 방법으로만 투자하는 성향)',
+      },
     ],
     [isrData]
   )
@@ -213,148 +304,92 @@ const Dashboard = () => {
       </div>
 
       <div className='dash-master'>
-        <div>
-          <div className='dash-slave'>
-            <div className='dash-box'>
-              <span>⏰진행 현황</span>
-              <div className='dash-tool'>
-                <div className='tool-box'>
-                  <span>📋퀘스트 현황</span>
-                  <div className='quest-status-box'>
-                    <div className='quest-summary'>
-                      <div className='quest-summary-label'>오늘 달성률</div>
-                      <div className='quest-summary-score'>
-                        {Number(questStatus.dailyPercent || 0).toFixed(2)}%
-                      </div>
-                      <div className='quest-summary-desc'>
-                        오늘 {questStatus.dailyGoal}문제 목표 기준
-                      </div>
-                    </div>
-
-                    <ul className='quest-list'>
-                      <li className='quest-item'>
-                        <span>오늘 푼 퀴즈</span>
-                        <strong>
-                          {todaySolvedDisplay} / {questStatus.dailyGoal}
-                        </strong>
-                      </li>
-
-                      <li className='quest-item'>
-                        <span>오늘 정답 수</span>
-                        <strong>{questStatus.todayCorrect}</strong>
-                      </li>
-
-                      <li className='quest-item'>
-                        <span>누적 풀이 수</span>
-                        <strong>
-                          {questStatus.totalSolved} / {questStatus.totalCount}
-                        </strong>
-                      </li>
-
-                      <li className='quest-item'>
-                        <span>누적 정답률</span>
-                        <strong>
-                          {Number(questStatus.accuracy || 0).toFixed(2)}%
-                        </strong>
-                      </li>
-                    </ul>
+        {/* <div className='dash-slave'> */}
+          <div className='dash-tool'>
+            <div className='tool-box'>
+              <span>📋퀘스트 현황</span>
+              <div className='quest-status-box'>
+                <div className='quest-summary'>
+                  <div className='quest-summary-score'>
+                    {Number(questStatus.dailyPercent || 0).toFixed(2)}%
+                  </div>
+                  <div className='quest-summary-desc'>
+                    오늘 {questStatus.dailyGoal}문제 목표 기준
                   </div>
                 </div>
 
-                <div className='tool-box'>
-                  <span>🎯ISR 지표</span>
-                  <div className='isr-summary'>
-                    <div className='isr-summary-label'>현재 ISR</div>
-                    <div className='isr-summary-score'>{formatScore(isrData.isr)}</div>
-                    <div className='isr-summary-desc'>
-                      판단력·생존력·성과 품질·행동 통제력·사고 체계·시장 대응력 종합
-                    </div>
-                  </div>
+                <ul className='quest-list'>
+                  <li className='quest-item'>
+                    <span>오늘 푼 퀴즈</span>
+                    <strong>
+                      {todaySolvedDisplay} / {questStatus.dailyGoal}
+                    </strong>
+                  </li>
 
-                  <ul className='isr-list'>
-                    {isrItems.map((item) => (
-                      <li key={item.key} className='isr-item'>
-                        <div className='isr-item-top'>
-                          <span className='isr-name'>{item.label}</span>
-                          <span className='isr-value'>{formatScore(item.value)}</span>
-                        </div>
-                        <div className='isr-bar'>
-                          <div
-                            className='isr-bar-fill'
-                            style={{
-                              width: `${Math.max(
-                                0,
-                                Math.min(100, Number(item.value || 0))
-                              )}%`,
-                            }}
-                          />
-                        </div>
-                      </li>
-                    ))}
-                  </ul>
-                </div>
+                  <li className='quest-item'>
+                    <span>오늘 정답 수</span>
+                    <strong>{questStatus.todayCorrect}</strong>
+                  </li>
+
+                  <li className='quest-item'>
+                    <span>누적 풀이 수</span>
+                    <strong>
+                      {questStatus.totalSolved} / {questStatus.totalCount}
+                    </strong>
+                  </li>
+
+                  <li className='quest-item'>
+                    <span>누적 정답률</span>
+                    <strong>
+                      {Number(questStatus.accuracy || 0).toFixed(2)}%
+                    </strong>
+                  </li>
+                </ul>
               </div>
             </div>
 
-            <div className='dash-thread'>
-              <div className='dash-box'>
-                <span>💖찜한 주식</span>
-                <div className='stock-box'>
-                  <ul className='stock-list'>
-                    <li className='stock-item stock-head liked-grid'>
-                      <p>주식</p>
-                      <p>금액</p>
-                      <p>변동</p>
-                    </li>
-                    {likedStocks.length === 0 ? (
-                      <li className='stock-empty'>찜한 주식이 없습니다.</li>
-                    ) : (
-                      likedStocks.map((stock) => (
-                        <li
-                          key={stock.id || stock.stockCode}
-                          className='stock-item stock-head liked-grid'
-                        >
-                          <p>{stock.stockName || stock.stockCode}</p>
-                          <p>{formatNumber(stock.price)}</p>
-                          <p>{formatSignedNumber(stock.change)}</p>
-                        </li>
-                      ))
-                    )}
-                  </ul>
+            <div className='tool-box'>
+              <div className='isr-header'>
+                <span>🎯ISR 지표</span>
+                <div className='isr-tooltip-wrap'>
+                  <span className='isr-tooltip-icon'>ⓘ</span>
+                  <span className='isr-tooltip-text'>{isrDescription}</span>
+                </div>
+              </div>
+              <div className='isr-summary'>
+                <div className='isr-summary-score'>{formatScore(isrData.isr)}</div>
+                <div className='isr-summary-desc'>
+                  판단력·생존력·성과 품질·행동 통제력·사고 체계·시장 대응력 종합
                 </div>
               </div>
 
-              <div className='dash-box'>
-                <span>💹보유 주식</span>
-                <div className='stock-box'>
-                  <ul className='stock-list'>
-                    <li className='stock-item stock-head liked-grid'>
-                      <p>주식</p>
-                      <p>원금</p>
-                      <p>변동</p>
-                      <p>변동률</p>
-                    </li>
-                    {ownedStocks.length === 0 ? (
-                      <li className='stock-empty'>보유 주식이 없습니다.</li>
-                    ) : (
-                      ownedStocks.map((stock) => (
-                        <li
-                          key={stock.id || stock.stockCode}
-                          className='stock-item owned-grid'
-                        >
-                          <p>{stock.stockName || stock.stockCode}</p>
-                          <p>{formatNumber(stock.totalPrice)}</p>
-                          <p>{formatSignedNumber(stock.changeAmount)}</p>
-                          <p>{formatSignedPercent(stock.changeRate)}</p>
-                        </li>
-                      ))
-                    )}
-                  </ul>
-                </div>
-              </div>
+              <ul className='isr-list'>
+                {isrItems.map((item) => (
+                  <li key={item.key} className='isr-item'>
+                    <div className='isr-item-top'>
+                      <div className='isr-name'>
+                        <span>{item.label}</span>
+                        <div className='isr-tooltip-wrap'>
+                          <span className='isr-tooltip-icon'>ⓘ</span>
+                          <span className='isr-tooltip-text'>{item.description}</span>
+                        </div>
+                      </div>
+                      <p className='isr-value'>{formatScore(item.value)}</p>
+                    </div>
+                    <div className='isr-bar'>
+                      <div
+                        className='isr-bar-fill'
+                        style={{
+                          width: `${Math.max(0, Math.min(100, Number(item.value || 0)))}%`,
+                        }}
+                      />
+                    </div>
+                  </li>
+                ))}
+              </ul>
             </div>
           </div>
-        </div>
+        {/* </div> */}
 
         <div className='dash-rank'>
           <span>🏆리그 순위표</span>
@@ -379,7 +414,7 @@ const Dashboard = () => {
                 <li className='stock-empty'>랭킹 데이터가 없습니다.</li>
               ) : (
                 rankingList.slice(0, 7).map((rankMember, index) => (
-                  <li key={rankMember.memberId} className='rank-item'>
+                  <li key={rankMember.memberId || index} className='rank-item'>
                     <div className='item-profile'>
                       <div className='rank-num'>{index + 1}</div>
                       <img
@@ -392,6 +427,65 @@ const Dashboard = () => {
                     <div className='rank-num'>
                       {formatNumber(rankMember.points)}
                     </div>
+                  </li>
+                ))
+              )}
+            </ul>
+          </div>
+        </div>
+
+      </div>
+
+      <div className='dash-thread'>
+        <div className='dash-box'>
+          <span>💖찜한 주식</span>
+          <div className='stock-box'>
+            <ul className='stock-list'>
+              <li className='stock-item stock-head liked-grid'>
+                <p>주식</p>
+                <p className='numbers'>금액</p>
+                <p className='numbers'>변동</p>
+              </li>
+              {likedStocks.length === 0 ? (
+                <li className='stock-empty'>찜한 주식이 없습니다.</li>
+              ) : (
+                likedStocks.map((stock) => (
+                  <li
+                    key={stock.id || stock.stockCode}
+                    className='stock-item liked-grid'
+                  >
+                    <p>{stock.stockName || stock.stockCode}</p>
+                    <p className='numbers'>{formatNumber(stock.price)}</p>
+                    <p className='numbers'>{formatSignedNumber(stock.change)}</p>
+                  </li>
+                ))
+              )}
+            </ul>
+          </div>
+        </div>
+
+        <div className='dash-box'>
+          <span>💹보유 주식</span>
+          <div className='stock-box'>
+            <ul className='stock-list'>
+              <li className='stock-item stock-head owned-grid'>
+                <p>주식</p>
+                <p className='numbers'>원금</p>
+                <p className='numbers'>변동</p>
+                <p className='numbers'>변동률</p>
+              </li>
+              {ownedStocks.length === 0 ? (
+                <li className='stock-empty'>보유 주식이 없습니다.</li>
+              ) : (
+                ownedStocks.map((stock) => (
+                  <li
+                    key={stock.id || stock.stockCode}
+                    className='stock-item owned-grid'
+                  >
+                    <p>{stock.stockName || stock.stockCode}</p>
+                    <p className='numbers'>{formatNumber(stock.principal)}</p>
+                    <p className='numbers'>{formatSignedNumber(stock.changeAmount)}</p>
+                    <p className='numbers'>{formatSignedPercent(stock.changeRate)}</p>
                   </li>
                 ))
               )}

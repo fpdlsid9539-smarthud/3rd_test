@@ -1,9 +1,12 @@
+/* frontend/src/components/Profile.css */
+
 .profile {
   position: sticky;
   top: 0;
   height: 100vh;
   padding: 1rem 0.5rem;
-
+  overflow-y: auto;
+  overflow-x: visible;
   background-color: var(--bg);
   border-left: 1px solid var(--border);
   box-sizing: border-box;
@@ -11,19 +14,19 @@
 
 .profile-content {
   width: 100%;
+  min-height: 100%;
   box-sizing: border-box;
-  /* overflow-y: scroll; */
-  
-
+  overflow: visible;
   display: flex;
   flex-direction: column;
   gap: 0.5rem;
 }
 
 .profile-set {
+  position: relative;
+  z-index: 200;
   padding: 0 1rem;
   margin-bottom: 1rem;
-  
   display: flex;
   justify-content: space-between;
   gap: 1.5rem;
@@ -31,10 +34,8 @@
 
 .set-icons {
   padding: 1rem;
-
   background: var(--bg) transparent 100;
   border-radius: 0.75rem;
-  
   transition: all 0.3s ease;
   cursor: pointer;
 }
@@ -43,9 +44,13 @@
   background: var(--btn-prim);
 }
 
+.set-icons--active {
+  background: var(--primary-highlight2);
+  border: 2px solid var(--primary);
+}
+
 .profile-master {
   padding: 0 1rem;
-
   display: flex;
   flex-direction: column;
   justify-content: center;
@@ -55,10 +60,8 @@
 
 .profile-account {
   position: relative;
-
   width: 136px;
   height: 136px;
-
   font-size: 1rem;
 }
 
@@ -70,59 +73,88 @@
 
 .glowing-container img {
   position: relative;
-  /* width: 100%; */
   z-index: 2;
-
   display: block;
-
   border-radius: 8.5rem;
 }
 
 .glowing-container::after {
   content: "";
   position: absolute;
-  top: 0;
-  left: 0;
-  right: 0;
-  bottom: 0;
-  /* Use the same image as the glow source */
+  inset: 0;
   background-image: var(--profile-url);
   background-size: cover;
   background-position: center;
-
-  /* The "Magic" filters */
   filter: blur(0.5rem) brightness(1.2) saturate(1);
   opacity: 0.72;
-
-  /* Place it behind the main image */
   border-radius: 50%;
-  
   z-index: -1;
   transform: scale(1.12);
+}
+
+.glowing-container--editable {
+  cursor: pointer;
 }
 
 .profile-pic {
   width: 8.5rem;
   height: 8.5rem;
-
   border-radius: 8.5rem;
-  object-fit: cover
+  object-fit: cover;
 }
 
+.profile-membership,
 .profile-premium {
   position: absolute;
   top: 100%;
   left: 50%;
   transform: translate(-50%, -50%);
   z-index: 5;
-
   width: 2.5rem;
   height: 1.5rem;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 0.7rem;
+  font-weight: 700;
+  border-radius: 1rem;
+  box-sizing: border-box;
+}
 
+.profile-membership--premium {
+  background-color: var(--warning-highlight);
+  border: 2px solid var(--warning);
+  color: var(--warning);
+}
+
+.profile-membership--free {
+  background-color: #e5e7eb;
+  border: 2px solid #9ca3af;
+  color: #6b7280;
+}
+
+.profile-premium {
   text-align: center;
   background-color: var(--warning-highlight);
   border: 2px solid var(--warning);
-  border-radius: 1rem;
+}
+
+.avatar-edit-overlay {
+  position: absolute;
+  inset: 0;
+  border-radius: 50%;
+  background: rgba(0, 0, 0, 0.5);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 1.5rem;
+  opacity: 0;
+  transition: opacity 0.3s ease;
+  z-index: 3;
+}
+
+.glowing-container--editable:hover .avatar-edit-overlay {
+  opacity: 1;
 }
 
 .profile-name {
@@ -133,16 +165,13 @@
 .profile-stats {
   width: 100%;
   padding: 0.5rem 1rem;
-
   display: flex;
   justify-content: space-around;
-
   border-bottom: 1px solid var(--border);
 }
 
 .profile-stats hr {
   width: 1px;
-
   background-color: var(--border);
   border: none;
 }
@@ -152,7 +181,6 @@
   flex-direction: column;
   justify-content: center;
   align-items: center;
-
   font-size: 1.5rem;
   font-weight: 500;
   color: var(--primary);
@@ -160,14 +188,12 @@
 
 .total-description {
   padding-bottom: 0.5rem;
-
   display: flex;
   flex-direction: column;
   gap: 0.25rem;
-
   font-size: 1.5rem;
   font-weight: 500;
-  border-bottom: 1px solid var(--border)
+  border-bottom: 1px solid var(--border);
 }
 
 .total-description span:last-child {
@@ -175,22 +201,20 @@
   font-weight: 500;
 }
 
+.description-top {
+  font-size: 0.95rem;
+  font-weight: 600;
+  color: var(--text);
+}
+
 .description-slave {
   padding: 0 0.5rem;
-
   text-align: end;
 }
 
 .description-slave span {
   font-size: 1rem;
   font-weight: 500;
-}
-
-.achievement-slave{
-  width: 3.5rem;
-
-  font-size: 0.875rem;
-  text-align: center;
 }
 
 .gain {
@@ -204,11 +228,9 @@
 .profile-stock {
   height: fit-content;
   padding: 1rem;
-
   display: flex;
   flex-direction: column;
   gap: 1rem;
-
   font-size: 1.4rem;
   font-weight: 500;
   background-color: var(--bg);
@@ -225,7 +247,6 @@
 
 .stock-content {
   height: fit-content;
-
   display: flex;
   flex-direction: column;
   gap: 0.25rem;
@@ -235,127 +256,593 @@
   font-size: 1.125rem;
   font-weight: 600;
 }
- 
-/* ── 인라인 편집 모드 ── */
-.set-icons--active {
-  background: var(--primary-highlight2);
-  border: 2px solid var(--primary);
-  /* outline-offset: 2px; */
-}
- 
-/* 프로필 사진 — 편집 가능 상태 */
-.glowing-container--editable {
-  cursor: pointer;
-}
- 
-.avatar-edit-overlay {
-  position: absolute;
-  inset: 0;
-  border-radius: 50%;
-  background: rgba(0, 0, 0, 0.5);
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  font-size: 1.5rem;
-  opacity: 0;
-  transition: opacity 0.3s ease;
-  z-index: 3;
-}
- 
-.glowing-container--editable:hover .avatar-edit-overlay {
-  opacity: 1;
-}
- 
-/* 닉네임 인라인 편집 */
+
 .nickname-edit-wrap {
   width: 100%;
   box-sizing: border-box;
-
   display: flex;
   flex-direction: column;
   align-items: center;
   gap: 0.5rem;
-
   animation: fadeIn 0.15s ease;
 }
- 
+
 @keyframes fadeIn {
   from { opacity: 0; transform: translateY(-4px); }
-  to   { opacity: 1; transform: translateY(0); }
+  to { opacity: 1; transform: translateY(0); }
 }
- 
+
 .nickname-input {
   width: 100%;
   padding: 0.5rem 1rem;
   box-sizing: border-box;
   outline: none;
- 
   background: var(--bg);
   border: 1.5px solid var(--primary);
   border-radius: 0.5rem;
-
   font-size: 1.25rem;
   font-weight: 600;
   text-align: center;
   color: var(--text);
-
   transition: border-color 0.2s ease, box-shadow 0.2s ease;
 }
- 
+
 .nickname-input:focus {
   box-shadow: 0 0 0 4px color-mix(in srgb, var(--primary) 20%, transparent);
 }
- 
+
 .nickname-error {
   font-size: 0.75rem;
   color: var(--danger);
   margin: 0;
 }
- 
+
 .nickname-actions {
   width: 100%;
   display: flex;
   gap: 0.4rem;
 }
- 
+
 .edit-btn {
   padding: 0.5rem 0;
-  
   flex: 1;
   border: none;
   border-radius: 0.75rem;
-
   font-size: 1rem;
   font-weight: 600;
   cursor: pointer;
-
   transition: opacity 0.3s ease, transform 0.2s ease;
 }
- 
+
 .edit-btn:disabled {
   opacity: 0.5;
   cursor: not-allowed;
 }
- 
+
 .edit-btn:not(:disabled):active {
   transform: scale(0.97);
 }
- 
+
 .edit-btn--cancel {
   background: transparent;
   color: var(--text);
   border: 1px solid var(--border);
 }
- 
+
 .edit-btn--cancel:not(:disabled):hover {
   background: var(--border);
 }
- 
+
 .edit-btn--save {
   background: var(--btn-prim, var(--primary));
   color: var(--text);
 }
- 
+
 .edit-btn--save:not(:disabled):hover {
   opacity: 0.85;
+}
+
+.notification-wrap {
+  position: relative;
+  z-index: 9999;
+  display: flex;
+  align-items: center;
+}
+
+.notification-dot {
+  position: absolute;
+  top: -2px;
+  right: -1px;
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  background: var(--danger);
+  box-shadow: 0 0 0 2px #fff;
+}
+
+.notification-dropdown {
+  width: 240px;
+  max-height: 320px;
+  overflow-y: auto;
+  padding: 14px 14px 10px;
+  border-radius: 14px;
+  background: #ffffff;
+  border: 1px solid #ececec;
+  box-shadow: 0 12px 28px rgba(0, 0, 0, 0.16);
+  z-index: 10000;
+}
+
+.notification-dropdown--fixed {
+  position: fixed;
+}
+
+.notification-dropdown-title {
+  font-size: 14px;
+  font-weight: 700;
+  color: #222;
+}
+
+.notification-dropdown-sub {
+  margin-top: 3px;
+  margin-bottom: 10px;
+  font-size: 11px;
+  color: #8e8e93;
+}
+
+.notification-empty {
+  padding: 16px 0;
+  text-align: center;
+  font-size: 13px;
+  color: #777;
+}
+
+.notification-item {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  padding: 10px 0;
+  border-top: 1px solid #f2f2f2;
+}
+
+.notification-item-left {
+  min-width: 0;
+  flex: 1;
+}
+
+.notification-name {
+  font-size: 14px;
+  font-weight: 600;
+  color: #222;
+}
+
+.notification-date {
+  margin-top: 4px;
+  font-size: 12px;
+  color: #9b9b9b;
+}
+
+.notification-amount {
+  flex-shrink: 0;
+  font-size: 14px;
+  font-weight: 700;
+}
+
+.notification-amount.positive {
+  color: #22c55e;
+}
+
+.notification-amount.negative {
+  color: #ef4444;
+}
+
+.achievement-title-row {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 0.75rem;
+}
+
+.achievement-more-btn,
+.achievement-back-btn {
+  border: none;
+  background: transparent;
+  color: var(--primary);
+  font-size: 0.95rem;
+  font-weight: 700;
+  cursor: pointer;
+  padding: 0;
+}
+
+.achievement-more-btn:hover,
+.achievement-back-btn:hover {
+  text-decoration: underline;
+}
+
+.achievment-list {
+  display: flex;
+  flex-direction: column;
+  gap: 0.75rem;
+  max-height: 140px;
+  overflow-y: auto;
+}
+
+.achievment-list--full {
+  gap: 1rem;
+  max-height: none;
+  overflow: visible;
+}
+
+.achievment-item {
+  display: flex;
+  align-items: flex-start;
+  gap: 0.75rem;
+}
+
+.achievment-item--full {
+  align-items: flex-start;
+  padding: 0.875rem;
+  border: 1px solid var(--border);
+  border-radius: 0.875rem;
+  background: color-mix(in srgb, var(--bg) 88%, white 12%);
+}
+
+.img-block {
+  width: 3.5rem;
+  height: 3.5rem;
+  flex-shrink: 0;
+  object-fit: cover;
+  border-radius: 0.75rem;
+}
+
+.achievment-description {
+  min-width: 0;
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+}
+
+.achievment-description--full {
+  flex: 1;
+  gap: 0.3rem;
+}
+
+.achievement-slave {
+  display: block;
+  width: 100%;
+  font-size: 0.9rem;
+  line-height: 1.35;
+  text-align: left;
+  white-space: normal;
+  word-break: keep-all;
+  overflow-wrap: break-word;
+  color: var(--text);
+}
+
+.achievement-name-row {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  gap: 0.5rem;
+}
+
+.achievement-name {
+  font-size: 1rem;
+  font-weight: 700;
+  color: var(--text);
+}
+
+.achievement-meta {
+  font-size: 0.8rem;
+  color: var(--text-muted, #888);
+}
+
+.achievement-desc {
+  margin: 0;
+  font-size: 0.9rem;
+  color: var(--text);
+  line-height: 1.45;
+  word-break: keep-all;
+}
+
+.achievement-date {
+  font-size: 0.78rem;
+  color: var(--text-muted, #888);
+}
+
+.achievement-state {
+  padding: 0.28rem 0.55rem;
+  border-radius: 999px;
+  font-size: 0.72rem;
+  font-weight: 700;
+  white-space: nowrap;
+}
+
+.achievement-state--done {
+  color: #15803d;
+  background: #dcfce7;
+}
+
+.achievement-state--pending {
+  color: #92400e;
+  background: #fef3c7;
+}
+
+.achievement-page-top {
+  display: flex;
+  align-items: center;
+}
+
+.achievement-summary-card {
+  gap: 0.85rem;
+}
+
+.achievement-progress-top {
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+}
+
+.achievement-progress-text {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  font-size: 0.95rem;
+  color: var(--text);
+}
+
+.achievement-progress-bar {
+  width: 100%;
+  height: 0.75rem;
+  background: #e5e7eb;
+  border-radius: 999px;
+  overflow: hidden;
+}
+
+.achievement-progress-fill {
+  height: 100%;
+  background: linear-gradient(90deg, #22c55e 0%, #16a34a 100%);
+  border-radius: 999px;
+  transition: width 0.3s ease;
+}
+
+.achievement-progress-percent {
+  text-align: right;
+  font-size: 0.85rem;
+  font-weight: 700;
+  color: var(--primary);
+}
+
+.achievement-count {
+  font-size: 0.9rem;
+  font-weight: 700;
+  color: var(--primary);
+}
+
+.achievement-empty-block {
+  padding: 1rem 0;
+  text-align: center;
+  font-size: 0.95rem;
+  color: #888;
+}
+
+.profile-title-badge {
+  margin-top: -0.75rem;
+  padding: 0.35rem 0.85rem;
+  border-radius: 999px;
+  background: color-mix(in srgb, var(--primary) 14%, transparent);
+  color: var(--primary);
+  font-size: 0.88rem;
+  font-weight: 700;
+  line-height: 1.2;
+  text-align: center;
+  max-width: 100%;
+  word-break: keep-all;
+}
+
+.title-summary-card {
+  gap: 0.85rem;
+}
+
+.title-current-box {
+  display: flex;
+  flex-direction: column;
+  gap: 0.45rem;
+  padding: 1rem;
+  border-radius: 0.95rem;
+  border: 1px solid var(--border);
+  background: color-mix(in srgb, var(--primary) 8%, var(--bg));
+}
+
+.title-current-label {
+  font-size: 0.78rem;
+  font-weight: 700;
+  color: var(--primary);
+}
+
+.title-current-name {
+  font-size: 1.05rem;
+  font-weight: 800;
+  color: var(--text);
+  line-height: 1.35;
+  word-break: keep-all;
+}
+
+.title-current-desc {
+  margin: 0;
+  font-size: 0.88rem;
+  line-height: 1.45;
+  color: var(--text-muted, #777);
+  word-break: keep-all;
+}
+
+.title-list {
+  display: flex;
+  flex-direction: column;
+  gap: 0.85rem;
+}
+
+.title-item {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  gap: 0.9rem;
+  padding: 0.9rem;
+  border: 1px solid var(--border);
+  border-radius: 0.9rem;
+  background: color-mix(in srgb, var(--bg) 88%, white 12%);
+}
+
+.title-item-left {
+  min-width: 0;
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  gap: 0.3rem;
+}
+
+.title-item-name {
+  font-size: 1rem;
+  font-weight: 700;
+  color: var(--text);
+  line-height: 1.35;
+}
+
+.title-item-meta {
+  font-size: 0.78rem;
+  color: var(--text-muted, #888);
+}
+
+.title-item-desc {
+  margin: 0;
+  font-size: 0.88rem;
+  color: var(--text);
+  line-height: 1.45;
+  word-break: keep-all;
+}
+
+.title-equip-btn {
+  flex-shrink: 0;
+  min-width: 84px;
+  padding: 0.55rem 0.8rem;
+  border: 1px solid var(--primary);
+  border-radius: 999px;
+  background: transparent;
+  color: var(--primary);
+  font-size: 0.82rem;
+  font-weight: 700;
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+
+.title-equip-btn:hover:not(:disabled) {
+  background: color-mix(in srgb, var(--primary) 10%, transparent);
+}
+
+.title-equip-btn:disabled {
+  opacity: 0.7;
+  cursor: not-allowed;
+}
+
+.title-equip-btn--active {
+  background: var(--primary);
+  color: white;
+}
+
+.achievement-progress-text--single {
+  justify-content: space-between;
+  align-items: center;
+}
+
+/* ===== 프로필 하단 최근 업적 3개 가로 ===== */
+.achievement-recent-grid {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 0.75rem;
+  align-items: start;
+}
+
+.achievement-recent-card {
+  min-width: 0;
+  padding: 0.5rem 0.25rem;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 0.45rem;
+  text-align: center;
+}
+
+.achievement-recent-img {
+  width: 3.6rem;
+  height: 3.6rem;
+  object-fit: cover;
+  border-radius: 0.75rem;
+  flex-shrink: 0;
+}
+
+.achievement-recent-name {
+  width: 100%;
+  font-size: 0.88rem;
+  font-weight: 700;
+  line-height: 1.35;
+  color: var(--text);
+  word-break: keep-all;
+  overflow-wrap: break-word;
+}
+
+/* ===== 더보기 페이지 전체 업적 카드 3개씩 ===== */
+.achievement-grid-full {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 0.9rem;
+}
+
+.achievement-grid-card {
+  min-width: 0;
+  padding: 0.85rem 0.65rem;
+  border: 1px solid var(--border);
+  border-radius: 0.9rem;
+  background: color-mix(in srgb, var(--bg) 88%, white 12%);
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 0.55rem;
+  text-align: center;
+  box-sizing: border-box;
+  overflow: hidden;
+}
+
+.achievement-grid-img {
+  width: 4.2rem;
+  height: 4.2rem;
+  object-fit: cover;
+  border-radius: 0.8rem;
+  flex-shrink: 0;
+}
+
+.achievement-grid-name {
+  width: 100%;
+  font-size: 0.92rem;
+  font-weight: 700;
+  line-height: 1.35;
+  color: var(--text);
+  word-break: keep-all;
+  overflow-wrap: break-word;
+}
+
+.achievement-grid-date {
+  width: 100%;
+  font-size: 0.76rem;
+  line-height: 1.3;
+  color: var(--text-muted, #888);
+  word-break: keep-all;
+  overflow-wrap: break-word;
+}
+
+/* ===== 반응형: 영역 좁을 때 2개씩 ===== */
+@media (max-width: 420px) {
+  .achievement-grid-full {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
 }

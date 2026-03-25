@@ -1,6 +1,7 @@
 const axios = require("axios");
 const db = require("../../config/db");
 const { createToken } = require("../utils/jwt");
+const achievementService = require("../services/achievementService");
 
 /* 공통 응답 */
 function success(res, message, data = null, status = 200) {
@@ -52,7 +53,7 @@ async function getRecentAchievements(memberId) {
   );
 
   if (!rows.length) {
-    return ["🌱 Vivere 주린이"];
+    return [];
   }
 
   return rows.map((r) => r.name);
@@ -70,6 +71,10 @@ function buildMemberPayload(member) {
     isr_score: member.isr_score ?? 0,
     created_at: member.created_at ?? null,
     profile_image: member.profile_image,
+    profile_image2: member.profile_image2 ?? null,
+    membership_type: member.membership_type ?? "free",
+    equipped_title_ach_id: member.equipped_title_ach_id ?? null,
+    role: member.role ?? "user",
   };
 }
 
@@ -113,48 +118,7 @@ async function findMemberById(memberId) {
   return rows[0] || null;
 }
 
-async function grantDefaultAchievementIfMissing(memberId) {
-  const [rows] = await db.promise().query(
-    "SELECT * FROM member_achievements WHERE member_id = ? AND ach_id = 1",
-    [memberId]
-  );
-
-  if (!rows.length) {
-    await db.promise().query(
-      "INSERT INTO member_achievements (member_id, ach_id, is_equipped) VALUES (?, 1, TRUE)",
-      [memberId]
-    );
-  }
-}
-
-/* =========================
-   기본 찜/보유 주식 시드
-   - 신규 회원 생성 시에만 사용
-========================= */
-async function seedDefaultStocksForMember(memberId, conn = null) {
-  const executor = conn || db.promise();
-
-  await executor.query(
-    `
-    INSERT IGNORE INTO liked_stocks (member_id, stock_code)
-    VALUES (?, '005930'), (?, '035420')
-    `,
-    [memberId, memberId]
-  );
-
-  await executor.query(
-    `
-    INSERT IGNORE INTO owned_stocks (member_id, stock_code, quantity, avg_price)
-    VALUES (?, '000660', 3, 210000), (?, '005930', 10, 73000)
-    `,
-    [memberId, memberId]
-  );
-}
-
-/* =========================
-   테스트용 기본 gameLog 시드
-   - 원치 않으면 이 함수 호출만 빼면 됨
-========================= */
+/* 테스트용 기본 gameLog 시드 */
 async function seedDefaultGameLogForMember(memberId, conn = null) {
   const executor = conn || db.promise();
 
@@ -204,23 +168,17 @@ async function createMember(provider, providerId, nickname, profile_image) {
 
     const newMemberId = result.insertId;
 
-    await conn.query(
-      "INSERT INTO member_achievements (member_id, ach_id, is_equipped) VALUES (?, 1, TRUE)",
-      [newMemberId]
-    );
-
-    /* 신규 회원에게만 기본 주식 시드 지급 */
-    await seedDefaultStocksForMember(newMemberId, conn);
-
-    /* 신규 회원에게만 기본 gameLog 시드 지급 */
     await seedDefaultGameLogForMember(newMemberId, conn);
 
-    const [rows] = await conn.query(
+    await conn.commit();
+
+    await achievementService.grantSignupTitle(newMemberId);
+
+    const [rows] = await db.promise().query(
       "SELECT * FROM members WHERE member_id = ?",
       [newMemberId]
     );
 
-    await conn.commit();
     return rows[0];
   } catch (err) {
     await conn.rollback();
@@ -230,11 +188,17 @@ async function createMember(provider, providerId, nickname, profile_image) {
   }
 }
 
-async function loginOrRegister(provider, providerId, nickname, profile_image) {
+async function loginOrRegister(provider, providerId, nickname, profile_image, profile_image2) {
   const member = await findMember(provider, providerId);
 
   if (member) {
-    if (profile_image) {
+    if (profile_image2) {
+      await db.promise().query(
+        "UPDATE members SET profile_image2 = ? WHERE member_id = ?",
+        [profile_image2, member.member_id]
+      );
+      member.profile_image2 = profile_image2;
+    } else {
       await db.promise().query(
         "UPDATE members SET profile_image = ? WHERE member_id = ?",
         [profile_image, member.member_id]
@@ -242,18 +206,6 @@ async function loginOrRegister(provider, providerId, nickname, profile_image) {
       member.profile_image = profile_image;
     }
 
-    await grantDefaultAchievementIfMissing(member.member_id);
-
-    /*
-      기존 회원 로그인 시에는 기본 주식 자동 지급 금지
-      원인:
-      로그인할 때마다 삼성전자/하이닉스/NAVER가 다시 들어갔음
-    */
-
-    /*
-      gameLog는 비어있을 때만 시드되므로 유지 가능
-      원치 않으면 아래 한 줄도 제거 가능
-    */
     await seedDefaultGameLogForMember(member.member_id);
 
     const refreshedMember = await findMemberById(member.member_id);
@@ -363,7 +315,6 @@ exports.getProfileMeta = async (req, res) => {
   }
 };
 
-/* 토큰 재발급 */
 exports.refreshToken = async (req, res) => {
   try {
     const member = await findMemberById(req.user.member_id);
@@ -468,7 +419,8 @@ exports.kakaoCallback = async (req, res) => {
       user.provider,
       user.providerId,
       user.nickname,
-      user.profile_image
+      user.profile_image,
+      user.profile_image2
     );
 
     const token = createToken(result.member);
@@ -568,7 +520,8 @@ exports.googleCallback = async (req, res) => {
       user.provider,
       user.providerId,
       user.nickname,
-      user.profile_image
+      user.profile_image,
+      user.profile_image2
     );
 
     const token = createToken(result.member);
@@ -583,5 +536,34 @@ exports.googleCallback = async (req, res) => {
       err.response?.data || err.message,
       500
     );
+  }
+};
+
+/* 프로필 이미지 업로드 */
+exports.updateProfileImage = async (req, res) => {
+  try {
+    if (!req.file) {
+      return fail(res, "이미지 파일이 없습니다.", null, 400);
+    }
+
+    const memberId = req.user.member_id;
+
+    const mime = req.file.mimetype;
+    const base64 = req.file.buffer.toString("base64");
+    const dataUrl = `data:${mime};base64,${base64}`;
+
+    await db.promise().query(
+      "UPDATE members SET profile_image2 = ? WHERE member_id = ?",
+      [dataUrl, memberId]
+    );
+
+    const updatedMember = await findMemberById(memberId);
+
+    return success(res, "프로필 이미지 업로드 성공", {
+      member: buildMemberPayload(updatedMember),
+    });
+  } catch (err) {
+    console.error("updateProfileImage error =", err);
+    return fail(res, "이미지 업로드 실패", err.message, 500);
   }
 };

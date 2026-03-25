@@ -1,7 +1,8 @@
 const db = require("../../config/db");
+const achievementService = require("../services/achievementService");
 
 /* =========================
-   공통 응답
+  공통 응답
 ========================= */
 
 function success(res, message, data = null, status = 200) {
@@ -13,7 +14,7 @@ function fail(res, message, error = null, status = 500) {
 }
 
 /* =========================
-   memberId 추출
+  memberId 추출
 ========================= */
 
 function extractMemberId(req) {
@@ -28,7 +29,7 @@ function extractMemberId(req) {
 }
 
 /* =========================
-   테이블 존재 여부 에러 체크
+  테이블 에러 체크
 ========================= */
 
 function isTableMissingError(err) {
@@ -40,19 +41,31 @@ function isTableMissingError(err) {
 }
 
 /* =========================
-   포인트 테이블
+  포인트 정책
 ========================= */
 
 const POINT_TABLE = {
-  하: { correct: 1000, wrong: -500  },
-  중: { correct: 2000, wrong: -1000 },
-  상: { correct: 3000, wrong: -1500 },
+  하: { correct: 1000, wrong: 0 },
+  중: { correct: 2000, wrong: 0 },
+  상: { correct: 3000, wrong: 0 },
 };
 
 const PERFECT_BONUS = { 하: 5000, 중: 10000, 상: 20000 };
 
 /* =========================
-   전체 퀴즈 조회
+  공통 후처리
+========================= */
+
+async function refreshMemberAchievements(memberId) {
+  try {
+    await achievementService.checkAndGrantAchievements(memberId);
+  } catch (err) {
+    console.error("refreshMemberAchievements error =", err);
+  }
+}
+
+/* =========================
+  퀴즈 조회
 ========================= */
 
 exports.getAllQuizzes = async (req, res) => {
@@ -72,14 +85,9 @@ exports.getAllQuizzes = async (req, res) => {
     const [rows] = await db.promise().query(sql, params);
     return success(res, "퀴즈 조회 성공", rows);
   } catch (err) {
-    console.error("getAllQuizzes error =", err);
     return fail(res, "퀴즈 조회 실패", err.message);
   }
 };
-
-/* =========================
-   랜덤 퀴즈
-========================= */
 
 exports.getRandomQuiz = async (req, res) => {
   try {
@@ -103,14 +111,9 @@ exports.getRandomQuiz = async (req, res) => {
 
     return success(res, "랜덤 퀴즈 조회 성공", rows[0]);
   } catch (err) {
-    console.error("getRandomQuiz error =", err);
     return fail(res, "랜덤 퀴즈 조회 실패", err.message);
   }
 };
-
-/* =========================
-   퀴즈 1개 조회
-========================= */
 
 exports.getQuizById = async (req, res) => {
   try {
@@ -127,13 +130,12 @@ exports.getQuizById = async (req, res) => {
 
     return success(res, "퀴즈 조회 성공", rows[0]);
   } catch (err) {
-    console.error("getQuizById error =", err);
     return fail(res, "퀴즈 조회 실패", err.message);
   }
 };
 
 /* =========================
-   정답 체크 (난이도별 포인트)
+  정답 체크 + 포인트 + 업적
 ========================= */
 
 exports.checkAnswer = async (req, res) => {
@@ -141,47 +143,64 @@ exports.checkAnswer = async (req, res) => {
     const memberId = extractMemberId(req);
     const { quiz_id, answer, difficulty } = req.body;
 
-    if (!memberId) return fail(res, "사용자 인증 필요", null, 401);
-    if (!quiz_id || answer === undefined)
-      return fail(res, "quiz_id, answer 필요", null, 400);
+    if (!memberId) {
+      return fail(res, "사용자 인증 필요", null, 401);
+    }
 
     const [rows] = await db.promise().query(
       "SELECT quiz_id, answer, explanation FROM quizzes WHERE quiz_id = ?",
       [quiz_id]
     );
 
-    if (rows.length === 0) return fail(res, "퀴즈 없음", null, 404);
+    if (rows.length === 0) {
+      return fail(res, "퀴즈 없음", null, 404);
+    }
 
-    const correctAnswer  = Number(rows[0].answer);
+    const correctAnswer = Number(rows[0].answer);
     const selectedAnswer = Number(answer);
-    const isCorrect      = correctAnswer === selectedAnswer;
+    const isCorrect = correctAnswer === selectedAnswer;
 
-    // 난이도별 포인트 (없으면 기존 100/0 fallback)
-    const pts = POINT_TABLE[difficulty]?.[isCorrect ? "correct" : "wrong"] ??
-                (isCorrect ? 100 : 0);
+    const pts =
+      POINT_TABLE[difficulty]?.[isCorrect ? "correct" : "wrong"] ??
+      (isCorrect ? 100 : 0);
 
     /* 기록 저장 */
     let historySaved = false;
+
     try {
       await db.promise().query(
-        `INSERT INTO member_quiz_history
-         (member_id, quiz_id, selected_answer, is_correct)
-         VALUES (?, ?, ?, ?)`,
+        `
+        INSERT INTO member_quiz_history
+        (member_id, quiz_id, selected_answer, is_correct)
+        VALUES (?, ?, ?, ?)
+        `,
         [memberId, quiz_id, selectedAnswer, isCorrect ? 1 : 0]
       );
       historySaved = true;
     } catch (err) {
-      console.error("quiz history error =", err);
       if (!isTableMissingError(err)) {
         return fail(res, "퀴즈 기록 저장 실패", err.message);
       }
     }
 
-    /* 포인트 적용 — 0 미만으로 내려감 */
+    /* 포인트 지급 */
     await db.promise().query(
       `UPDATE members SET points = points + ? WHERE member_id = ?`,
       [pts, memberId]
     );
+
+    await db.promise().query(
+      `
+      INSERT INTO point_history (member_id, change_amount, reason)
+      VALUES (?, ?, ?)
+      `,
+      [memberId, pts, `quiz_${difficulty}_${isCorrect ? "correct" : "wrong"}`]
+    );
+
+    /* 업적 갱신 */
+    if (historySaved) {
+      await refreshMemberAchievements(memberId);
+    }
 
     const [memberRows] = await db.promise().query(
       `SELECT member_id, nickname, points FROM members WHERE member_id = ?`,
@@ -197,95 +216,103 @@ exports.checkAnswer = async (req, res) => {
       member: memberRows[0] || null,
     });
   } catch (err) {
-    console.error("checkAnswer error =", err);
     return fail(res, "정답 확인 실패", err.message);
   }
 };
 
 /* =========================
-   퍼펙트 보너스 지급
+  보너스
 ========================= */
 
 exports.bonusReward = async (req, res) => {
   try {
     const memberId = extractMemberId(req);
     const { difficulty } = req.body;
-    if (!memberId) return fail(res, "사용자 인증 필요", null, 401);
+
+    if (!memberId) {
+      return fail(res, "사용자 인증 필요", null, 401);
+    }
+
+    const bonusPts = PERFECT_BONUS[difficulty] ?? 5000;
 
     await db.promise().query(
       `UPDATE members SET points = points + ? WHERE member_id = ?`,
-      [PERFECT_BONUS[difficulty] ?? 5000, memberId]
+      [bonusPts, memberId]
     );
 
-    const [memberRows] = await db.promise().query(
-      `SELECT member_id, nickname, points FROM members WHERE member_id = ?`,
-      [memberId]
+    await db.promise().query(
+      `
+      INSERT INTO point_history (member_id, change_amount, reason)
+      VALUES (?, ?, ?)
+      `,
+      [memberId, bonusPts, `quiz_perfect_bonus_${difficulty}`]
     );
 
-    return success(res, "퍼펙트 보너스 지급 완료", {
-      bonusPoints: PERFECT_BONUS[difficulty] ?? 5000,
-      member: memberRows[0] || null,
-    });
+    await refreshMemberAchievements(memberId);
+
+    return success(res, "보너스 지급 완료", { bonusPoints: bonusPts });
   } catch (err) {
-    console.error("bonusReward error =", err);
     return fail(res, "보너스 지급 실패", err.message);
   }
 };
 
 /* =========================
-   퀘스트 현황
+  퀘스트
 ========================= */
 
 exports.getMyQuestStatus = async (req, res) => {
   try {
     const memberId = extractMemberId(req);
-    if (!memberId) return fail(res, "사용자 인증 필요", null, 401);
+
+    if (!memberId) {
+      return fail(res, "사용자 인증 필요", null, 401);
+    }
 
     const [totalQuizRows] = await db.promise().query(
-      "SELECT COUNT(*) AS totalCount FROM quizzes"
+      `SELECT COUNT(*) AS totalCount FROM quizzes`
     );
 
-    const [todaySolvedRows] = await db.promise().query(
-      `SELECT COUNT(*) AS todaySolved
-       FROM member_quiz_history
-       WHERE member_id = ? AND DATE(solved_at) = CURDATE()`,
+    const [todayRows] = await db.promise().query(
+      `
+      SELECT
+        COUNT(*) AS todaySolved,
+        SUM(CASE WHEN is_correct = 1 THEN 1 ELSE 0 END) AS todayCorrect
+      FROM member_quiz_history
+      WHERE member_id = ?
+        AND DATE(solved_at) = CURDATE()
+      `,
       [memberId]
     );
 
-    const [todayCorrectRows] = await db.promise().query(
-      `SELECT COUNT(*) AS todayCorrect
-       FROM member_quiz_history
-       WHERE member_id = ? AND is_correct = 1 AND DATE(solved_at) = CURDATE()`,
+    const [totalRows] = await db.promise().query(
+      `
+      SELECT
+        COUNT(*) AS totalSolved,
+        SUM(CASE WHEN is_correct = 1 THEN 1 ELSE 0 END) AS totalCorrect
+      FROM member_quiz_history
+      WHERE member_id = ?
+      `,
       [memberId]
     );
 
-    const [totalSolvedRows] = await db.promise().query(
-      `SELECT COUNT(*) AS totalSolved FROM member_quiz_history WHERE member_id = ?`,
-      [memberId]
-    );
+    const totalCount = Number(totalQuizRows[0]?.totalCount || 0);
+    const todaySolved = Number(todayRows[0]?.todaySolved || 0);
+    const todayCorrect = Number(todayRows[0]?.todayCorrect || 0);
+    const totalSolved = Number(totalRows[0]?.totalSolved || 0);
+    const totalCorrect = Number(totalRows[0]?.totalCorrect || 0);
 
-    const [accuracyRows] = await db.promise().query(
-      `SELECT ROUND(
-         (SUM(CASE WHEN is_correct = 1 THEN 1 ELSE 0 END) / NULLIF(COUNT(*), 0)) * 100,
-         2
-       ) AS accuracy
-       FROM member_quiz_history WHERE member_id = ?`,
-      [memberId]
-    );
-
-    const totalCount   = Number(totalQuizRows[0].totalCount   || 0);
-    const todaySolved  = Number(todaySolvedRows[0].todaySolved  || 0);
-    const todayCorrect = Number(todayCorrectRows[0].todayCorrect || 0);
-    const totalSolved  = Number(totalSolvedRows[0].totalSolved  || 0);
-    const accuracy     = Number(accuracyRows[0].accuracy        || 0);
-
-    const dailyGoal    = 3;
+    const dailyGoal = 3;
     const dailyPercent = Math.min(
       100,
-      Number(((todaySolved / dailyGoal) * 100).toFixed(2))
+      Number((((todaySolved || 0) / dailyGoal) * 100).toFixed(2))
     );
 
-    return success(res, "퀘스트 현황 조회 성공", {
+    const accuracy =
+      totalSolved > 0
+        ? Number(((totalCorrect / totalSolved) * 100).toFixed(2))
+        : 0;
+
+    return success(res, "퀘스트 조회 성공", {
       todaySolved,
       todayCorrect,
       totalSolved,
@@ -295,7 +322,105 @@ exports.getMyQuestStatus = async (req, res) => {
       dailyPercent,
     });
   } catch (err) {
-    console.error("getMyQuestStatus error =", err);
     return fail(res, "퀘스트 조회 실패", err.message);
+  }
+};
+
+/* ==========================================
+  OX 퀴즈
+========================================== */
+
+let yfInstance = null;
+
+async function getYahooFinance() {
+  if (yfInstance) return yfInstance;
+  const mod = await import("yahoo-finance2");
+  const YahooFinance = mod.default || mod;
+  yfInstance =
+    typeof YahooFinance === "function"
+      ? new YahooFinance()
+      : YahooFinance;
+  return yfInstance;
+}
+
+const POPULAR_STOCKS = [
+  { code: "005930", name: "삼성전자" },
+  { code: "000660", name: "SK하이닉스" },
+];
+
+const activeOxQuizzes = new Map();
+const oxParticipationLog = new Map();
+
+exports.getDailyOxQuiz = async (req, res) => {
+  try {
+    const memberId = extractMemberId(req);
+
+    if (!memberId) {
+      return fail(res, "사용자 인증 필요", null, 401);
+    }
+
+    const stock =
+      POPULAR_STOCKS[Math.floor(Math.random() * POPULAR_STOCKS.length)];
+
+    const yf = await getYahooFinance();
+    await yf.quote(`${stock.code}.KS`);
+
+    const isUp = Math.random() > 0.5;
+    const answer = isUp ? "O" : "X";
+
+    activeOxQuizzes.set(memberId, { answer });
+    oxParticipationLog.set(memberId, {
+      ...(oxParticipationLog.get(memberId) || {}),
+      lastQuizAt: new Date(),
+      stockCode: stock.code,
+    });
+
+    return success(res, "OX 퀴즈", {
+      question: `${stock.name} 상승 여부 맞추기`,
+    });
+  } catch (err) {
+    return fail(res, "OX 퀴즈 실패", err.message);
+  }
+};
+
+exports.submitOxQuiz = async (req, res) => {
+  try {
+    const memberId = extractMemberId(req);
+    const { userAnswer } = req.body;
+
+    if (!memberId) {
+      return fail(res, "사용자 인증 필요", null, 401);
+    }
+
+    const quiz = activeOxQuizzes.get(memberId);
+    if (!quiz) {
+      return fail(res, "퀴즈 없음");
+    }
+
+    const isCorrect = quiz.answer === userAnswer;
+    const pts = isCorrect ? 500 : 100;
+
+    await db.promise().query(
+      `UPDATE members SET points = points + ? WHERE member_id = ?`,
+      [pts, memberId]
+    );
+
+    await db.promise().query(
+      `
+      INSERT INTO point_history (member_id, change_amount, reason)
+      VALUES (?, ?, ?)
+      `,
+      [memberId, pts, isCorrect ? "ox_quiz_correct" : "ox_quiz_wrong"]
+    );
+
+    await refreshMemberAchievements(memberId);
+    activeOxQuizzes.delete(memberId);
+
+    return success(res, "OX 결과", {
+      isCorrect,
+      rewardPoints: pts,
+    });
+  } catch (err) {
+    return fail(res, "OX 제출 실패", err.message);
   }
 };

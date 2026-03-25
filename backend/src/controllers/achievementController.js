@@ -1,66 +1,118 @@
 const db = require("../../config/db");
+const achievementService = require("../services/achievementService");
 
-function success(res, message, data = null, status = 200) {
-  return res.status(status).json({ success: true, message, data });
+function success(res, message, data = null) {
+  return res.json({ success: true, message, data });
 }
 
-function fail(res, message, error = null, status = 500) {
-  return res.status(status).json({ success: false, message, error });
+function fail(res, message, error = null) {
+  return res.status(500).json({ success: false, message, error });
 }
 
+/* 전체 업적 */
 exports.getAllAchievements = async (req, res) => {
   try {
-    const { item_type, category } = req.query;
-    let sql = `SELECT ach_id, item_type, category, name, description, reward_point FROM achievements`;
-    const params = [];
-    const conditions = [];
-
-    if (item_type) {
-      conditions.push("item_type = ?");
-      params.push(item_type);
-    }
-    if (category) {
-      conditions.push("category = ?");
-      params.push(category);
-    }
-    if (conditions.length > 0) {
-      sql += " WHERE " + conditions.join(" AND ");
-    }
-    sql += " ORDER BY ach_id ASC";
-
-    const [rows] = await db.promise().query(sql, params);
-    return success(res, "업적/칭호 조회 성공", rows);
+    const [rows] = await db.promise().query(
+      `SELECT * FROM achievements ORDER BY ach_id ASC`
+    );
+    return success(res, "전체 업적 조회", rows);
   } catch (err) {
-    console.error("업적/칭호 조회 오류:", err);
-    return fail(res, "업적/칭호 조회 실패", err.message);
+    return fail(res, "실패", err.message);
   }
 };
 
+/* 업적 상세 */
 exports.getAchievementById = async (req, res) => {
   try {
-    const { id } = req.params;
-    const sql = `SELECT ach_id, item_type, category, name, description, reward_point FROM achievements WHERE ach_id = ?`;
-
-    const [rows] = await db.promise().query(sql, [id]);
-
-    if (rows.length === 0) {
-      return fail(res, "해당 업적/칭호를 찾을 수 없습니다.", null, 404);
-    }
-
-    return success(res, "업적/칭호 상세 조회 성공", rows[0]);
+    const [rows] = await db.promise().query(
+      `SELECT * FROM achievements WHERE ach_id = ?`,
+      [req.params.id]
+    );
+    return success(res, "조회 성공", rows[0]);
   } catch (err) {
-    console.error("업적/칭호 상세 조회 오류:", err);
-    return fail(res, "업적/칭호 상세 조회 실패", err.message);
+    return fail(res, "실패", err.message);
   }
 };
 
+/* 내 업적 */
 exports.getMyAchievements = async (req, res) => {
   try {
-    return success(res, "내 업적 조회 성공", {
-      member_id: req.user.member_id,
-      achievements: [],
+    const memberId = req.user.member_id;
+
+    const [rows] = await db.promise().query(
+      `
+      SELECT
+        a.*,
+        ma.obtained_at,
+        CASE
+          WHEN ma.ach_id IS NOT NULL THEN 1
+          ELSE 0
+        END AS is_obtained
+      FROM achievements a
+      LEFT JOIN member_achievements ma
+        ON a.ach_id = ma.ach_id
+       AND ma.member_id = ?
+      WHERE a.ach_id NOT IN (21, 22)
+      ORDER BY a.ach_id ASC
+      `,
+      [memberId]
+    );
+
+    return success(res, "내 업적 조회", {
+      achievements: rows,
+      totalCount: rows.length,
+      obtainedCount: rows.filter((row) => Number(row.is_obtained) === 1).length,
     });
   } catch (err) {
-    return fail(res, "내 업적 조회 실패", err.message);
+    return fail(res, "실패", err.message);
   }
+};
+
+/* 최근 업적 */
+exports.getRecentAchievements = async (req, res) => {
+  try {
+    const memberId = req.user.member_id;
+
+    const [rows] = await db.promise().query(
+      `
+      SELECT a.*, ma.obtained_at
+      FROM member_achievements ma
+      JOIN achievements a ON ma.ach_id = a.ach_id
+      WHERE ma.member_id = ?
+      ORDER BY ma.obtained_at DESC
+      LIMIT 3
+      `,
+      [memberId]
+    );
+
+    return success(res, "최근 업적", rows);
+  } catch (err) {
+    return fail(res, "실패", err.message);
+  }
+};
+
+/* 칭호 */
+exports.getMyTitles = async (req, res) => {
+  const data = await achievementService.getMyTitles(req.user.member_id);
+  return success(res, "칭호", data);
+};
+
+exports.getEquippedTitle = async (req, res) => {
+  const data = await achievementService.getEquippedTitle(req.user.member_id);
+  return success(res, "장착 칭호", data);
+};
+
+exports.equipTitle = async (req, res) => {
+  const data = await achievementService.equipTitle(
+    req.user.member_id,
+    req.body.ach_id
+  );
+  return success(res, "장착 완료", data);
+};
+
+exports.checkAchievements = async (req, res) => {
+  const data = await achievementService.checkAndGrantAchievements(
+    req.user.member_id
+  );
+  return success(res, "체크 완료", data);
 };

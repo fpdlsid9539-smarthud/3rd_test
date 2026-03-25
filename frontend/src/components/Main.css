@@ -1,9 +1,13 @@
+body {
+  background: var(--bg);
+}
+
 .main-body {
   min-height: 100vh;
   display: grid;
-  grid-template-columns: minmax(220px, 280px) minmax(0, 1fr) minmax(240px, 320px);
-  gap: 2rem;
-  align-items: start;
+  grid-template-columns: var(--nav-width, 280px) minmax(0, 1fr) minmax(220px, 280px);
+  gap: 1.5rem;
+  transition: grid-template-columns 0.4s cubic-bezier(0.4, 0, 0.2, 1);
 }
 
 .navigation-area,

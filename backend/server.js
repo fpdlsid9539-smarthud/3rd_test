@@ -12,6 +12,8 @@ const educationRoutes = require("./src/routes/educationRoutes");
 const isrRoutes = require("./src/routes/isrRoutes");
 const rankingRoutes = require("./src/routes/rankingRoutes");
 const billingRoutes = require("./src/routes/billingRoutes");
+const pointHistoryRoutes = require("./src/routes/pointHistoryRoutes");
+const faqRoutes = require('./src/routes/faqRoutes')
 const app = express();
 
 // CORS: 로컬 기본값 + .env 의 FRONTEND_URL 을 허용 origin 에 추가
@@ -37,6 +39,7 @@ app.use(
 app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
 
+app.use('/api/faq', faqRoutes)
 app.use("/", router);
 app.use("/api/auth", authRoutes);
 app.use("/api/stocks", stockRoutes);
@@ -46,6 +49,7 @@ app.use("/api", achievementRoutes);
 app.use("/api/isr", isrRoutes);
 app.use("/api/ranking", rankingRoutes);
 app.use("/api/billing", billingRoutes);
+app.use("/api/points", pointHistoryRoutes);
 app.get("/__whoami", (req, res) => {
   res.json({
     ok: true,

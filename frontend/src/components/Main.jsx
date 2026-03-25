@@ -8,11 +8,35 @@ import Quiz from './QuizPage'
 import Stocks from './Stocks'
 import Ranking from './Ranking'
 import Billing from './Billing'
+import FAQAdmin from './FAQADMIN'
+import FAQPage from './FAQPage'
 
 const Main = () => {
-  const [activeMenu, setActiveMenu] = useState('Dashboard')
+  const VALID_MENUS = [
+    'Dashboard',
+    'Education',
+    'Quiz',
+    'Stocks',
+    'Ranking',
+    'Billing',
+    'FAQ',
+    'FAQAdmin',
+  ]
+
+  const PROTECTED_MENUS = ['Quiz', 'Stocks', 'Billing']
+
+  const getInitialMenu = () => {
+    const hash = window.location.hash.replace('#', '')
+    return VALID_MENUS.includes(hash) ? hash : 'Dashboard'
+  }
+
+  const [activeMenu, setActiveMenu] = useState(getInitialMenu)
   const [isLoggedIn, setIsLoggedIn] = useState(false)
   const [membershipType, setMembershipType] = useState(null)
+  const [navCollapsed, setNavCollapsed] = useState(
+    () => localStorage.getItem('nav_collapsed') === 'true'
+  )
+  const [role, setRole] = useState('user')
 
   useEffect(() => {
     const params = new URLSearchParams(window.location.search)
@@ -20,7 +44,7 @@ const Main = () => {
 
     if (tokenFromUrl) {
       localStorage.setItem('token', tokenFromUrl)
-      const cleanUrl = window.location.origin + window.location.pathname
+      const cleanUrl = window.location.origin + window.location.pathname + window.location.hash
       window.history.replaceState({}, document.title, cleanUrl)
     }
 
@@ -28,12 +52,42 @@ const Main = () => {
     const loggedIn = !!token
     setIsLoggedIn(loggedIn)
 
+    const initialHash = window.location.hash.replace('#', '')
+    if (PROTECTED_MENUS.includes(initialHash) && !loggedIn) {
+      window.location.hash = 'Dashboard'
+      setActiveMenu('Dashboard')
+    }
+
     if (loggedIn) {
       fetchMembership(token)
+      fetchRole(token)
     } else {
       setMembershipType(null)
+      setRole('user')
     }
-  }, [])
+
+    const handleHashChange = () => {
+      const hash = window.location.hash.replace('#', '')
+      if (!VALID_MENUS.includes(hash)) return
+
+      const currentLoggedIn = !!localStorage.getItem('token')
+
+      if (PROTECTED_MENUS.includes(hash) && !currentLoggedIn) {
+        window.location.hash = 'Dashboard'
+        return
+      }
+
+      if (hash === 'FAQAdmin' && role !== 'admin') {
+        window.location.hash = 'Dashboard'
+        return
+      }
+
+      setActiveMenu(hash)
+    }
+
+    window.addEventListener('hashchange', handleHashChange)
+    return () => window.removeEventListener('hashchange', handleHashChange)
+  }, [role])
 
   const fetchMembership = async (token) => {
     try {
@@ -58,19 +112,52 @@ const Main = () => {
     }
   }
 
-  const handleMenuChange = (menu) => {
-    const protectedMenus = ['Quiz', 'Stocks', 'Billing']
+  const fetchRole = async (token) => {
+    try {
+      const res = await fetch('http://localhost:5000/api/auth/me', {
+        headers: {
+          Authorization: `Bearer ${token}`,
+        },
+      })
 
+      const data = await res.json()
+      const userRole = data?.data?.role || 'user'
+      setRole(userRole)
+    } catch (err) {
+      console.error('role 조회 실패:', err)
+      setRole('user')
+    }
+  }
+
+  const handleMenuChange = (menu) => {
     const token = localStorage.getItem('token')
     const loggedIn = !!token
     setIsLoggedIn(loggedIn)
 
-    if (protectedMenus.includes(menu) && !loggedIn) {
+    if (PROTECTED_MENUS.includes(menu) && !loggedIn) {
       alert('로그인 후 이용할 수 있습니다.')
+      window.location.hash = 'Dashboard'
       setActiveMenu('Dashboard')
       return
     }
 
+    if (menu === 'FAQAdmin') {
+      if (!loggedIn) {
+        alert('로그인 후 이용할 수 있습니다.')
+        window.location.hash = 'Dashboard'
+        setActiveMenu('Dashboard')
+        return
+      }
+
+      if (role !== 'admin') {
+        alert('관리자만 접근할 수 있습니다.')
+        window.location.hash = 'Dashboard'
+        setActiveMenu('Dashboard')
+        return
+      }
+    }
+
+    window.location.hash = menu
     setActiveMenu(menu)
     window.scrollTo({ top: 0, behavior: 'smooth' })
   }
@@ -97,18 +184,25 @@ const Main = () => {
             setMembershipType={setMembershipType}
           />
         )
+      case 'FAQ':
+        return <FAQPage />
+      case 'FAQAdmin':
+        return loggedIn && role === 'admin' ? <FAQAdmin /> : <Dashboard />
       default:
         return <Dashboard />
     }
   }
 
   return (
-    <div className='main-body'>
+    <div className='main-body' style={{ '--nav-width': navCollapsed ? '5.5rem' : '280px' }}>
       <aside className='navigation-area'>
         <Navigation
           setActiveMenu={handleMenuChange}
           activeMenu={activeMenu}
           membershipType={membershipType}
+          collapsed={navCollapsed}
+          setCollapsed={setNavCollapsed}
+          role={role}
         />
       </aside>
 
