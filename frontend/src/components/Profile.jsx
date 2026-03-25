@@ -456,7 +456,7 @@ const Profile = () => {
 
   const membershipLabel = isPremium ? '👑' : 'Free'
 
-  const openEdit = () => {
+const openEdit = () => {
     setEditNickname(member?.nickname || '')
     setEditPreviewUrl(null)
     setSaveError('')
@@ -466,20 +466,13 @@ const Profile = () => {
 
   const closeEdit = () => {
     setEditMode(false)
-    setSaveError('')
-    if (editPreviewUrl) {
-      URL.revokeObjectURL(editPreviewUrl)
-    }
     setEditPreviewUrl(null)
+    setSaveError('')
   }
 
   const handleImageChange = (e) => {
     const file = e.target.files?.[0]
     if (!file) return
-
-    if (editPreviewUrl) {
-      URL.revokeObjectURL(editPreviewUrl)
-    }
     setEditPreviewUrl(URL.createObjectURL(file))
   }
 
@@ -489,33 +482,30 @@ const Profile = () => {
       nicknameInputRef.current?.focus()
       return
     }
-
     setSaving(true)
     setSaveError('')
-
     try {
-      if (fileInputRef.current?.files?.[0]) {
+      // Upload image first if one was selected
+      if (fileInputRef.current?.files[0]) {
         const formData = new FormData()
         formData.append('profile_image', fileInputRef.current.files[0])
-
-        await api.patch('/api/auth/me/image', formData, {
-          headers: {
-            Authorization: `Bearer ${localStorage.getItem('token')}`,
-            'Content-Type': 'multipart/form-data',
-          },
+        await fetch(`http://localhost:5000/api/auth/me/image`, {
+          method: 'PATCH',
+          headers: { Authorization: `Bearer ${localStorage.getItem('token')}` },
+          body: formData, // multipart — do NOT set Content-Type manually
         })
       }
 
-      await api.patch('/api/auth/me', { nickname: editNickname.trim() })
-      await loadProfile()
-
+      const data = await api.patch('/api/auth/me', { nickname: editNickname.trim() })
+      setMember(prev => ({
+        ...prev,
+        ...data.data.member,
+        profile_image2: editPreviewUrl || data.data.member.profile_image2,
+      }))
       setEditMode(false)
-      if (editPreviewUrl) {
-        URL.revokeObjectURL(editPreviewUrl)
-      }
       setEditPreviewUrl(null)
     } catch (err) {
-      setSaveError(err?.response?.data?.message || err.message || '저장 실패')
+      setSaveError(err.message)
     } finally {
       setSaving(false)
     }
@@ -671,29 +661,6 @@ const Profile = () => {
             </button>
           </div>
 
-          <div className='profile-stock title-summary-card'>
-            <div className='achievement-title-row'>
-              <h2>현재 칭호</h2>
-            </div>
-
-            <div className='title-current-box'>
-              <div className='title-current-label'>장착 중</div>
-
-              <div className='title-current-name-row'>
-                <div className='title-current-name'>
-                  {equippedTitle?.name || '칭호 없음'}
-                </div>
-
-                <div className='isr-tooltip-wrap'>
-                  <span className='isr-tooltip-icon'>ⓘ</span>
-                  <span className='isr-tooltip-text'>
-                    {getTooltipText(equippedTitle, '칭호 설명이 없습니다.')}
-                  </span>
-                </div>
-              </div>
-            </div>
-          </div>
-
           <div className='profile-stock'>
             <div className='achievement-title-row'>
               <h2>칭호 선택</h2>
@@ -711,16 +678,13 @@ const Profile = () => {
 
                   return (
                     <div className='title-item' key={item.ach_id}>
+                      <div className='title-item-tooltip'>
+                        {getTooltipText(item, '칭호 설명이 없습니다.')}
+                      </div>
+
                       <div className='title-item-left'>
                         <div className='title-item-name-row'>
                           <span className='title-item-name'>{item.name}</span>
-
-                          <div className='isr-tooltip-wrap'>
-                            <span className='isr-tooltip-icon'>ⓘ</span>
-                            <span className='isr-tooltip-text'>
-                              {getTooltipText(item, '칭호 설명이 없습니다.')}
-                            </span>
-                          </div>
                         </div>
                       </div>
 

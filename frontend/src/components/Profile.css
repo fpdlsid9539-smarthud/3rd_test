@@ -3,9 +3,10 @@
 .profile {
   position: sticky;
   top: 0;
-  height: 100vh;
-  padding: 1rem 0.5rem;
-  overflow-y: auto;
+  height: auto;
+  min-height: 100vh;
+  padding: 1rem 0.5rem 6rem;
+  overflow-y: visible;
   overflow-x: visible;
   background-color: var(--bg);
   border-left: 1px solid var(--border);
@@ -15,7 +16,7 @@
 
 .profile-content {
   width: 100%;
-  min-height: 100%;
+  min-height: auto;
   box-sizing: border-box;
   overflow: visible;
   display: flex;
@@ -23,7 +24,7 @@
   gap: 0.5rem;
   position: relative;
   z-index: 30;
-  padding-bottom: 4rem;
+  padding-bottom: 8rem;
 }
 
 .profile-set {
@@ -209,6 +210,7 @@
 .profile-name {
   font-size: 1.5rem;
   font-weight: 600;
+  margin: 0;
 }
 
 .profile-stats {
@@ -223,6 +225,7 @@
   width: 1px;
   background-color: var(--border);
   border: none;
+  margin: 0;
 }
 
 .stats-description {
@@ -230,6 +233,7 @@
   flex-direction: column;
   justify-content: center;
   align-items: center;
+  gap: 0.15rem;
   font-size: 1.5rem;
   font-weight: 500;
   color: var(--primary);
@@ -259,6 +263,7 @@
 .description-slave {
   padding: 0 0.5rem;
   text-align: end;
+  margin: 0;
 }
 
 .description-slave span {
@@ -304,6 +309,7 @@
 }
 
 .profile-stock h2 {
+  margin: 0;
   font-size: 1.125rem;
   font-weight: 600;
 }
@@ -440,6 +446,7 @@
   display: flex;
   justify-content: space-between;
   align-items: center;
+  gap: 0.75rem;
   margin-bottom: 12px;
 }
 
@@ -530,6 +537,7 @@
   font-weight: 700;
   cursor: pointer;
   padding: 0;
+  flex-shrink: 0;
 }
 
 .achievement-more-btn:hover,
@@ -643,6 +651,7 @@
   font-size: 0.9rem;
   font-weight: 700;
   color: var(--primary);
+  flex-shrink: 0;
 }
 
 .achievement-empty-block {
@@ -661,12 +670,18 @@
 
 .achievement-recent-card {
   min-width: 0;
-  padding: 0.5rem 0.25rem;
+  min-height: 78px;
+  padding: 0.75rem 0.4rem;
+  border: 1px solid var(--border);
+  border-radius: 0.85rem;
+  background: color-mix(in srgb, var(--bg) 88%, white 12%);
   display: flex;
   flex-direction: column;
+  justify-content: center;
   align-items: center;
   gap: 0.45rem;
   text-align: center;
+  box-sizing: border-box;
 }
 
 .achievement-recent-img {
@@ -695,12 +710,14 @@
 
 .achievement-grid-card {
   min-width: 0;
+  min-height: 110px;
   padding: 1rem 0.8rem;
   border: 1px solid var(--border);
   border-radius: 0.9rem;
   background: color-mix(in srgb, var(--bg) 88%, white 12%);
   display: flex;
   flex-direction: column;
+  justify-content: center;
   align-items: center;
   gap: 0.75rem;
   text-align: center;
@@ -740,24 +757,26 @@
 .achievement-progress-tooltip-grid {
   display: grid;
   grid-template-columns: repeat(auto-fill, minmax(38px, 1fr));
-  gap: 0.5rem; /* 삐져나가지 않게 간격 살짝 축소 */
+  gap: 0.5rem;
   margin-top: 0.5rem;
   width: 100%;
   box-sizing: border-box;
 }
 
-/* 🟢 hover 대상이 되는 트리거 요소 (말풍선의 위치 기준점) */
 .achievement-trigger-item {
-  position: relative; /* 🟢 핵심: 말풍선의 절대 위치 기준점이 됩니다. */
-  cursor: help; /* 물음표 커서로 상호작용성 암시 */
+  position: relative;
+  cursor: help;
   box-sizing: border-box;
   z-index: 1;
 }
 
-/* 🟢 평소에 보여줄 초소형 아이콘 (또는 이름 꼬리표) */
+.achievement-trigger-item:hover {
+  z-index: 30;
+}
+
 .achievement-mini-icon {
-  width: 100%; /* 고정 너비(40px) 삭제하고 100%로 꽉 차게 변경 */
-  aspect-ratio: 1; /* 너비에 맞춰 높이도 자동으로 정사각형 유지 */
+  width: 100%;
+  aspect-ratio: 1;
   height: auto;
   background-color: color-mix(in srgb, var(--bg) 95%, black 5%);
   border: 1px solid var(--border);
@@ -765,60 +784,51 @@
   display: flex;
   justify-content: center;
   align-items: center;
-  font-size: 0.9rem; /* 좁아져도 안 잘리게 폰트 살짝 축소 */
+  font-size: 0.9rem;
   font-weight: 800;
   color: var(--text);
   box-shadow: 0 2px 5px rgba(0, 0, 0, 0.05);
   transition: all 0.2s ease;
   box-sizing: border-box;
+  user-select: none;
 }
 
-/* hover 시 아이콘 강조 효과 */
 .achievement-trigger-item:hover .achievement-mini-icon {
   background-color: var(--border);
-  transform: scale(1.1);
-  z-index: 9999;
+  transform: scale(1.08);
 }
 
-/* ========================================================
-   CSS 기반 말풍선 (Tooltip) 구현
-   ======================================================== */
-
-/* 🟢 평소에 숨겨두는 말풍선 본체 */
 .achievement-speech-bubble {
   position: absolute;
-  bottom: 120%; 
-  right: -5px; /* 🟢 중앙 정렬 대신 오른쪽 모서리에 맞춥니다 */
+  bottom: 120%;
+  right: -5px;
   left: auto;
-  transform: translateY(10px); /* 🟢 translateX(-50%) 삭제 */
-  width: 220px; /* 🟢 너비도 살짝 다이어트해서 가독성 업 */
-  background: rgba(255, 255, 255, 0.96); 
+  transform: translateY(10px);
+  width: 220px;
+  background: rgba(255, 255, 255, 0.96);
   border-radius: 0.8rem;
   box-shadow: 0 8px 25px rgba(0, 0, 0, 0.12);
   padding: 1rem;
   z-index: 100;
   border: 1px solid rgba(0, 0, 0, 0.05);
-  
-  visibility: hidden; 
+  visibility: hidden;
   opacity: 0;
   pointer-events: none;
   transition: opacity 0.3s ease, transform 0.3s ease;
   backdrop-filter: blur(5px);
 }
 
-/* 🟢 [핵심] hover 시 말풍선 나타나게 하는 로직 */
 .achievement-trigger-item:hover .achievement-speech-bubble {
   visibility: visible;
   opacity: 1;
-  transform: translateY(0); /* 제자리로 올라오면서 나타남 */
-  pointer-events: auto; /* 나타나면 상호작용 가능 */
+  transform: translateY(0);
+  pointer-events: auto;
 }
 
-/* 말풍선 꼬리 (화살표) 구현 */
 .bubble-arrow {
   position: absolute;
   top: 100%;
-  right : 15px;
+  right: 15px;
   left: auto;
   transform: none;
   width: 15px;
@@ -829,16 +839,15 @@
 .bubble-arrow::after {
   content: "";
   position: absolute;
-  top: -8px; /* 위로 살짝 올려서 사각형이 꼬리처럼 보이게 함 */
+  top: -8px;
   left: 0;
   width: 15px;
   height: 15px;
-  background: rgba(255, 255, 255, 0.96); /* 말풍선과 같은 배경색 */
-  transform: rotate(45deg); /* 사각형을 45도 돌려서 삼각형 꼬리 만듦 */
-  box-shadow: 1px 1px 1px rgba(0, 0, 0, 0.02); /* 살짝 그림자 추가 */
+  background: rgba(255, 255, 255, 0.96);
+  transform: rotate(45deg);
+  box-shadow: 1px 1px 1px rgba(0, 0, 0, 0.02);
 }
 
-/* 말풍선 내부 콘텐츠 스타일 */
 .bubble-content {
   display: flex;
   flex-direction: column;
@@ -857,7 +866,8 @@
   color: #666666;
   margin: 0;
   line-height: 1.4;
-  /* 가독성을 위해 긴 글은 적절히 줄바꿈 처리 */
+  word-break: keep-all;
+  overflow-wrap: break-word;
 }
 
 .achievement-progress-body {
@@ -938,60 +948,8 @@
   visibility: visible;
 }
 
-
 .profile-title-badge > span {
   white-space: nowrap;
-}
-
-.title-summary-card {
-  gap: 0.85rem;
-}
-
-.title-current-box {
-  display: flex;
-  flex-direction: column;
-  gap: 0.45rem;
-  padding: 1rem;
-  border-radius: 0.95rem;
-  border: 1px solid var(--border);
-  background: color-mix(in srgb, var(--primary) 8%, var(--bg));
-  overflow: visible;
-}
-
-.title-current-label {
-  font-size: 0.78rem;
-  font-weight: 700;
-  color: var(--primary);
-}
-
-.title-current-name-row {
-  display: inline-flex;
-  align-items: center;
-  gap: 0.35rem;
-  flex-wrap: nowrap;
-  min-width: 0;
-  overflow: visible;
-}
-
-.title-current-name {
-  font-size: 1.05rem;
-  font-weight: 800;
-  color: var(--text);
-  line-height: 1.35;
-  word-break: keep-all;
-  display: inline-flex;
-  align-items: center;
-  gap: 0.35rem;
-  flex-wrap: nowrap;
-  min-width: 0;
-}
-
-.title-current-desc {
-  margin: 0;
-  font-size: 0.88rem;
-  line-height: 1.45;
-  color: var(--text-muted, #777);
-  word-break: keep-all;
 }
 
 .title-list {
@@ -1013,6 +971,50 @@
   background: color-mix(in srgb, var(--bg) 88%, white 12%);
   overflow: visible;
   z-index: 1;
+  cursor: pointer;
+  transition: border-color 0.2s ease, box-shadow 0.2s ease;
+}
+
+.title-item:hover {
+  border-color: color-mix(in srgb, var(--primary) 35%, var(--border));
+  box-shadow: 0 6px 18px rgba(0, 0, 0, 0.06);
+  z-index: 20;
+}
+
+.title-item-tooltip {
+  position: absolute;
+  right: 0;
+  top: auto;
+  bottom: calc(100% + 10px);
+  min-width: 180px;
+  max-width: 240px;
+  padding: 0.65rem 0.8rem;
+  border-radius: 0.75rem;
+  background: #111827;
+  color: #fff;
+  font-size: 0.78rem;
+  line-height: 1.45;
+  text-align: left;
+  white-space: normal;
+  word-break: keep-all;
+  overflow-wrap: break-word;
+  box-shadow: 0 12px 24px rgba(0, 0, 0, 0.18);
+  opacity: 0;
+  visibility: hidden;
+  pointer-events: none;
+  transition: opacity 0.18s ease, visibility 0.18s ease;
+  z-index: 10001;
+}
+
+.title-item-tooltip::before {
+  content: "";
+  position: absolute;
+  right: 10px;
+  bottom: -6px;
+  width: 12px;
+  height: 12px;
+  background: #111827;
+  transform: rotate(45deg);
 }
 
 .title-item-left {
@@ -1024,9 +1026,9 @@
   overflow: visible;
 }
 
-.title-item:hover,
-.title-item:has(.isr-tooltip-wrap:hover) {
-  z-index: 9999;
+.title-item:hover .title-item-tooltip {
+  opacity: 1;
+  visibility: visible;
 }
 
 .title-item-name-row {
@@ -1112,6 +1114,11 @@
   vertical-align: baseline;
 }
 
+.clickable-points:hover {
+  color: #2563eb !important;
+  border-bottom-color: rgba(37, 99, 235, 0.6);
+}
+
 .clickable-points span {
   color: #3b82f6 !important;
 }
@@ -1136,7 +1143,6 @@
   background: color-mix(in srgb, var(--bg) 88%, white 12%);
 }
 
-/* tooltip */
 .isr-tooltip-wrap {
   position: relative;
   display: inline-flex;
@@ -1210,11 +1216,23 @@
   z-index: 10001;
 }
 
+.profile-content,
+.profile-stock,
+.title-list,
+.title-item,
+.title-item-left,
+.title-item-name-row {
+  overflow: visible !important;
+}
+
 @media (max-width: 420px) {
   .achievement-grid-full {
     grid-template-columns: repeat(2, minmax(0, 1fr));
   }
 
+  .achievement-recent-grid {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
 
   .point-history-item {
     padding: 12px 14px;
@@ -1228,40 +1246,42 @@
 
   .title-item {
     align-items: flex-start;
+    flex-direction: column;
   }
 
   .title-equip-btn {
+    width: 100%;
     min-width: 76px;
     padding: 0.5rem 0.7rem;
   }
 
   .achievement-progress-tooltip-grid {
-    grid-template-columns: repeat(3, 1fr); 
+    grid-template-columns: repeat(3, 1fr);
     gap: 0.6rem;
   }
 
-  /* 🟢 모바일에서는 hover 말풍선 기능을 끕니다 (오작동 방지) */
   .achievement-speech-bubble {
     display: none !important;
   }
 
-  /* 🟢 아이콘을 다시 작은 카드로 변경해서 보여줍니다. */
   .achievement-mini-icon {
     width: 100%;
     height: auto;
     border-radius: 0.6rem;
     padding: 0.6rem;
     font-size: 0.9rem;
-    aspect-ratio: 1; /* 정사각형 유지 */
+    aspect-ratio: 1;
   }
-}
 
-.profile-content,
-.profile-stock,
-.title-list,
-.title-item,
-.title-item-left,
-.title-item-name-row,
-.isr-tooltip-wrap {
-  overflow: visible !important;
+  .profile-title-text-tooltip,
+  .title-item-tooltip {
+    right: 50%;
+    left: auto;
+    transform: translateX(50%);
+    max-width: min(240px, calc(100vw - 2rem));
+  }
+
+  .title-item-tooltip::before {
+    right: calc(50% - 6px);
+  }
 }

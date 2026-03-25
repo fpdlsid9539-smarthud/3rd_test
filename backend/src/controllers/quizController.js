@@ -582,3 +582,71 @@ exports.submitOxQuiz = async (req, res) => {
     return fail(res, "OX 제출 실패", err.message);
   }
 };
+
+/* =========================
+  퀴즈 명예의 전당 랭킹 조회
+========================= */
+exports.getQuizRanking = async (req, res) => {
+  try {
+    const { type = 'accuracy' } = req.query; // 'accuracy', 'total', 'weekly'
+    let sql = '';
+
+    if (type === 'total') {
+      // 1. 다득점 TOP (정답을 가장 많이 맞춘 순)
+      sql = `
+        SELECT
+          m.member_id AS id,
+          m.nickname,
+          m.profile_image AS profileImage,
+          SUM(CASE WHEN ph.reason LIKE '%correct%' THEN 1 ELSE 0 END) AS score
+        FROM members m
+        JOIN point_history ph ON m.member_id = ph.member_id
+        WHERE ph.reason LIKE '%quiz%'
+        GROUP BY m.member_id
+        HAVING score > 0
+        ORDER BY score DESC, m.member_id ASC
+        LIMIT 5
+      `;
+    } else if (type === 'weekly') {
+      // 2. 주간 TOP (최근 7일 내 정답률, 최소 3문제 이상)
+      sql = `
+        SELECT
+          m.member_id AS id,
+          m.nickname,
+          m.profile_image AS profileImage,
+          COUNT(ph.history_id) AS total_cnt,
+          (SUM(CASE WHEN ph.reason LIKE '%correct%' THEN 1 ELSE 0 END) / COUNT(ph.history_id) * 100) AS score
+        FROM members m
+        JOIN point_history ph ON m.member_id = ph.member_id
+        WHERE ph.reason LIKE '%quiz%' AND ph.created_at >= DATE_SUB(NOW(), INTERVAL 7 DAY)
+        GROUP BY m.member_id
+        HAVING total_cnt >= 3
+        ORDER BY score DESC, total_cnt DESC
+        LIMIT 5
+      `;
+    } else {
+      // 3. 정답률 TOP (전체 기간 정답률, 최소 5문제 이상)
+      sql = `
+        SELECT
+          m.member_id AS id,
+          m.nickname,
+          m.profile_image AS profileImage,
+          COUNT(ph.history_id) AS total_cnt,
+          (SUM(CASE WHEN ph.reason LIKE '%correct%' THEN 1 ELSE 0 END) / COUNT(ph.history_id) * 100) AS score
+        FROM members m
+        JOIN point_history ph ON m.member_id = ph.member_id
+        WHERE ph.reason LIKE '%quiz%'
+        GROUP BY m.member_id
+        HAVING total_cnt >= 5
+        ORDER BY score DESC, total_cnt DESC
+        LIMIT 5
+      `;
+    }
+
+    const [rows] = await db.promise().query(sql);
+    return success(res, "퀴즈 랭킹 조회 성공", rows);
+  } catch (err) {
+    console.error("getQuizRanking error =", err);
+    return fail(res, "랭킹 조회 실패", err.message);
+  }
+};

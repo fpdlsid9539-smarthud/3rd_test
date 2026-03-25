@@ -14,6 +14,8 @@ router.post("/check", authMiddleware, quizController.checkAnswer);
 
 router.get("/status/me", authMiddleware, quizController.getMyQuestStatus);
 
+router.get("/ranking", quizController.getQuizRanking);
+
 router.get("/ox", authMiddleware, quizController.getDailyOxQuiz);
 
 router.post("/ox/submit", authMiddleware, quizController.submitOxQuiz);

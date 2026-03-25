@@ -35,6 +35,31 @@ const QuizPage = () => {
   const [sessionLog, setSessionLog] = useState([])      // [{question, correct, points}]
   const [allQuizzes, setAllQuizzes] = useState([])      // cached quiz list
 
+  const [quizRankingTab, setQuizRankingTab] = useState('accuracy'); // 'accuracy', 'total', 'weekly'
+  const [quizRankings, setQuizRankings] = useState([]);
+  const [rankingLoading, setRankingLoading] = useState(false);
+
+  React.useEffect(() => {
+    if (step === 'DIFFICULTY') {
+      fetchQuizRankings(quizRankingTab);
+    }
+  }, [step, quizRankingTab]);
+
+  // 🟢 3. 랭킹 데이터 Fetch 함수 (현재는 UI 확인용 더미 데이터 세팅)
+  const fetchQuizRankings = async (tab) => {
+    setRankingLoading(true);
+    try {
+      const res = await api.get(`/api/quiz/ranking?type=${tab}`);
+      const data = res?.data?.data || res?.data || [];
+      setQuizRankings(data);
+    } catch (err) {
+      console.error('랭킹 로딩 실패', err);
+      setQuizRankings([]);
+    } finally {
+      setRankingLoading(false);
+    }
+  };
+
   /* ─────────────────────────────────────────
      O/X 퀴즈 전용 함수
   ───────────────────────────────────────── */
@@ -194,6 +219,69 @@ const QuizPage = () => {
   /* ─────────────────────────────────────────
      Render sections
   ───────────────────────────────────────── */
+  const renderQuizRanking = () => (
+    <div className='quiz-ranking-container'>
+      <div className='quiz-ranking-header'>
+        <div className='quiz-ranking-title'>
+          <span className='qr-icon'>🏆</span>
+          <h2>퀴즈 명예의 전당</h2>
+        </div>
+        
+        <div className='quiz-ranking-tabs'>
+          <button
+            className={`qr-tab ${quizRankingTab === 'accuracy' ? 'active' : ''}`}
+            onClick={() => setQuizRankingTab('accuracy')}
+          >
+            정답률 TOP
+          </button>
+          <button
+            className={`qr-tab ${quizRankingTab === 'total' ? 'active' : ''}`}
+            onClick={() => setQuizRankingTab('total')}
+          >
+            다득점 TOP
+          </button>
+          <button
+            className={`qr-tab ${quizRankingTab === 'weekly' ? 'active' : ''}`}
+            onClick={() => setQuizRankingTab('weekly')}
+          >
+            주간 TOP
+          </button>
+        </div>
+      </div>
+
+      <div className='quiz-ranking-list'>
+        {rankingLoading ? (
+          <div className='qr-empty'>순위를 분석 중입니다...</div>
+        ) : quizRankings.length > 0 ? (
+          quizRankings.map((user, index) => (
+            <div className='qr-item' key={user.id || index}>
+              <div className='qr-item-left'>
+                <span className={`qr-rank num-${index + 1}`}>{index + 1}</span>
+                <div className='qr-profile-placeholder'>
+                  {user.profileImage ? (
+                    <img src={user.profileImage} alt='profile' className='qr-profile-img' />
+                  ) : (
+                    user.nickname.substring(0, 1)
+                  )}
+                </div>
+                <span className='qr-nickname'>{user.nickname}</span>
+              </div>
+              <div className='qr-item-right'>
+                <span className='qr-score'>
+                  {quizRankingTab === 'total'
+                    ? `${user.score}문제`
+                    : `${Number(user.score).toFixed(1)}%`}
+                </span>
+              </div>
+            </div>
+          ))
+        ) : (
+          <div className='qr-empty'>아직 랭킹 데이터가 없습니다.</div>
+        )}
+      </div>
+    </div>
+  );
+
   const renderDifficulty = () => (
     <div className='quiz-section'>
       <div className='quiz-title'>
@@ -228,6 +316,7 @@ const QuizPage = () => {
             </tbody>
           </table>
         </div>
+         {renderQuizRanking()}
       </div>
     </div>
   )

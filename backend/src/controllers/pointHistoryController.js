@@ -19,6 +19,52 @@ function extractMemberId(req) {
   return Number.isInteger(memberId) && memberId > 0 ? memberId : null;
 }
 
+function getDisplayType(reason) {
+  const reasonStr = String(reason || "").toLowerCase();
+
+  // 1. 일일 O/X 퀴즈
+  if (
+    reasonStr.includes("ox_quiz") ||
+    reasonStr.includes("ox quiz") ||
+    reasonStr.includes("daily_ox")
+  ) {
+    return "일일O/X퀴즈";
+  }
+
+  // 2. 일반 전략실 퀴즈 (그 외 quiz 전부)
+  if (
+    reasonStr.includes("quiz") ||
+    reasonStr.includes("퀴즈") ||
+    reasonStr.includes("correct") ||
+    reasonStr.includes("wrong")
+  ) {
+    return "전략실 퀴즈";
+  }
+
+  // 3. 교육실
+  if (
+    reasonStr.includes("lesson") ||
+    reasonStr.includes("education") ||
+    reasonStr.includes("교육")
+  ) {
+    return "교육실 학습완료";
+  }
+
+  // 4. 주식
+  if (
+    reasonStr.includes("stock") ||
+    reasonStr.includes("buy") ||
+    reasonStr.includes("sell") ||
+    reasonStr.includes("주식") ||
+    reasonStr.includes("매수") ||
+    reasonStr.includes("매도")
+  ) {
+    return "주식 거래";
+  }
+
+  return "포인트 변동";
+}
+
 exports.getPointNotifications = async (req, res) => {
   try {
     const memberId = extractMemberId(req);
@@ -42,42 +88,9 @@ exports.getPointNotifications = async (req, res) => {
     const [rows] = await db.promise().query(sql, [memberId]);
 
     const notifications = rows.map((row) => {
-      const reason = String(row.reason || "").trim();
-      const reasonStr = reason.toLowerCase();
-
-      let displayType = "포인트 변동";
-
-      if (
-        reasonStr.includes("lesson") ||
-        reasonStr.includes("교육")
-      ) {
-        displayType = "교육실 학습완료";
-      } else if (
-        reasonStr.includes("quiz") ||
-        reasonStr.includes("퀴즈") ||
-        reasonStr.includes("correct") ||
-        reasonStr.includes("wrong")
-      ) {
-        displayType = "전략실 퀴즈";
-      } else if (
-        reason.includes("매수") ||
-        reason.includes("매도") ||
-        reason.includes("찜하기") ||
-        reason.includes("찜 해제") ||
-        reasonStr.includes("stock") ||
-        reasonStr.includes("buy") ||
-        reasonStr.includes("sell") ||
-        reasonStr.includes("like") ||
-        reasonStr.includes("주식")
-      ) {
-        displayType = reason || "전략실 주식 매매";
-      } else {
-        displayType = reason || "포인트 변동";
-      }
-
       return {
         history_id: row.history_id,
-        type: displayType,
+        type: getDisplayType(row.reason),
         changeAmount: Number(row.change_amount || 0),
         createdAt: row.created_at,
       };
