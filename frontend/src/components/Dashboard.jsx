@@ -6,7 +6,7 @@ import bronze from '../assets/icons/ranked/bronze.png'
 import silver from '../assets/icons/ranked/silver.png'
 import gold from '../assets/icons/ranked/gold.png'
 import diamond from '../assets/icons/ranked/diamond.png'
-import NewsTicker from './NewsTicker';
+import NewsTicker from './NewsTicker'
 
 const EMPTY_ISR = {
   accuracy: 0,
@@ -28,11 +28,25 @@ const EMPTY_QUEST = {
   dailyPercent: 0,
 }
 
+const LEAGUE_META = [
+  { key: 'bronze', label: '브론즈', image: bronze, alt: '브론즈 티어' },
+  { key: 'silver', label: '실버', image: silver, alt: '실버 티어' },
+  { key: 'gold', label: '골드', image: gold, alt: '골드 티어' },
+  { key: 'diamond', label: '다이아', image: diamond, alt: '다이아 티어' },
+]
+
 const Dashboard = () => {
   const [member, setMember] = useState(null)
   const [likedStocks, setLikedStocks] = useState([])
   const [ownedStocks, setOwnedStocks] = useState([])
   const [rankingList, setRankingList] = useState([])
+  const [leagueRanks, setLeagueRanks] = useState({
+    bronze: [],
+    silver: [],
+    gold: [],
+    diamond: [],
+  })
+  const [selectedLeague, setSelectedLeague] = useState(null)
   const [isrData, setIsrData] = useState(EMPTY_ISR)
   const [questStatus, setQuestStatus] = useState(EMPTY_QUEST)
   const [loading, setLoading] = useState(true)
@@ -52,11 +66,34 @@ const Dashboard = () => {
     return data && typeof data === 'object' && !Array.isArray(data) ? data : fallback
   }
 
+  const getMemberIdValue = (target) => {
+    if (!target) return null
+
+    const rawId =
+      target?.member_id ??
+      target?.memberId ??
+      target?.id ??
+      null
+
+    if (rawId === null || rawId === undefined || rawId === '') return null
+    return String(rawId)
+  }
+
+  const normalizeRankMember = (rankMember = {}) => {
+    return {
+      ...rankMember,
+      memberId: rankMember.memberId ?? rankMember.member_id ?? null,
+      nickname: rankMember.nickname ?? '사용자',
+      profileImage: rankMember.profileImage ?? rankMember.profile_image ?? profile,
+      points: Number(rankMember.points ?? 0),
+      rankingPoint: Number(rankMember.rankingPoint ?? rankMember.isr ?? rankMember.score ?? 0),
+      leagueRank: Number(rankMember.leagueRank ?? rankMember.rank ?? 0),
+    }
+  }
+
   const loadDashboard = useCallback(async (showLoading = false) => {
     try {
-      if (showLoading) {
-        setLoading(true)
-      }
+      if (showLoading) setLoading(true)
 
       const [
         memberRes,
@@ -81,7 +118,6 @@ const Dashboard = () => {
           raw?.data?.member ||
           raw ||
           null
-
         setMember(memberData)
       } else {
         setMember(null)
@@ -96,7 +132,6 @@ const Dashboard = () => {
           change: Number(stock?.change ?? stock?.changeAmount ?? 0),
           changeRate: Number(stock?.changeRate ?? stock?.rate ?? 0),
         }))
-
         setLikedStocks(likedData)
       } else {
         setLikedStocks([])
@@ -140,7 +175,6 @@ const Dashboard = () => {
 
       if (isrRes.status === 'fulfilled') {
         const rawIsr = toObject(isrRes.value, EMPTY_ISR)
-
         setIsrData({
           accuracy: Number(rawIsr?.accuracy || 0),
           risk: Number(rawIsr?.risk || 0),
@@ -158,21 +192,40 @@ const Dashboard = () => {
         const rankingData = toObject(rankingRes.value, {})
         const leagues = rankingData?.leagues || {}
 
-        const mergedRanking = [
-          ...(leagues.diamond || []),
-          ...(leagues.gold || []),
-          ...(leagues.silver || []),
-          ...(leagues.bronze || []),
-        ]
+        const normalizedLeagues = {
+          bronze: Array.isArray(leagues.bronze) ? leagues.bronze.map(normalizeRankMember) : [],
+          silver: Array.isArray(leagues.silver) ? leagues.silver.map(normalizeRankMember) : [],
+          gold: Array.isArray(leagues.gold) ? leagues.gold.map(normalizeRankMember) : [],
+          diamond: Array.isArray(leagues.diamond) ? leagues.diamond.map(normalizeRankMember) : [],
+        }
 
-        setRankingList(Array.isArray(mergedRanking) ? mergedRanking : [])
+        setLeagueRanks(normalizedLeagues)
+
+        const mergedRanking = [
+          ...normalizedLeagues.bronze,
+          ...normalizedLeagues.silver,
+          ...normalizedLeagues.gold,
+          ...normalizedLeagues.diamond,
+        ]
+          .sort((a, b) => Number(b.rankingPoint || 0) - Number(a.rankingPoint || 0))
+          .map((memberItem, index) => ({
+            ...memberItem,
+            overallRank: index + 1,
+          }))
+
+        setRankingList(mergedRanking)
       } else {
+        setLeagueRanks({
+          bronze: [],
+          silver: [],
+          gold: [],
+          diamond: [],
+        })
         setRankingList([])
       }
 
       if (questRes.status === 'fulfilled') {
         const questData = toObject(questRes.value, {})
-
         setQuestStatus({
           todaySolved: Number(questData.todaySolved || 0),
           todayCorrect: Number(questData.todayCorrect || 0),
@@ -231,6 +284,10 @@ const Dashboard = () => {
     return Number(value || 0).toFixed(2)
   }
 
+  const formatRankingPoint = (value) => {
+    return Number(value || 0).toFixed(1)
+  }
+
   const isrDescription = '사용자의 투자 과정과 행동의 질을 평가하는 기준.'
 
   const isrItems = useMemo(
@@ -280,6 +337,30 @@ const Dashboard = () => {
     Number(questStatus.dailyGoal || 3)
   )
 
+  const displayedRankingList = useMemo(() => {
+    if (!selectedLeague) {
+      return rankingList.slice(0, 7)
+    }
+
+    const selectedList = (leagueRanks[selectedLeague] || [])
+      .slice()
+      .sort((a, b) => Number(b.rankingPoint || 0) - Number(a.rankingPoint || 0))
+
+    return selectedList.slice(0, 7)
+  }, [selectedLeague, rankingList, leagueRanks])
+
+  const isMyRankMember = (rankMember) => {
+    const currentMemberId = getMemberIdValue(member)
+    const rankMemberId = getMemberIdValue(rankMember)
+
+    if (!currentMemberId || !rankMemberId) return false
+    return currentMemberId === rankMemberId
+  }
+
+  const handleLeagueClick = (leagueKey) => {
+    setSelectedLeague(leagueKey)
+  }
+
   if (loading) {
     return <div className='dash-container'>대시보드 불러오는 중...</div>
   }
@@ -307,136 +388,150 @@ const Dashboard = () => {
       </div>
 
       <div className='dash-master'>
-        {/* <div className='dash-slave'> */}
-          <div className='dash-tool'>
-            <div className='tool-box'>
-              <span>📋퀘스트 현황</span>
-              <div className='quest-status-box'>
-                <div className='quest-summary'>
-                  <div className='quest-summary-score'>
-                    {Number(questStatus.dailyPercent || 0).toFixed(2)}%
-                  </div>
-                  <div className='quest-summary-desc'>
-                    오늘 {questStatus.dailyGoal}문제 목표 기준
-                  </div>
+        <div className='dash-tool'>
+          <div className='tool-box'>
+            <span>📋퀘스트 현황</span>
+            <div className='quest-status-box'>
+              <div className='quest-summary'>
+                <div className='quest-summary-score'>
+                  {Number(questStatus.dailyPercent || 0).toFixed(2)}%
                 </div>
-
-                <ul className='quest-list'>
-                  <li className='quest-item'>
-                    <span>오늘 푼 퀴즈</span>
-                    <strong>
-                      {todaySolvedDisplay} / {questStatus.dailyGoal}
-                    </strong>
-                  </li>
-
-                  <li className='quest-item'>
-                    <span>오늘 정답 수</span>
-                    <strong>{questStatus.todayCorrect}</strong>
-                  </li>
-
-                  <li className='quest-item'>
-                    <span>누적 풀이 수</span>
-                    <strong>
-                      {questStatus.totalSolved} / {questStatus.totalCount}
-                    </strong>
-                  </li>
-
-                  <li className='quest-item'>
-                    <span>누적 정답률</span>
-                    <strong>
-                      {Number(questStatus.accuracy || 0).toFixed(2)}%
-                    </strong>
-                  </li>
-                </ul>
-              </div>
-            </div>
-
-            <div className='tool-box'>
-              <div className='isr-header'>
-                <span>🎯ISR 지표</span>
-                <div className='isr-tooltip-wrap'>
-                  <span className='isr-tooltip-icon'>ⓘ</span>
-                  <span className='isr-tooltip-text'>{isrDescription}</span>
-                </div>
-              </div>
-              <div className='isr-summary'>
-                <div className='isr-summary-score'>{formatScore(isrData.isr)}</div>
-                <div className='isr-summary-desc'>
-                  판단력·생존력·성과 품질·행동 통제력·사고 체계·시장 대응력 종합
+                <div className='quest-summary-desc'>
+                  오늘 {questStatus.dailyGoal}문제 목표 기준
                 </div>
               </div>
 
-              <ul className='isr-list'>
-                {isrItems.map((item) => (
-                  <li key={item.key} className='isr-item'>
-                    <div className='isr-item-top'>
-                      <div className='isr-name'>
-                        <span>{item.label}</span>
-                        <div className='isr-tooltip-wrap'>
-                          <span className='isr-tooltip-icon'>ⓘ</span>
-                          <span className='isr-tooltip-text'>{item.description}</span>
-                        </div>
-                      </div>
-                      <p className='isr-value'>{formatScore(item.value)}</p>
-                    </div>
-                    <div className='isr-bar'>
-                      <div
-                        className='isr-bar-fill'
-                        style={{
-                          width: `${Math.max(0, Math.min(100, Number(item.value || 0)))}%`,
-                        }}
-                      />
-                    </div>
-                  </li>
-                ))}
+              <ul className='quest-list'>
+                <li className='quest-item'>
+                  <span>오늘 푼 퀴즈</span>
+                  <strong>
+                    {todaySolvedDisplay} / {questStatus.dailyGoal}
+                  </strong>
+                </li>
+
+                <li className='quest-item'>
+                  <span>오늘 정답 수</span>
+                  <strong>{questStatus.todayCorrect}</strong>
+                </li>
+
+                <li className='quest-item'>
+                  <span>누적 풀이 수</span>
+                  <strong>
+                    {questStatus.totalSolved} / {questStatus.totalCount}
+                  </strong>
+                </li>
+
+                <li className='quest-item'>
+                  <span>누적 정답률</span>
+                  <strong>
+                    {Number(questStatus.accuracy || 0).toFixed(2)}%
+                  </strong>
+                </li>
               </ul>
             </div>
           </div>
-        {/* </div> */}
+
+          <div className='tool-box'>
+            <div className='isr-header'>
+              <span>🎯ISR 지표</span>
+              <div className='isr-tooltip-wrap'>
+                <span className='isr-tooltip-icon'>ⓘ</span>
+                <span className='isr-tooltip-text'>{isrDescription}</span>
+              </div>
+            </div>
+            <div className='isr-summary'>
+              <div className='isr-summary-score'>{formatScore(isrData.isr)}</div>
+              <div className='isr-summary-desc'>
+                판단력·생존력·성과 품질·행동 통제력·사고 체계·시장 대응력 종합
+              </div>
+            </div>
+
+            <ul className='isr-list'>
+              {isrItems.map((item) => (
+                <li key={item.key} className='isr-item'>
+                  <div className='isr-item-top'>
+                    <div className='isr-name'>
+                      <span>{item.label}</span>
+                      <div className='isr-tooltip-wrap'>
+                        <span className='isr-tooltip-icon'>ⓘ</span>
+                        <span className='isr-tooltip-text'>{item.description}</span>
+                      </div>
+                    </div>
+                    <p className='isr-value'>{formatScore(item.value)}</p>
+                  </div>
+                  <div className='isr-bar'>
+                    <div
+                      className='isr-bar-fill'
+                      style={{
+                        width: `${Math.max(0, Math.min(100, Number(item.value || 0)))}%`,
+                      }}
+                    />
+                  </div>
+                </li>
+              ))}
+            </ul>
+          </div>
+        </div>
 
         <div className='dash-rank'>
           <span>🏆리그 순위표</span>
           <div className='rank-box'>
             <ul className='rank-league'>
-              <li className='league'>
-                <img src={bronze} alt='브론즈 티어' className='league-badge' />
-              </li>
-              <li className='league'>
-                <img src={silver} alt='실버 티어' className='league-badge' />
-              </li>
-              <li className='league'>
-                <img src={gold} alt='골드 티어' className='league-badge' />
-              </li>
-              <li className='league'>
-                <img src={diamond} alt='다이아 티어' className='league-badge' />
-              </li>
+              {LEAGUE_META.map((league) => (
+                <li key={league.key} className='league'>
+                  <button
+                    type='button'
+                    className={`league-button ${selectedLeague === league.key ? 'active' : ''}`}
+                    onClick={() => handleLeagueClick(league.key)}
+                    title={`${league.label} 리그 보기`}
+                  >
+                    <img
+                      src={league.image}
+                      alt={league.alt}
+                      className='league-badge'
+                    />
+                  </button>
+                </li>
+              ))}
             </ul>
 
             <ul className='rank-list'>
-              {rankingList.length === 0 ? (
+              {displayedRankingList.length === 0 ? (
                 <li className='stock-empty'>랭킹 데이터가 없습니다.</li>
               ) : (
-                rankingList.slice(0, 7).map((rankMember, index) => (
-                  <li key={rankMember.memberId || index} className='rank-item'>
-                    <div className='item-profile'>
-                      <div className='rank-num'>{index + 1}</div>
-                      <img
-                        src={rankMember.profileImage || profile}
-                        alt='account_image'
-                        className='rank-profile'
-                      />
-                      <span>{rankMember.nickname || '사용자'}</span>
-                    </div>
-                    <div className='rank-num'>
-                      {formatNumber(rankMember.points)}
-                    </div>
-                  </li>
-                ))
+                displayedRankingList.map((rankMember, index) => {
+                  const isMine = isMyRankMember(rankMember)
+
+                  return (
+                    <li
+                      key={rankMember.memberId || rankMember.member_id || index}
+                      className={`rank-item ${isMine ? 'rank-item-mine' : ''}`}
+                    >
+                      <div className='item-profile'>
+                        <div className='rank-num'>
+                          {selectedLeague
+                            ? (rankMember.leagueRank || index + 1)
+                            : (rankMember.overallRank || index + 1)}
+                        </div>
+                        <img
+                          src={rankMember.profileImage || profile}
+                          alt='account_image'
+                          className='rank-profile'
+                        />
+                        <span className={isMine ? 'rank-name-mine' : ''}>
+                          {rankMember.nickname || '사용자'}
+                        </span>
+                      </div>
+                      <div className={`rank-num ${isMine ? 'rank-score-mine' : ''}`}>
+                        {formatRankingPoint(rankMember.rankingPoint)}
+                      </div>
+                    </li>
+                  )
+                })
               )}
             </ul>
           </div>
         </div>
-
       </div>
 
       <div className='dash-thread'>
@@ -473,7 +568,7 @@ const Dashboard = () => {
             <ul className='stock-list'>
               <li className='stock-item stock-head owned-grid'>
                 <p>주식</p>
-                <p className='numbers'>원금</p>
+                <p className='numbers'>금액</p>
                 <p className='numbers'>변동</p>
                 <p className='numbers'>변동률</p>
               </li>

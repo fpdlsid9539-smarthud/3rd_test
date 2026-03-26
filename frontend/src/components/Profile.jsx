@@ -987,7 +987,7 @@ const Profile = () => {
         <div className='profile-stats'>
           <div className='stats-description'>            
             <span className='description-top'>{displayTier || '브론즈'}</span>
-            <p>{tierRank ? `${tierRank}` : '-'} <span className='point-unit'>위</span></p>
+            <p>{tierRank ? `${tierRank}` : '-'}<span className='point-unit'>위</span></p>
           </div>
           <hr />
           <div className='stats-description'>

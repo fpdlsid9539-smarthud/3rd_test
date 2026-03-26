@@ -99,20 +99,15 @@ const Ranking = () => {
   }, [leagueData])
 
   const getDisplayRows = (rows) => {
-    const myRow = rows.find((row) => row.memberId === currentUserId)
-    const top10 = rows.slice(0, 10)
+    const myIndex = rows.findIndex((row) => row.memberId === currentUserId)
 
-    if (!myRow) {
-      return {
-        pinnedMyRow: null,
-        normalRows: top10,
-      }
+    if (myIndex === -1 || myIndex < 10) {
+      return rows.slice(0, 10)
     }
 
-    return {
-      pinnedMyRow: myRow,
-      normalRows: top10.filter((row) => row.memberId !== currentUserId),
-    }
+    // 3. 내 순위가 10등 밖으로 밀려났다면? (1~9등까지 보여주고, 마지막 10번째 자리에 나를 끼워 넣음!)
+    const top9 = rows.slice(0, 9)
+    return [...top9, rows[myIndex]]
   }
 
   return (
@@ -140,7 +135,7 @@ const Ranking = () => {
           <section className='league-grid'>
             {leagueConfig.map((league) => {
               const rows = leagueData[league.id] || []
-              const { pinnedMyRow, normalRows } = getDisplayRows(rows)
+              const displayRows = getDisplayRows(rows)
 
               return (
                 <article className='league-card' key={league.id}>
@@ -153,43 +148,30 @@ const Ranking = () => {
                   </div>
 
                   <ul className='league-user-list'>
-                    {pinnedMyRow && (
-                      <li className='league-user-item pinned-my-row' key={`me-${pinnedMyRow.memberId}`}>
-                        <span className='league-rank'>{pinnedMyRow.leagueRank}</span>
+                    {/* 🟢 기존의 복잡했던 pinnedMyRow와 normalRows를 하나로 합쳐서 깔끔하게 출력합니다 */}
+                    {displayRows.map((row) => {
+                      const isMe = row.memberId === currentUserId;
 
-                        <div className='league-user-main'>
-                          <img
-                            src={pinnedMyRow.profileImage || defaultProfile}
-                            alt={`${pinnedMyRow.nickname} 프로필`}
-                            className='league-profile'
-                          />
-                          <span className='league-name'>{pinnedMyRow.nickname}</span>
-                        </div>
+                      return (
+                        // 내 프로필일 경우 기존에 쓰시던 pinned-my-row 클래스를 붙여서 색상 하이라이트 유지!
+                        <li className={`league-user-item ${isMe ? 'pinned-my-row' : ''}`} key={row.memberId}>
+                          <span className='league-rank'>{row.leagueRank}</span>
 
-                        <span className='league-score'>
-                          {Number(pinnedMyRow.rankingPoint || 0).toFixed(1)}
-                        </span>
-                      </li>
-                    )}
+                          <div className='league-user-main'>
+                            <img
+                              src={row.profileImage || defaultProfile}
+                              alt={`${row.nickname} 프로필`}
+                              className='league-profile'
+                            />
+                            <span className='league-name'>{row.nickname}</span>
+                          </div>
 
-                    {normalRows.map((row) => (
-                      <li className='league-user-item' key={row.memberId}>
-                        <span className='league-rank'>{row.leagueRank}</span>
-
-                        <div className='league-user-main'>
-                          <img
-                            src={row.profileImage || defaultProfile}
-                            alt={`${row.nickname} 프로필`}
-                            className='league-profile'
-                          />
-                          <span className='league-name'>{row.nickname}</span>
-                        </div>
-
-                        <span className='league-score'>
-                          {Number(row.rankingPoint || 0).toFixed(1)}
-                        </span>
-                      </li>
-                    ))}
+                          <span className='league-score'>
+                            {Number(row.rankingPoint || 0).toFixed(1)}
+                          </span>
+                        </li>
+                      )
+                    })}
                   </ul>
                 </article>
               )

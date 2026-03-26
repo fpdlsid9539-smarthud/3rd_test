@@ -163,19 +163,6 @@ const Navigation = ({
                 <span>FAQ</span>
               </div>
             </li>
-
-            {role === 'admin' && (
-              <li
-                className={`nav-menu ${activeMenu === 'FAQAdmin' ? 'active' : ''}`}
-                onClick={() => setActiveMenu('FAQAdmin')}
-                title={collapsed ? 'FAQ 관리' : undefined}
-              >
-                <div className='nav-line'>
-                  <img src={faq} alt='FAQ 관리' className='icons icon-btn' />
-                  <span>FAQ 관리</span>
-                </div>
-              </li>
-            )}
           </ul>
         </div>
 
@@ -186,9 +173,9 @@ const Navigation = ({
               className={`billing-nav-button ${isPremium ? 'disabled' : ''}`}
               onClick={() => {
                 if (isMembershipLoaded && !isPremium) {
-                  setActiveMenu('Billing');
+                  setActiveMenu('Billing')
                 } else {
-                  handleCancel();
+                  handleCancel()
                 }
               }}
             >

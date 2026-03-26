@@ -8,7 +8,6 @@ import Quiz from './QuizPage'
 import Stocks from './Stocks'
 import Ranking from './Ranking'
 import Billing from './Billing'
-import FAQAdmin from './FAQADMIN'
 import FAQPage from './FAQPage'
 
 const Main = () => {
@@ -20,7 +19,6 @@ const Main = () => {
     'Ranking',
     'Billing',
     'FAQ',
-    'FAQAdmin',
   ]
 
   const PROTECTED_MENUS = ['Quiz', 'Stocks', 'Billing']
@@ -77,17 +75,12 @@ const Main = () => {
         return
       }
 
-      if (hash === 'FAQAdmin' && role !== 'admin') {
-        window.location.hash = 'Dashboard'
-        return
-      }
-
       setActiveMenu(hash)
     }
 
     window.addEventListener('hashchange', handleHashChange)
     return () => window.removeEventListener('hashchange', handleHashChange)
-  }, [role])
+  }, [])
 
   const fetchMembership = async (token) => {
     try {
@@ -141,22 +134,6 @@ const Main = () => {
       return
     }
 
-    if (menu === 'FAQAdmin') {
-      if (!loggedIn) {
-        alert('로그인 후 이용할 수 있습니다.')
-        window.location.hash = 'Dashboard'
-        setActiveMenu('Dashboard')
-        return
-      }
-
-      if (role !== 'admin') {
-        alert('관리자만 접근할 수 있습니다.')
-        window.location.hash = 'Dashboard'
-        setActiveMenu('Dashboard')
-        return
-      }
-    }
-
     window.location.hash = menu
     setActiveMenu(menu)
     window.scrollTo({ top: 0, behavior: 'smooth' })
@@ -186,8 +163,6 @@ const Main = () => {
         )
       case 'FAQ':
         return <FAQPage />
-      case 'FAQAdmin':
-        return loggedIn && role === 'admin' ? <FAQAdmin /> : <Dashboard />
       default:
         return <Dashboard />
     }
