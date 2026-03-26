@@ -34,6 +34,9 @@ const Main = () => {
   const [navCollapsed, setNavCollapsed] = useState(
     () => localStorage.getItem('nav_collapsed') === 'true'
   )
+  const [profileCollapsed, setProfileCollapsed] = useState(
+    () => localStorage.getItem('profile_collapsed') === 'true'
+  )
   const [role, setRole] = useState('user')
 
   useEffect(() => {
@@ -81,6 +84,10 @@ const Main = () => {
     window.addEventListener('hashchange', handleHashChange)
     return () => window.removeEventListener('hashchange', handleHashChange)
   }, [])
+
+    useEffect(() => {
+      localStorage.setItem('profile_collapsed', String(profileCollapsed))
+    }, [profileCollapsed])
 
   const fetchMembership = async (token) => {
     try {
@@ -168,8 +175,14 @@ const Main = () => {
     }
   }
 
-  return (
-    <div className='main-body' style={{ '--nav-width': navCollapsed ? '5.5rem' : '280px' }}>
+    return (
+    <div
+      className='main-body'
+      style={{
+        '--nav-width': navCollapsed ? '5.5rem' : '280px',
+        '--profile-width': profileCollapsed ? '72px' : '280px',
+      }}
+    >
       <aside className='navigation-area'>
         <Navigation
           setActiveMenu={handleMenuChange}
@@ -186,7 +199,10 @@ const Main = () => {
       </main>
 
       <aside className='profile-area'>
-        <Profile />
+        <Profile
+          collapsed={profileCollapsed}
+          setCollapsed={setProfileCollapsed}
+        />
       </aside>
     </div>
   )

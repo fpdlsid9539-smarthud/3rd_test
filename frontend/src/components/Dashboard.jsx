@@ -8,6 +8,7 @@ import gold from '../assets/icons/ranked/gold.png'
 import diamond from '../assets/icons/ranked/diamond.png'
 import NewsTicker from './NewsTicker'
 
+
 const EMPTY_ISR = {
   accuracy: 0,
   risk: 0,
@@ -358,11 +359,21 @@ const Dashboard = () => {
   }
 
   const handleLeagueClick = (leagueKey) => {
-    setSelectedLeague(leagueKey)
+    setSelectedLeague((prev) => (prev === leagueKey ? null : leagueKey))
   }
 
+  const selectedLeagueLabel = useMemo(() => {
+    if (!selectedLeague) return null
+    const foundLeague = LEAGUE_META.find((league) => league.key === selectedLeague)
+    return foundLeague?.label || null
+  }, [selectedLeague])
+
+  const rankingTitle = selectedLeagueLabel
+    ? `${selectedLeagueLabel} 리그 순위표`
+    : '전체 리그 순위표'
+
   if (loading) {
-    return <div className='dash-container'>대시보드 불러오는 중...</div>
+    return <div className='dash-container'>대시보드 불러오는 중.</div>
   }
 
   if (error) {
@@ -388,93 +399,91 @@ const Dashboard = () => {
       </div>
 
       <div className='dash-master'>
-        <div className='dash-tool'>
-          <div className='tool-box'>
-            <span>📋퀘스트 현황</span>
-            <div className='quest-status-box'>
-              <div className='quest-summary'>
-                <div className='quest-summary-score'>
-                  {Number(questStatus.dailyPercent || 0).toFixed(2)}%
-                </div>
-                <div className='quest-summary-desc'>
-                  오늘 {questStatus.dailyGoal}문제 목표 기준
-                </div>
+        <div className='tool-box'>
+          <span>📋퀘스트 현황</span>
+          <div className='quest-status-box'>
+            <div className='quest-summary'>
+              <div className='quest-summary-score'>
+                {Number(questStatus.dailyPercent || 0).toFixed(2)}%
               </div>
-
-              <ul className='quest-list'>
-                <li className='quest-item'>
-                  <span>오늘 푼 퀴즈</span>
-                  <strong>
-                    {todaySolvedDisplay} / {questStatus.dailyGoal}
-                  </strong>
-                </li>
-
-                <li className='quest-item'>
-                  <span>오늘 정답 수</span>
-                  <strong>{questStatus.todayCorrect}</strong>
-                </li>
-
-                <li className='quest-item'>
-                  <span>누적 풀이 수</span>
-                  <strong>
-                    {questStatus.totalSolved} / {questStatus.totalCount}
-                  </strong>
-                </li>
-
-                <li className='quest-item'>
-                  <span>누적 정답률</span>
-                  <strong>
-                    {Number(questStatus.accuracy || 0).toFixed(2)}%
-                  </strong>
-                </li>
-              </ul>
-            </div>
-          </div>
-
-          <div className='tool-box'>
-            <div className='isr-header'>
-              <span>🎯ISR 지표</span>
-              <div className='isr-tooltip-wrap'>
-                <span className='isr-tooltip-icon'>ⓘ</span>
-                <span className='isr-tooltip-text'>{isrDescription}</span>
-              </div>
-            </div>
-            <div className='isr-summary'>
-              <div className='isr-summary-score'>{formatScore(isrData.isr)}</div>
-              <div className='isr-summary-desc'>
-                판단력·생존력·성과 품질·행동 통제력·사고 체계·시장 대응력 종합
+              <div className='quest-summary-desc'>
+                오늘 {questStatus.dailyGoal}문제 목표 기준
               </div>
             </div>
 
-            <ul className='isr-list'>
-              {isrItems.map((item) => (
-                <li key={item.key} className='isr-item'>
-                  <div className='isr-item-top'>
-                    <div className='isr-name'>
-                      <span>{item.label}</span>
-                      <div className='isr-tooltip-wrap'>
-                        <span className='isr-tooltip-icon'>ⓘ</span>
-                        <span className='isr-tooltip-text'>{item.description}</span>
-                      </div>
-                    </div>
-                    <p className='isr-value'>{formatScore(item.value)}</p>
-                  </div>
-                  <div className='isr-bar'>
-                    <div
-                      className='isr-bar-fill'
-                      style={{
-                        width: `${Math.max(0, Math.min(100, Number(item.value || 0)))}%`,
-                      }}
-                    />
-                  </div>
-                </li>
-              ))}
+            <ul className='quest-list'>
+              <li className='quest-item'>
+                <span>오늘 푼 퀴즈</span>
+                <strong>
+                  {todaySolvedDisplay} / {questStatus.dailyGoal}
+                </strong>
+              </li>
+
+              <li className='quest-item'>
+                <span>오늘 정답 수</span>
+                <strong>{questStatus.todayCorrect}</strong>
+              </li>
+
+              <li className='quest-item'>
+                <span>누적 풀이 수</span>
+                <strong>
+                  {questStatus.totalSolved} / {questStatus.totalCount}
+                </strong>
+              </li>
+
+              <li className='quest-item'>
+                <span>누적 정답률</span>
+                <strong>
+                  {Number(questStatus.accuracy || 0).toFixed(2)}%
+                </strong>
+              </li>
             </ul>
           </div>
         </div>
 
+        <div className='tool-box'>
+          <div className='isr-header'>
+            <span>🎯ISR 지표</span>
+            <div className='isr-tooltip-wrap'>
+              <span className='isr-tooltip-icon'>ⓘ</span>
+              <span className='isr-tooltip-text'>{isrDescription}</span>
+            </div>
+          </div>
+          <div className='isr-summary'>
+            <div className='isr-summary-score'>{formatScore(isrData.isr)}</div>
+            <div className='isr-summary-desc'>
+              {isrDescription}
+            </div>
+          </div>
+
+          <ul className='isr-list'>
+            {isrItems.map((item) => (
+              <li key={item.key} className='isr-item'>
+                <div className='isr-item-top'>
+                  <div className='isr-name'>
+                    <span>{item.label}</span>
+                    <div className='isr-tooltip-wrap'>
+                      <span className='isr-tooltip-icon'>ⓘ</span>
+                      <span className='isr-tooltip-text'>{item.description}</span>
+                    </div>
+                  </div>
+                  <p className='isr-value'>{formatScore(item.value)}</p>
+                </div>
+                <div className='isr-bar'>
+                  <div
+                    className='isr-bar-fill'
+                    style={{
+                      width: `${Math.max(0, Math.min(100, Number(item.value || 0)))}%`,
+                    }}
+                  />
+                </div>
+              </li>
+            ))}
+          </ul>
+        </div>
+
         <div className='dash-rank'>
-          <span>🏆리그 순위표</span>
+          <span>🏆 {rankingTitle}</span>
           <div className='rank-box'>
             <ul className='rank-league'>
               {LEAGUE_META.map((league) => (
@@ -522,6 +531,7 @@ const Dashboard = () => {
                           {rankMember.nickname || '사용자'}
                         </span>
                       </div>
+
                       <div className={`rank-num ${isMine ? 'rank-score-mine' : ''}`}>
                         {formatRankingPoint(rankMember.rankingPoint)}
                       </div>
@@ -568,9 +578,9 @@ const Dashboard = () => {
             <ul className='stock-list'>
               <li className='stock-item stock-head owned-grid'>
                 <p>주식</p>
-                <p className='numbers'>금액</p>
+                <p className='numbers'>보유</p>
+                <p className='numbers'>원금</p>
                 <p className='numbers'>변동</p>
-                <p className='numbers'>변동률</p>
               </li>
               {ownedStocks.length === 0 ? (
                 <li className='stock-empty'>보유 주식이 없습니다.</li>
@@ -581,9 +591,11 @@ const Dashboard = () => {
                     className='stock-item owned-grid'
                   >
                     <p>{stock.stockName || stock.stockCode}</p>
+                    <p className='numbers'>{stock.quantity}</p>
                     <p className='numbers'>{formatNumber(stock.principal)}</p>
-                    <p className='numbers'>{formatSignedNumber(stock.changeAmount)}</p>
-                    <p className='numbers'>{formatSignedPercent(stock.changeRate)}</p>
+                    <p className='numbers'>
+                      {formatSignedNumber(stock.changeAmount)}({formatSignedPercent(stock.changeRate)})
+                    </p>
                   </li>
                 ))
               )}

@@ -59,7 +59,7 @@ const getTooltipText = (item, fallback = '설명이 없습니다.') => {
   return item?.description || item?.desc || item?.detail || fallback
 }
 
-const Profile = () => {
+const Profile = ({ collapsed = false, setCollapsed = () => {} }) => {
   const [member, setMember] = useState(null)
   const [ownedStocks, setOwnedStocks] = useState([])
   const [recentAchievements, setRecentAchievements] = useState([])
@@ -82,6 +82,7 @@ const Profile = () => {
   const [showAllAchievements, setShowAllAchievements] = useState(false)
   const [showPointHistory, setShowPointHistory] = useState(false)
   const [visibleHistoryCount, setVisibleHistoryCount] = useState(10)
+  const [pointHistoryRange, setPointHistoryRange] = useState('7d')
 
   const [achievementLoading, setAchievementLoading] = useState(false)
   // const [rankingPoint, setRankingPoint] = useState(0)
@@ -98,10 +99,15 @@ const Profile = () => {
   const [editPreviewUrl, setEditPreviewUrl] = useState(null)
   const [saving, setSaving] = useState(false)
   const [saveError, setSaveError] = useState('')
+  const [isTitleDropdownOpen, setIsTitleDropdownOpen] = useState(false)
 
+  const titleDropdownRef = useRef(null)
   const fileInputRef = useRef(null)
   const nicknameInputRef = useRef(null)
   const notificationRef = useRef(null)
+
+  const isProfileCollapsed = collapsed
+  const setIsProfileCollapsed = setCollapsed
 
   useEffect(() => {
     if (showPointHistory) {
@@ -117,6 +123,13 @@ const Profile = () => {
         !event.target.closest('.notification-dropdown')
       ) {
         setIsNotificationOpen(false)
+      }
+
+      if (
+        titleDropdownRef.current &&
+        !titleDropdownRef.current.contains(event.target)
+      ) {
+        setIsTitleDropdownOpen(false)
       }
     }
 
@@ -154,6 +167,7 @@ const Profile = () => {
             name: item.name ?? item.title ?? '업적',
             ach_img: item.ach_img ?? null,
             obtained_at: item.obtained_at ?? item.obtainedAt ?? null,
+            description: item.description ?? item.desc ?? item.detail ?? null,
           }
         }
 
@@ -185,6 +199,21 @@ const Profile = () => {
       hour: 'numeric',
       minute: 'numeric',
     })
+  }
+  const formatCompactDateTime = (value) => {
+  if (!value) return '-'
+
+  const date = new Date(value)
+  if (Number.isNaN(date.getTime())) return '-'
+
+  const year = date.getFullYear()
+  const month = String(date.getMonth() + 1).padStart(2, '0')
+  const day = String(date.getDate()).padStart(2, '0')
+
+  const hours = String(date.getHours()).padStart(2, '0')
+  const minutes = String(date.getMinutes()).padStart(2, '0')
+
+  return `${year}.${month}.${day} ${hours}:${minutes}`
   }
 
   const formatDateTime = (value) => {
@@ -383,6 +412,7 @@ const Profile = () => {
       setTitleEquipLoading(true)
       await api.patch('/api/titles/equip', { ach_id: achId })
       await loadMyTitles()
+      setIsTitleDropdownOpen(false)
     } catch (err) {
       console.error('칭호 장착 실패:', err)
       alert(err?.response?.data?.message || '칭호 장착에 실패했습니다.')
@@ -390,6 +420,17 @@ const Profile = () => {
       setTitleEquipLoading(false)
     }
   }
+
+  const handleToggleTitleDropdown = async () => {
+    const nextOpen = !isTitleDropdownOpen
+
+    setIsTitleDropdownOpen(nextOpen)
+
+    if (nextOpen && titles.length === 0) {
+      await loadMyTitles()
+    }
+  }
+
 
   const handleOpenAchievements = async () => {
     setShowPointHistory(false)
@@ -423,6 +464,22 @@ const Profile = () => {
       console.error('알림 조회 실패 =', err)
       setNotifications([])
       setHasUnreadNotification(false)
+    }
+  }
+
+  const handleHidePointHistory = async (historyId) => {
+    const ok = window.confirm('이 포인트 변동 내역을 숨길까요?')
+    if (!ok) return
+
+    try {
+      await api.patch(`/api/points/notifications/${historyId}/hide`)
+
+      setNotifications((prev) =>
+        prev.filter((item) => Number(item.history_id) !== Number(historyId))
+      )
+    } catch (err) {
+      console.error('포인트 내역 숨김 실패 =', err)
+      alert(err?.response?.data?.message || '포인트 내역 숨김에 실패했습니다.')
     }
   }
 
@@ -558,15 +615,25 @@ const Profile = () => {
     [allAchievements]
   )
 
-  const pointHistory7Days = useMemo(() => {
-    const sevenDaysAgo = new Date()
-    sevenDaysAgo.setDate(sevenDaysAgo.getDate() - 7)
+  const filteredPointHistory = useMemo(() => {
+    const now = new Date()
+    const rangeStart = new Date(now)
+
+    if (pointHistoryRange === '1d') {
+      rangeStart.setDate(now.getDate() - 1)
+    } else if (pointHistoryRange === '7d') {
+      rangeStart.setDate(now.getDate() - 7)
+    } else if (pointHistoryRange === '1m') {
+      rangeStart.setMonth(now.getMonth() - 1)
+    } else if (pointHistoryRange === '1y') {
+      rangeStart.setFullYear(now.getFullYear() - 1)
+    }
 
     return notifications.filter((item) => {
       const itemDate = new Date(item.createdAt)
-      return !Number.isNaN(itemDate.getTime()) && itemDate >= sevenDaysAgo
+      return !Number.isNaN(itemDate.getTime()) && itemDate >= rangeStart
     })
-  }, [notifications])
+  }, [notifications, pointHistoryRange])
 
   const currentTitleName =
     equippedTitle?.name || member?.title || '🌱 Vivere 주린이'
@@ -595,7 +662,15 @@ const Profile = () => {
   // Notification //
 
   if (showPointHistory) {
-    const visibleHistory = pointHistory7Days.slice(0, visibleHistoryCount);
+    const visibleHistory = filteredPointHistory.slice(0, visibleHistoryCount)
+
+    const rangeLabelMap = {
+      '1d': '최근 1일',
+      '7d': '최근 1주일',
+      '1m': '최근 1개월',
+      '1y': '최근 1년',
+    }
+
     return (
       <div className='profile'>
         <div className='profile-content'>
@@ -605,22 +680,74 @@ const Profile = () => {
             </button>
           </div>
 
-          <div className='profile-stock title-summary-card'>
-            <div className='achievement-title-row'>
-              <h2>포인트 변동 내역 (최근 7일)</h2>
-              <span className='achievement-count'>{pointHistory7Days.length}건</span>
-            </div>
+        <div className='profile-stock title-summary-card'>
+          <div className='achievement-title-row point-history-top-row'>
+            <h2>포인트 변동 내역</h2>
+            <span className='achievement-count'>{filteredPointHistory.length}건</span>
+          </div>
 
-            <div className='point-history-list'>
+          <div className='point-history-filter-wrap'>
+            <button
+              type='button'
+              className={`point-history-filter-btn ${pointHistoryRange === '1d' ? 'point-history-filter-btn--active' : ''}`}
+              onClick={() => {
+                setPointHistoryRange('1d')
+                setVisibleHistoryCount(10)
+              }}
+            >
+              1일
+            </button>
+
+            <button
+              type='button'
+              className={`point-history-filter-btn ${pointHistoryRange === '7d' ? 'point-history-filter-btn--active' : ''}`}
+              onClick={() => {
+                setPointHistoryRange('7d')
+                setVisibleHistoryCount(10)
+              }}
+            >
+              1주일
+            </button>
+
+            <button
+              type='button'
+              className={`point-history-filter-btn ${pointHistoryRange === '1m' ? 'point-history-filter-btn--active' : ''}`}
+              onClick={() => {
+                setPointHistoryRange('1m')
+                setVisibleHistoryCount(10)
+              }}
+            >
+              1개월
+            </button>
+
+            <button
+              type='button'
+              className={`point-history-filter-btn ${pointHistoryRange === '1y' ? 'point-history-filter-btn--active' : ''}`}
+              onClick={() => {
+                setPointHistoryRange('1y')
+                setVisibleHistoryCount(10)
+              }}
+            >
+              1년
+            </button>
+          </div>
+
+          <div className='point-history-range-label'>
+            {rangeLabelMap[pointHistoryRange]} 내역
+          </div>
+
+          <div className='point-history-list'>
               {visibleHistory.length > 0 ? (
                 visibleHistory.map((item) => (
-                  <div className='point-history-item' key={item.history_id}>
-                    <div className='notification-item-left'>
-                      <div className='notification-name'>{item.type}</div>
-                      <div className='notification-date'>
-                        {formatNoticeDate(item.createdAt)}
-                      </div>
+                <div className='point-history-item' key={item.history_id}>
+                  <div className='notification-item-left'>
+                    <div className='notification-name'>{item.type}</div>
+                    <div className='notification-date'>
+                      {formatCompactDateTime(item.createdAt)}
                     </div>
+                  </div>
+
+                  <div className='point-history-right'>
                     <div
                       className={`notification-amount ${Number(item.changeAmount) >= 0 ? 'positive' : 'negative'
                         }`}
@@ -628,21 +755,31 @@ const Profile = () => {
                       {Number(item.changeAmount) >= 0 ? '+' : ''}
                       {Number(item.changeAmount).toLocaleString('ko-KR')}pt
                     </div>
+
+                    <button
+                      type='button'
+                      className='point-history-hide-btn'
+                      onClick={() => handleHidePointHistory(item.history_id)}
+                      title='이 내역 숨기기'
+                    >
+                      삭제
+                    </button>
                   </div>
+                </div>
                 ))
               ) : (
                 <div className='achievement-empty-block'>
-                  최근 7일간 포인트 변동 내역이 없습니다.
+                  {rangeLabelMap[pointHistoryRange]} 내역이 없습니다.
                 </div>
               )}
-              {visibleHistoryCount < pointHistory7Days.length && (
-                <button
-                  className='title-equip-btn'
-                  onClick={() => setVisibleHistoryCount(prev => prev + 10)}
-                >
-                  더보기 ({visibleHistoryCount} / {pointHistory7Days.length})
-                </button>
-              )}
+                {visibleHistoryCount < filteredPointHistory.length && (
+                  <button
+                    className='title-equip-btn'
+                    onClick={() => setVisibleHistoryCount(prev => prev + 10)}
+                  >
+                    더보기 ({visibleHistoryCount} / {filteredPointHistory.length})
+                  </button>
+                )}
             </div>
           </div>
         </div>
@@ -732,18 +869,23 @@ const Profile = () => {
                 <div className='achievement-empty-block'>불러오는 중...</div>
               ) : obtainedAchievements.length > 0 ? (
                     obtainedAchievements.map((item) => (
-                      <div className='achievement-grid-card' key={item.ach_id}>
-                        <img
-                          src={getAchievementIcon(item.ach_id)}
-                          alt={item.name}
-                          className='achievement-grid-img'
-                        />
-                        <div className='achievement-grid-name'>{item.name}</div>
+                <div className='achievement-grid-card' key={item.ach_id}>
+                  <img
+                    src={getAchievementIcon(item.ach_id)}
+                    alt={item.name}
+                    className='achievement-grid-img'
+                  />
+                  <div className='achievement-grid-name'>{item.name}</div>
 
-                        <div className='achievement-grid-date'>
-                          획득일: {formatDateTime(item.obtained_at)}
-                        </div>
-                      </div>
+                  <div className='achievement-grid-date'>
+                    획득일: {formatDateTime(item.obtained_at)}
+                  </div>
+
+                  <div className='achievement-grid-card-tooltip'>
+                    <div className='achievement-grid-tooltip-arrow'></div>
+                    {getTooltipText(item, '업적 설명이 없습니다.')}
+                  </div>
+                </div>
                     ))
               ) : (
                 <div className='achievement-empty-block'>달성한 업적이 없습니다.</div>
@@ -802,17 +944,24 @@ const Profile = () => {
   // Profile Main //
 
   return (
-    <div className='profile'>
+    <div className={`profile ${isProfileCollapsed ? 'profile--collapsed' : ''}`}>
       <div className='profile-content'>
         <div className='profile-set'>
             
-            <button
-              type='button'
-              className='icon-container set-icons'
-            >
-              <img src={spread} alt='collapse profile' className='icons' />
-            </button>
-
+          <button
+            type='button'
+            className='icon-container set-icons'
+            onClick={() => setIsProfileCollapsed((prev) => !prev)}
+            title={isProfileCollapsed ? '프로필 펼치기' : '프로필 숨기기'}
+          >
+            <img
+              src={spread}
+              alt={isProfileCollapsed ? 'expand profile' : 'collapse profile'}
+              className={`icons profile-toggle-icon ${isProfileCollapsed ? 'profile-toggle-icon--collapsed' : ''}`}
+            />
+          </button>
+          {!isProfileCollapsed && (
+            <>
           <div className='notification-wrap' ref={notificationRef}>
             <button
               type='button'
@@ -899,9 +1048,14 @@ const Profile = () => {
           >
             <img src={logout} alt='logout' className='icons' />
           </button>
+           </>
+          )}
         </div>
+        {!isProfileCollapsed && (
+          <>
 
         <div className='profile-master'>
+        
           <div className='profile-account'>
             <div
               className={`glowing-container ${editMode ? 'glowing-container--editable' : ''}`}
@@ -972,13 +1126,65 @@ const Profile = () => {
             <>
                 <h2 className='profile-name'>{member?.nickname || '사용자'}</h2>
 
-                <div className='profile-title-badge'>
-                  <span className='profile-title-text-hover'>
-                    {currentTitleName}
-                    <span className='profile-title-text-tooltip'>
-                      {currentTitleDescription}
+                <div className='profile-title-dropdown-wrap' ref={titleDropdownRef}>
+                  <button
+                    type='button'
+                    className={`profile-title-badge profile-title-badge--button ${isTitleDropdownOpen ? 'profile-title-badge--open' : ''}`}
+                    onClick={handleToggleTitleDropdown}
+                  >
+                    <span className='profile-title-text-hover'>
+                      {currentTitleName}
+                      <span className='profile-title-text-tooltip'>
+                        {currentTitleDescription}
+                      </span>
                     </span>
-                  </span>
+                  </button>
+
+                  {isTitleDropdownOpen && (
+                    <div className='profile-title-dropdown'>
+                      <div className='profile-title-dropdown-header'>
+                        <div className='profile-title-dropdown-title'>칭호 선택</div>
+                        <span className='achievement-count'>{titles.length}개</span>
+                      </div>
+
+                      <div className='profile-title-dropdown-list'>
+                        {titleLoading ? (
+                          <div className='achievement-empty-block'>불러오는 중...</div>
+                        ) : titles.length > 0 ? (
+                          titles.map((item) => {
+                            const isEquipped =
+                              Number(item?.is_equipped) === 1 ||
+                              Number(item?.ach_id) === Number(equippedTitle?.ach_id)
+
+                            return (
+                              <div className='title-item profile-title-dropdown-item' key={item.ach_id}>
+                                <div className='title-item-tooltip'>
+                                  {getTooltipText(item, '칭호 설명이 없습니다.')}
+                                </div>
+
+                                <div className='title-item-left'>
+                                  <div className='title-item-name-row'>
+                                    <span className='title-item-name'>{item.name}</span>
+                                  </div>
+                                </div>
+
+                                <button
+                                  type='button'
+                                  className={`title-equip-btn ${isEquipped ? 'title-equip-btn--active' : ''}`}
+                                  disabled={titleEquipLoading || isEquipped}
+                                  onClick={() => handleEquipTitle(item.ach_id)}
+                                >
+                                  {isEquipped ? '장착 중' : titleEquipLoading ? '변경 중...' : '장착'}
+                                </button>
+                              </div>
+                            )
+                          })
+                        ) : (
+                          <div className='achievement-empty-block'>보유한 칭호가 없습니다.</div>
+                        )}
+                      </div>
+                    </div>
+                  )}
                 </div>
             </>
           )}
@@ -1074,6 +1280,11 @@ const Profile = () => {
                   <div className='achievement-recent-name'>
                     {typeof item === 'string' ? item : item?.name}
                   </div>
+
+                  <div className='achievement-recent-tooltip'>
+                    <div className='achievement-recent-tooltip-arrow'></div>
+                    {getTooltipText(item, '업적 설명이 없습니다.')}
+                  </div>
                 </div>
               ))
             ) : (
@@ -1081,6 +1292,9 @@ const Profile = () => {
             )}
           </div>
         </div>
+
+         </>
+        )}
       </div>
     </div>
   )

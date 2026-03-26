@@ -5,7 +5,7 @@ body {
 .main-body {
   min-height: 100vh;
   display: grid;
-  grid-template-columns: var(--nav-width, 280px) minmax(0, 1fr) minmax(220px, 280px);
+  grid-template-columns: var(--nav-width, 280px) minmax(0, 1fr) var(--profile-width, 280px);
   gap: 1.5rem;
   transition: grid-template-columns 0.4s cubic-bezier(0.4, 0, 0.2, 1);
 }
