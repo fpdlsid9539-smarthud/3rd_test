@@ -13,4 +13,10 @@ router.get(
   pointHistoryController.getPointNotifications
 );
 
+router.patch(
+  "/notifications/:historyId/hide",
+  authMiddleware,
+  pointHistoryController.hidePointNotification
+);
+
 module.exports = router;

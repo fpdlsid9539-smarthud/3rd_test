@@ -38,7 +38,7 @@ function getDisplayType(reason) {
     reasonStr.includes("correct") ||
     reasonStr.includes("wrong")
   ) {
-    return "전략실 퀴즈";
+    return "교육실 퀴즈";
   }
 
   // 3. 교육실
@@ -86,8 +86,8 @@ exports.getPointNotifications = async (req, res) => {
         created_at
       FROM point_history
       WHERE member_id = ?
-        AND created_at >= DATE_SUB(NOW(), INTERVAL 7 DAY)
         AND change_amount !=0
+        AND is_hidden = 0
       ORDER BY created_at DESC
     `;
 
@@ -106,5 +106,38 @@ exports.getPointNotifications = async (req, res) => {
   } catch (err) {
     console.error("포인트 알림 오류:", err);
     return fail(res, "포인트 알림 조회 실패", err.message);
+  }
+};
+
+exports.hidePointNotification = async (req, res) => {
+  try {
+    const memberId = extractMemberId(req);
+    const historyId = Number(req.params.historyId);
+
+    if (!memberId) {
+      return fail(res, "인증이 필요합니다.", null, 401);
+    }
+
+    if (!Number.isInteger(historyId) || historyId <= 0) {
+      return fail(res, "올바른 history_id가 아닙니다.", null, 400);
+    }
+
+    const sql = `
+      UPDATE point_history
+      SET is_hidden = 1
+      WHERE history_id = ?
+        AND member_id = ?
+    `;
+
+    const [result] = await db.promise().query(sql, [historyId, memberId]);
+
+    if (!result.affectedRows) {
+      return fail(res, "숨길 포인트 내역을 찾지 못했습니다.", null, 404);
+    }
+
+    return success(res, "포인트 내역 숨김 처리 성공");
+  } catch (err) {
+    console.error("포인트 내역 숨김 오류:", err);
+    return fail(res, "포인트 내역 숨김 처리 실패", err.message);
   }
 };
