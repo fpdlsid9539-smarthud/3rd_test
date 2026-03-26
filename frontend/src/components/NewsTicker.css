@@ -1,0 +1,200 @@
+/* 대시보드 상단에 배치될 하얀색 상자 */
+.news-ticker-container {
+  width: 100%;
+  /* 이미지 1번의 빨간 박스 위치에 맞춤 */
+  height: 48px; /* 한 줄 뉴스를 위한 적당한 높이 */
+  background-color: var(--box-bg, #ffffff); /* 하얀 배경 */
+  border-bottom: 1px solid var(--border, #e2e8f0); /* 하단 경계선 */
+  border-radius: 12px; /* 둥근 모서리 */
+  box-sizing: border-box;
+  padding: 0 1.5rem;
+  display: flex;
+  align-items: center; /* 세로 중앙 정렬 */
+  overflow: hidden; /* 영역 밖으로 나가는 글자 숨김 */
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.02); /* 살짝 그림자 */
+  margin-bottom: 1rem; /* 아래 종목 리스트와의 간격 */
+}
+
+/* 로딩 중 스타일 */
+.news-ticker-container.loading {
+  justify-content: center;
+  color: #94a3b8;
+  font-size: 0.9rem;
+}
+
+/* 뉴스 콘텐츠 영역 */
+.news-content {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+  width: 100%;
+  white-space: nowrap; /* 글자가 줄바꿈되지 않게 함 */
+  /* 🟢 부드러운 페이드인 애니메이션 적용 */
+  animation: newsFadeIn 0.5s ease-out;
+}
+
+/* 애니메이션 정의 */
+@keyframes newsFadeIn {
+  from { opacity: 0; transform: translateY(5px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+
+/* [출처] 부분 스타일 (이미지 2번처럼 파란색 계열) */
+.news-source {
+  font-weight: 700;
+  color: #2563eb; /* 신뢰감 있는 파란색 */
+  font-size: 0.95rem;
+  flex-shrink: 0; /* 출처 이름이 찌그러지지 않게 방어 */
+}
+
+/* 제목 부분 스타일 (클릭 가능) */
+.news-title {
+  font-weight: 600;
+  color: #1e293b; /* 어두운 회색 */
+  font-size: 0.98rem;
+  text-decoration: none; /* 밑줄 없앰 */
+  cursor: pointer;
+  
+  /* 🟢 글자가 상자보다 길면 '...'으로 줄임 처리 (한 줄 유지) */
+  overflow: hidden;
+  text-overflow: ellipsis;
+  flex: 1; /* 남은 공간을 꽉 채움 */
+}
+
+/* 마우스를 올렸을 때만 밑줄 표시 */
+.news-title:hover {
+  text-decoration: underline;
+  color: #000000;
+}
+
+/* ====================================
+   🟢 추가: 전체보기 버튼 & 모달 창 디자인
+   ==================================== */
+
+/* 전체보기 버튼 */
+.news-all-btn {
+  flex-shrink: 0;
+  background: #f1f5f9;
+  border: 1px solid #e2e8f0;
+  color: #475569;
+  font-size: 0.8rem;
+  font-weight: 600;
+  padding: 0.4rem 0.8rem;
+  border-radius: 8px;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  margin-left: 1rem;
+}
+
+.news-all-btn:hover {
+  background: #e2e8f0;
+  color: #1e293b;
+}
+
+/* 팝업창 배경 어둡게 */
+.news-modal-overlay {
+  position: fixed;
+  top: 0;
+  left: 0;
+  width: 100vw;
+  height: 100vh;
+  background: rgba(0, 0, 0, 0.4);
+  backdrop-filter: blur(3px);
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  z-index: 999999; /* 화면 맨 앞으로 오게 설정 */
+}
+
+/* 팝업창 본체 */
+.news-modal-content {
+  background: #ffffff;
+  width: 90%;
+  max-width: 600px;
+  border-radius: 1.2rem;
+  box-shadow: 0 10px 30px rgba(0, 0, 0, 0.15);
+  display: flex;
+  flex-direction: column;
+  max-height: 80vh;
+  overflow: hidden;
+  animation: modalFadeIn 0.2s ease-out;
+}
+
+@keyframes modalFadeIn {
+  from { opacity: 0; transform: translateY(20px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+
+/* 팝업창 헤더 */
+.news-modal-header {
+  padding: 1.2rem 1.5rem;
+  border-bottom: 1px solid #e2e8f0;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  background-color: var(--box-bg);
+}
+
+.news-modal-header h3 {
+  margin: 0;
+  font-size: 1.2rem;
+  font-weight: 800;
+  color: var(--text);
+}
+
+.news-modal-close {
+  background: transparent;
+  border: none;
+  font-size: 1.5rem;
+  font-weight: bold;
+  cursor: pointer;
+  color: #94a3b8;
+  transition: color 0.2s;
+}
+
+.news-modal-close:hover {
+  color: #ef4444;
+}
+
+/* 팝업창 리스트 영역 */
+.news-modal-list {
+  padding: 1rem;
+  overflow-y: auto; /* 리스트가 길어지면 스크롤 생성 */
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+}
+
+.news-modal-item {
+  display: flex;
+  gap: 0.75rem;
+  padding: 1rem;
+  text-decoration: none;
+  border-radius: 12px;
+  background: #f8fafc;
+  border: 1px solid transparent;
+  transition: all 0.2s;
+  align-items: flex-start;
+}
+
+.news-modal-item:hover {
+  background: #ffffff;
+  border-color: #cbd5e1;
+  transform: translateY(-2px);
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.05);
+}
+
+.news-modal-source {
+  color: #2563eb;
+  font-weight: 800;
+  font-size: 0.9rem;
+  flex-shrink: 0;
+  padding-top: 2px;
+}
+
+.news-modal-title {
+  color: #334155;
+  font-size: 1rem;
+  font-weight: 600;
+  line-height: 1.4;
+}

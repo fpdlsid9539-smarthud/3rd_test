@@ -59,10 +59,15 @@ function getDisplayType(reason) {
     reasonStr.includes("매수") ||
     reasonStr.includes("매도")
   ) {
-    return "주식 거래";
+   let formattedReason = reason;
+    if (reason.endsWith("매수")) {
+      formattedReason = `[매수] ${reason.replace(" 매수", "").trim()}`;
+    } else if (reason.endsWith("매도")) {
+      formattedReason = `[매도] ${reason.replace(" 매도", "").trim()}`;
+    }
+    
+    return formattedReason; 
   }
-
-  return "포인트 변동";
 }
 
 exports.getPointNotifications = async (req, res) => {
@@ -82,6 +87,7 @@ exports.getPointNotifications = async (req, res) => {
       FROM point_history
       WHERE member_id = ?
         AND created_at >= DATE_SUB(NOW(), INTERVAL 7 DAY)
+        AND change_amount !=0
       ORDER BY created_at DESC
     `;
 

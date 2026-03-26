@@ -1,13 +1,12 @@
-// frontend/src/components/Profile.jsx
-
 import React, { useEffect, useMemo, useRef, useState } from 'react'
 import './Profile.css'
 import notification from '../assets/icons/notification.svg'
-import account from '../assets/icons/account.svg'
+import edit from '../assets/icons/edit.svg'
 import logout from '../assets/icons/logout.svg'
+import spread from '../assets/icons/spread.svg'
 import defaultProfile from '../assets/chicken running machine.png'
-import vivereBeginner from '../assets/icons/achievement/vivere_beginner.png'
 import { api } from '../config/api.js'
+import { getAchievementIcon } from '../utils/achievementIconMap'
 
 const extractArrayData = (payload) => {
   if (Array.isArray(payload)) return payload
@@ -32,11 +31,11 @@ const normalizeOwnedStocks = (payload) => {
 const getStockPrincipal = (stock) => {
   const directTotalPrice = Number(
     stock?.totalPrice ??
-      stock?.total_price ??
-      stock?.principal ??
-      stock?.originPrice ??
-      stock?.origin_price ??
-      0
+    stock?.total_price ??
+    stock?.principal ??
+    stock?.originPrice ??
+    stock?.origin_price ??
+    0
   )
 
   if (directTotalPrice > 0) return directTotalPrice
@@ -49,10 +48,10 @@ const getStockPrincipal = (stock) => {
 const getStockProfit = (stock) => {
   return Number(
     stock?.changeAmount ??
-      stock?.change_amount ??
-      stock?.profit ??
-      stock?.pnl_amount ??
-      0
+    stock?.change_amount ??
+    stock?.profit ??
+    stock?.pnl_amount ??
+    0
   )
 }
 
@@ -456,7 +455,7 @@ const Profile = () => {
 
   const membershipLabel = isPremium ? '👑' : 'Free'
 
-const openEdit = () => {
+  const openEdit = () => {
     setEditNickname(member?.nickname || '')
     setEditPreviewUrl(null)
     setSaveError('')
@@ -593,8 +592,10 @@ const openEdit = () => {
     )
   }
 
+  // Notification //
+
   if (showPointHistory) {
-      const visibleHistory = pointHistory7Days.slice(0, visibleHistoryCount);
+    const visibleHistory = pointHistory7Days.slice(0, visibleHistoryCount);
     return (
       <div className='profile'>
         <div className='profile-content'>
@@ -621,9 +622,8 @@ const openEdit = () => {
                       </div>
                     </div>
                     <div
-                      className={`notification-amount ${
-                        Number(item.changeAmount) >= 0 ? 'positive' : 'negative'
-                      }`}
+                      className={`notification-amount ${Number(item.changeAmount) >= 0 ? 'positive' : 'negative'
+                        }`}
                     >
                       {Number(item.changeAmount) >= 0 ? '+' : ''}
                       {Number(item.changeAmount).toLocaleString('ko-KR')}pt
@@ -635,21 +635,22 @@ const openEdit = () => {
                   최근 7일간 포인트 변동 내역이 없습니다.
                 </div>
               )}
-                {visibleHistoryCount < pointHistory7Days.length && (
-                  <button
-                    className='title-equip-btn'
-                    style={{ width: '100%', marginTop: '0.5rem', padding: '0.8rem' }}
-                    onClick={() => setVisibleHistoryCount(prev => prev + 10)}
-                  >
-                    더보기 ({visibleHistoryCount} / {pointHistory7Days.length})
-                  </button>
-                )}
+              {visibleHistoryCount < pointHistory7Days.length && (
+                <button
+                  className='title-equip-btn'
+                  onClick={() => setVisibleHistoryCount(prev => prev + 10)}
+                >
+                  더보기 ({visibleHistoryCount} / {pointHistory7Days.length})
+                </button>
+              )}
             </div>
           </div>
         </div>
       </div>
     )
   }
+
+  // Achievments //
 
   if (showAllAchievements) {
     return (
@@ -689,9 +690,8 @@ const openEdit = () => {
                       </div>
 
                       <button
-                        className={`title-equip-btn ${
-                          isEquipped ? 'title-equip-btn--active' : ''
-                        }`}
+                        className={`title-equip-btn ${isEquipped ? 'title-equip-btn--active' : ''
+                          }`}
                         disabled={titleEquipLoading || isEquipped}
                         onClick={() => handleEquipTitle(item.ach_id)}
                       >
@@ -731,15 +731,20 @@ const openEdit = () => {
               {achievementLoading ? (
                 <div className='achievement-empty-block'>불러오는 중...</div>
               ) : obtainedAchievements.length > 0 ? (
-                obtainedAchievements.map((item) => (
-                  <div className='achievement-grid-card' key={item.ach_id}>
-                    <div className='achievement-grid-name'>{item.name}</div>
+                    obtainedAchievements.map((item) => (
+                      <div className='achievement-grid-card' key={item.ach_id}>
+                        <img
+                          src={getAchievementIcon(item.ach_id)}
+                          alt={item.name}
+                          className='achievement-grid-img'
+                        />
+                        <div className='achievement-grid-name'>{item.name}</div>
 
-                    <div className='achievement-grid-date'>
-                      획득일: {formatDateTime(item.obtained_at)}
-                    </div>
-                  </div>
-                ))
+                        <div className='achievement-grid-date'>
+                          획득일: {formatDateTime(item.obtained_at)}
+                        </div>
+                      </div>
+                    ))
               ) : (
                 <div className='achievement-empty-block'>달성한 업적이 없습니다.</div>
               )}
@@ -752,24 +757,28 @@ const openEdit = () => {
               <span className='achievement-count'>{inProgressAchievements.length}개</span>
             </div>
 
-           <div className='achievement-progress-tooltip-grid'>
+            <div className='achievement-progress-tooltip-grid'>
               {achievementLoading ? (
                 <div className='achievement-empty-block'>불러오는 중...</div>
               ) : inProgressAchievements.length > 0 ? (
                 inProgressAchievements.map((item) => (
                   /* hover의 대상이 되는 트리거 요소 */
                   <div className='achievement-trigger-item' key={item.ach_id}>
-                    
+
                     {/* 1. 평소에 보여줄 초소형 Identifier (예: 이름 앞글자 또는 별도 디자인) */}
                     <div className='achievement-mini-icon'>
-                      {item.name.substring(0, 1)} {/* 이름 첫 글자만 표시 */}
+                      <img
+                        src={getAchievementIcon(item.ach_id)}
+                        alt={item.name}
+                        className='achievement-mini-icon-img'
+                      />
                     </div>
 
                     {/* 2. hover 시 나타날 CSS 기반 말풍선 (Tooltip) */}
                     <div className='achievement-speech-bubble'>
                       {/* 말풍선 꼬리 */}
                       <div className='bubble-arrow'></div>
-                      
+
                       {/* 말풍선 내용 */}
                       <div className='bubble-content'>
                         <strong className='bubble-name'>{item.name}</strong>
@@ -790,10 +799,20 @@ const openEdit = () => {
     )
   }
 
+  // Profile Main //
+
   return (
     <div className='profile'>
       <div className='profile-content'>
         <div className='profile-set'>
+            
+            <button
+              type='button'
+              className='icon-container set-icons'
+            >
+              <img src={spread} alt='collapse profile' className='icons' />
+            </button>
+
           <div className='notification-wrap' ref={notificationRef}>
             <button
               type='button'
@@ -850,9 +869,8 @@ const openEdit = () => {
                       </div>
 
                       <div
-                        className={`notification-amount ${
-                          Number(item.changeAmount) >= 0 ? 'positive' : 'negative'
-                        }`}
+                        className={`notification-amount ${Number(item.changeAmount) >= 0 ? 'positive' : 'negative'
+                          }`}
                       >
                         {Number(item.changeAmount) >= 0 ? '+' : ''}
                         {Number(item.changeAmount).toLocaleString('ko-KR')}pt
@@ -870,7 +888,7 @@ const openEdit = () => {
             onClick={editMode ? closeEdit : openEdit}
             title={editMode ? '편집 취소' : '프로필 편집'}
           >
-            <img src={account} alt='account' className='icons' />
+            <img src={edit} alt='edit' className='icons' />
           </button>
 
           <button
@@ -900,9 +918,8 @@ const openEdit = () => {
             </div>
 
             <div
-              className={`profile-membership ${
-                isPremium ? 'profile-membership--premium' : 'profile-membership--free'
-              }`}
+              className={`profile-membership ${isPremium ? 'profile-membership--premium' : 'profile-membership--free'
+                }`}
             >
               {membershipLabel}
             </div>
@@ -953,30 +970,29 @@ const openEdit = () => {
             </div>
           ) : (
             <>
-              <h2 className='profile-name'>{member?.nickname || '사용자'}</h2>
+                <h2 className='profile-name'>{member?.nickname || '사용자'}</h2>
 
-              <div className='profile-title-badge'>
-                <span className='profile-title-text-hover'>
-                  {currentTitleName}
-                  <span className='profile-title-text-tooltip'>
-                    {currentTitleDescription}
+                <div className='profile-title-badge'>
+                  <span className='profile-title-text-hover'>
+                    {currentTitleName}
+                    <span className='profile-title-text-tooltip'>
+                      {currentTitleDescription}
+                    </span>
                   </span>
-                </span>
-              </div>
+                </div>
             </>
           )}
 
-          <div className='profile-stats'>
-            <div className='stats-description'>
-              {/* <span className='description-top'>{member?.tier || '브론즈'}</span> */}
-              <span className='description-top'>{displayTier || '브론즈'}</span>
-              <p>{tierRank ? `${tierRank}위` : '-'}</p>
-            </div>
-            <hr />
-            <div className='stats-description'>
-              <span className='description-top'>ISR</span>
-              <p>{member?.isr_score ?? 0}</p>
-            </div>
+        </div>
+        <div className='profile-stats'>
+          <div className='stats-description'>            
+            <span className='description-top'>{displayTier || '브론즈'}</span>
+            <p>{tierRank ? `${tierRank}` : '-'} <span className='point-unit'>위</span></p>
+          </div>
+          <hr />
+          <div className='stats-description'>
+            <span className='description-top'>ISR</span>
+            <p>{member?.isr_score ?? 0}</p>
           </div>
         </div>
 
@@ -984,10 +1000,11 @@ const openEdit = () => {
           <span className='description-top'>보유 포인트</span>
           <p
             className='description-slave'
-            onClick={() => setShowPointHistory(true)}
-            style={{ cursor: 'pointer' }}
           >
-            <span className='clickable-points'>
+            <span
+              className='clickable-points'
+              onClick={() => setShowPointHistory(true)}
+            >
               {formatNumber(member?.points ?? 0)}
             </span>
             <span className='point-unit'>pt</span>
@@ -1046,7 +1063,13 @@ const openEdit = () => {
                   className='achievement-recent-card'
                   key={`${item?.ach_id || item?.name || item || 'achievement'}-${index}`}
                 >
-                 
+                  {typeof item !== 'string' && (
+                    <img
+                      src={getAchievementIcon(item.ach_id)}
+                      alt={item.name}
+                      className='achievement-recent-img'
+                    />
+                  )}
 
                   <div className='achievement-recent-name'>
                     {typeof item === 'string' ? item : item?.name}

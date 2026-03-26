@@ -8,7 +8,8 @@ import Quiz from './QuizPage'
 import Stocks from './Stocks'
 import Ranking from './Ranking'
 import Billing from './Billing'
-import FAQAdmin from './FAQAdmin'
+import FAQAdmin from './FAQADMIN'
+import FAQPage from './FAQPage'
 
 const Main = () => {
   const VALID_MENUS = [
@@ -18,6 +19,7 @@ const Main = () => {
     'Stocks',
     'Ranking',
     'Billing',
+    'FAQ',
     'FAQAdmin',
   ]
 
@@ -42,8 +44,7 @@ const Main = () => {
 
     if (tokenFromUrl) {
       localStorage.setItem('token', tokenFromUrl)
-      const cleanUrl =
-        window.location.origin + window.location.pathname + window.location.hash
+      const cleanUrl = window.location.origin + window.location.pathname + window.location.hash
       window.history.replaceState({}, document.title, cleanUrl)
     }
 
@@ -183,6 +184,8 @@ const Main = () => {
             setMembershipType={setMembershipType}
           />
         )
+      case 'FAQ':
+        return <FAQPage />
       case 'FAQAdmin':
         return loggedIn && role === 'admin' ? <FAQAdmin /> : <Dashboard />
       default:
@@ -191,10 +194,7 @@ const Main = () => {
   }
 
   return (
-    <div
-      className='main-body'
-      style={{ '--nav-width': navCollapsed ? '5.5rem' : '280px' }}
-    >
+    <div className='main-body' style={{ '--nav-width': navCollapsed ? '5.5rem' : '280px' }}>
       <aside className='navigation-area'>
         <Navigation
           setActiveMenu={handleMenuChange}
@@ -206,7 +206,9 @@ const Main = () => {
         />
       </aside>
 
-      <main className='content-area'>{renderContent()}</main>
+      <main className='content-area'>
+        {renderContent()}
+      </main>
 
       <aside className='profile-area'>
         <Profile />

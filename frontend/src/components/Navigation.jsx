@@ -8,7 +8,7 @@ import card from '../assets/icons/card.svg'
 import rank from '../assets/icons/rank.svg'
 import quiz from '../assets/icons/quiz.svg'
 import stocks from '../assets/icons/stocks.svg'
-import faq from '../assets/icons/education.svg'
+import faq from '../assets/icons/megaphone.svg'
 
 const Navigation = ({
   setActiveMenu,
@@ -155,9 +155,7 @@ const Navigation = ({
 
             <li
               className={`nav-menu ${activeMenu === 'FAQ' ? 'active' : ''}`}
-              onClick={() => {
-                window.location.hash = 'FAQ'
-              }}
+              onClick={() => setActiveMenu('FAQ')}
               title={collapsed ? 'FAQ' : undefined}
             >
               <div className='nav-line'>
@@ -188,15 +186,16 @@ const Navigation = ({
               className={`billing-nav-button ${isPremium ? 'disabled' : ''}`}
               onClick={() => {
                 if (isMembershipLoaded && !isPremium) {
-                  setActiveMenu('Billing')
+                  setActiveMenu('Billing');
+                } else {
+                  handleCancel();
                 }
               }}
-              disabled={!isMembershipLoaded || isPremium}
             >
               {!isMembershipLoaded
                 ? '확인 중...'
                 : isPremium
-                  ? '프리미엄 이용 중'
+                  ? '구독 취소'
                   : (
                     <>
                       <img src={card} alt='결제' className='icons' />
@@ -205,16 +204,6 @@ const Navigation = ({
                   )}
             </button>
           </div>
-
-          {isPremium && (
-            <button
-              type='button'
-              className='billing-cancel-mini-btn'
-              onClick={handleCancel}
-            >
-              구독취소
-            </button>
-          )}
         </div>
       </nav>
     </aside>

@@ -1,9 +1,9 @@
 .navigation {
-  position: fixed; 
+  position: fixed;
   top: 0;
   z-index: 9999;
   height: 100vh;
-  width: var(--nav-width, 280px); 
+  width: var(--nav-width, 280px);
   background-color: var(--box-bg);
   border-right: 1px solid var(--border);
   box-sizing: border-box;
@@ -100,6 +100,7 @@
 
 .nav-menu {
   height: 3.5rem;
+  box-sizing: border-box;
 
   display: flex;
   align-items: center;
@@ -179,9 +180,22 @@
   cursor: pointer;
 }
 
+.billing-action-wrap:not(.premium) {
+  transition: all 0.3s ease;
+}
+
 .billing-action-wrap:not(.premium):hover {
   transform: translateY(-0.25rem);
   box-shadow: 0 0.25rem 0.5rem var(--shadow-1);
+}
+
+.billing-nav-button.disabled {
+  background: var(--text-highlight);
+  color: var(--box-bg);
+  cursor: pointer;
+  transform: none;
+  filter: none;
+  transition: all 0.3s ease;
 }
 
 .billing-action-wrap:hover .billing-nav-button.disabled,

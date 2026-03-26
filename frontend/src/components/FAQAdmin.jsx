@@ -1,7 +1,7 @@
-import React, { useEffect, useState } from 'react';
-import './FAQAdmin.css';
+import React, { useEffect, useState } from 'react'
+import './FAQAdmin.css'
 
-const BACKEND_URL = 'http://localhost:5000';
+const BACKEND_URL = 'http://localhost:5000'
 
 const EMPTY_FORM = {
   question: '',
@@ -9,128 +9,143 @@ const EMPTY_FORM = {
   category: '일반',
   sort_order: 0,
   is_visible: 1,
-};
+}
 
 const EMPTY_ANSWER_FORM = {
   questionId: null,
   admin_answer: '',
-};
+}
+
+const formatDateTime = (value) => {
+  if (!value) return '-'
+
+  const date = new Date(value)
+  if (Number.isNaN(date.getTime())) return '-'
+
+  const yyyy = date.getFullYear()
+  const mm = String(date.getMonth() + 1).padStart(2, '0')
+  const dd = String(date.getDate()).padStart(2, '0')
+  const hh = String(date.getHours()).padStart(2, '0')
+  const mi = String(date.getMinutes()).padStart(2, '0')
+
+  return `${yyyy}.${mm}.${dd} ${hh}:${mi}`
+}
 
 const FAQAdmin = () => {
-  const [faqList, setFaqList] = useState([]);
-  const [questionList, setQuestionList] = useState([]);
-  const [loading, setLoading] = useState(true);
-  const [questionLoading, setQuestionLoading] = useState(true);
-  const [saving, setSaving] = useState(false);
-  const [answerSaving, setAnswerSaving] = useState(false);
+  const [faqList, setFaqList] = useState([])
+  const [questionList, setQuestionList] = useState([])
+  const [loading, setLoading] = useState(true)
+  const [questionLoading, setQuestionLoading] = useState(true)
+  const [saving, setSaving] = useState(false)
+  const [answerSaving, setAnswerSaving] = useState(false)
 
-  const [form, setForm] = useState(EMPTY_FORM);
-  const [editingId, setEditingId] = useState(null);
+  const [form, setForm] = useState(EMPTY_FORM)
+  const [editingId, setEditingId] = useState(null)
 
-  const [answerForm, setAnswerForm] = useState(EMPTY_ANSWER_FORM);
+  const [answerForm, setAnswerForm] = useState(EMPTY_ANSWER_FORM)
 
-  const getToken = () => localStorage.getItem('token');
+  const getToken = () => localStorage.getItem('token')
 
   const fetchFaq = async () => {
     try {
-      setLoading(true);
+      setLoading(true)
 
-      const token = getToken();
+      const token = getToken()
       const res = await fetch(`${BACKEND_URL}/api/faq/all`, {
         headers: {
           Authorization: `Bearer ${token}`,
         },
-      });
+      })
 
-      const data = await res.json();
+      const data = await res.json()
 
       if (!data.success) {
-        throw new Error(data.message || 'FAQ 목록 조회 실패');
+        throw new Error(data.message || 'FAQ 목록 조회 실패')
       }
 
-      setFaqList(Array.isArray(data.data) ? data.data : []);
+      setFaqList(Array.isArray(data.data) ? data.data : [])
     } catch (err) {
-      console.error(err);
-      alert(err.message || 'FAQ 목록 조회 중 오류가 발생했습니다.');
-      setFaqList([]);
+      console.error(err)
+      alert(err.message || 'FAQ 목록 조회 중 오류가 발생했습니다.')
+      setFaqList([])
     } finally {
-      setLoading(false);
+      setLoading(false)
     }
-  };
+  }
 
   const fetchQuestions = async () => {
     try {
-      setQuestionLoading(true);
+      setQuestionLoading(true)
 
-      const token = getToken();
+      const token = getToken()
       const res = await fetch(`${BACKEND_URL}/api/faq/questions`, {
         headers: {
           Authorization: `Bearer ${token}`,
         },
-      });
+      })
 
-      const data = await res.json();
+      const data = await res.json()
 
       if (!data.success) {
-        throw new Error(data.message || '질문 목록 조회 실패');
+        throw new Error(data.message || '질문 목록 조회 실패')
       }
 
-      setQuestionList(Array.isArray(data.data) ? data.data : []);
+      setQuestionList(Array.isArray(data.data) ? data.data : [])
     } catch (err) {
-      console.error(err);
-      alert(err.message || '질문 목록 조회 중 오류가 발생했습니다.');
-      setQuestionList([]);
+      console.error(err)
+      alert(err.message || '질문 목록 조회 중 오류가 발생했습니다.')
+      setQuestionList([])
     } finally {
-      setQuestionLoading(false);
+      setQuestionLoading(false)
     }
-  };
+  }
 
   useEffect(() => {
-    fetchFaq();
-    fetchQuestions();
-  }, []);
+    fetchFaq()
+    fetchQuestions()
+  }, [])
 
   const handleChange = (e) => {
-    const { name, value } = e.target;
+    const { name, value } = e.target
 
     setForm((prev) => ({
       ...prev,
       [name]: name === 'sort_order' ? Number(value || 0) : value,
-    }));
-  };
+    }))
+  }
 
   const resetForm = () => {
-    setForm(EMPTY_FORM);
-    setEditingId(null);
-  };
+    setForm(EMPTY_FORM)
+    setEditingId(null)
+  }
 
   const handleSubmit = async (e) => {
-    e.preventDefault();
+    e.preventDefault()
 
     if (!form.question.trim()) {
-      alert('질문을 입력하세요.');
-      return;
+      alert('질문을 입력하세요.')
+      return
     }
 
     if (!form.answer.trim()) {
-      alert('답변을 입력하세요.');
-      return;
+      alert('답변을 입력하세요.')
+      return
     }
 
     try {
-      setSaving(true);
+      setSaving(true)
 
-      const token = getToken();
+      const token = getToken()
       if (!token) {
-        alert('로그인이 필요합니다.');
-        return;
+        alert('로그인이 필요합니다.')
+        return
       }
 
       const url = editingId
         ? `${BACKEND_URL}/api/faq/${editingId}`
-        : `${BACKEND_URL}/api/faq`;
+        : `${BACKEND_URL}/api/faq`
 
-      const method = editingId ? 'PUT' : 'POST';
+      const method = editingId ? 'PUT' : 'POST'
 
       const res = await fetch(url, {
         method,
@@ -139,47 +154,47 @@ const FAQAdmin = () => {
           Authorization: `Bearer ${token}`,
         },
         body: JSON.stringify(form),
-      });
+      })
 
-      const data = await res.json();
+      const data = await res.json()
 
       if (!data.success) {
-        throw new Error(data.message || '저장 실패');
+        throw new Error(data.message || '저장 실패')
       }
 
-      alert(editingId ? 'FAQ 수정 완료' : 'FAQ 등록 완료');
-      resetForm();
-      fetchFaq();
+      alert(editingId ? 'FAQ 수정 완료' : 'FAQ 등록 완료')
+      resetForm()
+      fetchFaq()
     } catch (err) {
-      console.error(err);
-      alert(err.message || '저장 중 오류가 발생했습니다.');
+      console.error(err)
+      alert(err.message || '저장 중 오류가 발생했습니다.')
     } finally {
-      setSaving(false);
+      setSaving(false)
     }
-  };
+  }
 
   const handleEdit = (faq) => {
-    setEditingId(faq.faq_id);
+    setEditingId(faq.faq_id)
     setForm({
       question: faq.question || '',
       answer: faq.answer || '',
       category: faq.category || '일반',
       sort_order: Number(faq.sort_order || 0),
       is_visible: Number(faq.is_visible || 0),
-    });
+    })
 
-    window.scrollTo({ top: 0, behavior: 'smooth' });
-  };
+    window.scrollTo({ top: 0, behavior: 'smooth' })
+  }
 
   const handleDelete = async (faqId) => {
-    const ok = window.confirm('정말 이 FAQ를 삭제하시겠습니까?');
-    if (!ok) return;
+    const ok = window.confirm('정말 이 FAQ를 삭제하시겠습니까?')
+    if (!ok) return
 
     try {
-      const token = getToken();
+      const token = getToken()
       if (!token) {
-        alert('로그인이 필요합니다.');
-        return;
+        alert('로그인이 필요합니다.')
+        return
       }
 
       const res = await fetch(`${BACKEND_URL}/api/faq/${faqId}`, {
@@ -187,33 +202,33 @@ const FAQAdmin = () => {
         headers: {
           Authorization: `Bearer ${token}`,
         },
-      });
+      })
 
-      const data = await res.json();
+      const data = await res.json()
 
       if (!data.success) {
-        throw new Error(data.message || '삭제 실패');
+        throw new Error(data.message || '삭제 실패')
       }
 
-      alert('FAQ 삭제 완료');
+      alert('FAQ 삭제 완료')
 
       if (editingId === faqId) {
-        resetForm();
+        resetForm()
       }
 
-      fetchFaq();
+      fetchFaq()
     } catch (err) {
-      console.error(err);
-      alert(err.message || '삭제 중 오류가 발생했습니다.');
+      console.error(err)
+      alert(err.message || '삭제 중 오류가 발생했습니다.')
     }
-  };
+  }
 
   const handleToggleVisibility = async (faqId) => {
     try {
-      const token = getToken();
+      const token = getToken()
       if (!token) {
-        alert('로그인이 필요합니다.');
-        return;
+        alert('로그인이 필요합니다.')
+        return
       }
 
       const res = await fetch(`${BACKEND_URL}/api/faq/${faqId}/visibility`, {
@@ -221,52 +236,52 @@ const FAQAdmin = () => {
         headers: {
           Authorization: `Bearer ${token}`,
         },
-      });
+      })
 
-      const data = await res.json();
+      const data = await res.json()
 
       if (!data.success) {
-        throw new Error(data.message || '노출 상태 변경 실패');
+        throw new Error(data.message || '노출 상태 변경 실패')
       }
 
-      fetchFaq();
+      fetchFaq()
     } catch (err) {
-      console.error(err);
-      alert(err.message || '노출 상태 변경 중 오류가 발생했습니다.');
+      console.error(err)
+      alert(err.message || '노출 상태 변경 중 오류가 발생했습니다.')
     }
-  };
+  }
 
   const startAnswerEdit = (question) => {
     setAnswerForm({
       questionId: question.question_id,
       admin_answer: question.admin_answer || '',
-    });
-  };
+    })
+  }
 
   const resetAnswerForm = () => {
-    setAnswerForm(EMPTY_ANSWER_FORM);
-  };
+    setAnswerForm(EMPTY_ANSWER_FORM)
+  }
 
   const handleAnswerSubmit = async (e) => {
-    e.preventDefault();
+    e.preventDefault()
 
     if (!answerForm.questionId) {
-      alert('답변할 질문을 선택하세요.');
-      return;
+      alert('답변할 질문을 선택하세요.')
+      return
     }
 
     if (!answerForm.admin_answer.trim()) {
-      alert('답변 내용을 입력하세요.');
-      return;
+      alert('답변 내용을 입력하세요.')
+      return
     }
 
     try {
-      setAnswerSaving(true);
+      setAnswerSaving(true)
 
-      const token = getToken();
+      const token = getToken()
       if (!token) {
-        alert('로그인이 필요합니다.');
-        return;
+        alert('로그인이 필요합니다.')
+        return
       }
 
       const res = await fetch(
@@ -278,64 +293,64 @@ const FAQAdmin = () => {
             Authorization: `Bearer ${token}`,
           },
           body: JSON.stringify({
-            admin_answer: answerForm.admin_answer,
+            answer: answerForm.admin_answer,
           }),
         }
-      );
+      )
 
-      const data = await res.json();
+      const data = await res.json()
 
       if (!data.success) {
-        throw new Error(data.message || '답변 등록 실패');
+        throw new Error(data.message || '답변 등록 실패')
       }
 
-      alert('질문 답변 등록 완료');
-      resetAnswerForm();
-      fetchQuestions();
+      alert('질문 답변 등록 완료')
+      resetAnswerForm()
+      fetchQuestions()
     } catch (err) {
-      console.error(err);
-      alert(err.message || '답변 등록 중 오류가 발생했습니다.');
+      console.error(err)
+      alert(err.message || '답변 등록 중 오류가 발생했습니다.')
     } finally {
-      setAnswerSaving(false);
+      setAnswerSaving(false)
     }
-  };
+  }
 
   const handleDeleteQuestion = async (questionId) => {
-    const ok = window.confirm('정말 이 질문을 삭제하시겠습니까?');
-    if (!ok) return;
+    const ok = window.confirm('정말 이 질문을 삭제하시겠습니까?')
+    if (!ok) return
 
     try {
-      const token = getToken();
+      const token = getToken()
       if (!token) {
-        alert('로그인이 필요합니다.');
-        return;
+        alert('로그인이 필요합니다.')
+        return
       }
 
-      const res = await fetch(`${BACKEND_URL}/api/faq/questions/${questionId}`, {
+      const res = await fetch(`${BACKEND_URL}/api/faq/questions/${questionId}/admin`, {
         method: 'DELETE',
         headers: {
           Authorization: `Bearer ${token}`,
         },
-      });
+      })
 
-      const data = await res.json();
+      const data = await res.json()
 
       if (!data.success) {
-        throw new Error(data.message || '질문 삭제 실패');
+        throw new Error(data.message || '질문 삭제 실패')
       }
 
-      alert('질문 삭제 완료');
+      alert('질문 삭제 완료')
 
       if (answerForm.questionId === questionId) {
-        resetAnswerForm();
+        resetAnswerForm()
       }
 
-      fetchQuestions();
+      fetchQuestions()
     } catch (err) {
-      console.error(err);
-      alert(err.message || '질문 삭제 중 오류가 발생했습니다.');
+      console.error(err)
+      alert(err.message || '질문 삭제 중 오류가 발생했습니다.')
     }
-  };
+  }
 
   return (
     <div className='faq-admin-page'>
@@ -519,8 +534,9 @@ const FAQAdmin = () => {
                       [{question.category}] /{' '}
                       {Number(question.is_anonymous) === 1
                         ? '익명'
-                        : question.nickname || '사용자'}{' '}
-                      / {question.status === 'answered' ? '답변완료' : '답변대기'}
+                        : question.member_nickname || question.nickname || '사용자'}{' '}
+                      / {question.status === 'answered' ? '답변완료' : '답변대기'} / 질문 등록 {formatDateTime(question.created_at)}
+                      {question.answered_at ? ` / 답변 등록 ${formatDateTime(question.answered_at)}` : ''}
                     </div>
                   </div>
 
@@ -544,7 +560,14 @@ const FAQAdmin = () => {
                 <div className='faq-admin-answer'>{question.content}</div>
 
                 {question.admin_answer ? (
-                  <div className='faq-admin-answer' style={{ marginTop: '0.8rem', borderTop: '1px solid #e5e7eb', paddingTop: '0.8rem' }}>
+                  <div
+                    className='faq-admin-answer'
+                    style={{
+                      marginTop: '0.8rem',
+                      borderTop: '1px solid #e5e7eb',
+                      paddingTop: '0.8rem',
+                    }}
+                  >
                     <strong>운영진 답변</strong>
                     <div style={{ marginTop: '0.35rem' }}>{question.admin_answer}</div>
                   </div>
@@ -555,7 +578,7 @@ const FAQAdmin = () => {
         )}
       </div>
     </div>
-  );
-};
+  )
+}
 
-export default FAQAdmin;
+export default FAQAdmin

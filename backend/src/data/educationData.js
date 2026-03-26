@@ -1,8 +1,4 @@
-
-
-
-  const educationLessons = [
-  // ===== 초급 =====
+const educationLessons = [
   {
     id: "stock-intro",
     title: "먼저, 주식이란?",
@@ -148,7 +144,6 @@
 - 투자 지표는 절대적인 숫자가 아니라, 상대 비교 속에서 진짜 의미를 찾아내는 훈련이 필요합니다.`,
   },
 
-  // ===== 중급 =====
   {
     id: "hidden-gem",
     title: "흙 속의 진주 찾기",
@@ -222,10 +217,9 @@
 - 숫자만 보고 섣불리 들어가기보다, 실제 실적과 시장의 심리가 긍정적으로 돌아서는지 함께 확인하세요.`,
   },
 
-  // ===== 상급 =====
   {
     id: "dividend-trap",
-    title: "빛 좋은 개살구 (배당 함정)",
+    title: "배당 함정",
     xp: 5000,
     status: "new",
     difficulty: "advanced",
@@ -237,7 +231,7 @@
   },
   {
     id: "empty-cart",
-    title: "껍데기만 화려한 빈수레",
+    title: "고평가 거품주",
     xp: 5000,
     status: "new",
     difficulty: "advanced",
@@ -249,7 +243,7 @@
   },
   {
     id: "top-student",
-    title: "비싼 값 하는 1등 모범생",
+    title: "프리미엄 성장주",
     xp: 5000,
     status: "new",
     difficulty: "advanced",
@@ -261,7 +255,7 @@
   },
   {
     id: "value-swamp",
-    title: "만년 저평가의 늪 (시간 낭비)",
+    title: "저평가 정체주",
     xp: 5000,
     status: "new",
     difficulty: "advanced",
@@ -273,7 +267,7 @@
   },
   {
     id: "falling-knife",
-    title: "떨어지는 칼날 (바닥인 줄 알았지?)",
+    title: "실적 붕괴주",
     xp: 5000,
     status: "new",
     difficulty: "advanced",
@@ -285,7 +279,7 @@
   },
   {
     id: "bomb-passing",
-    title: "폭탄 돌리기 (상투 경고보)",
+    title: "고점 과열주",
     xp: 5000,
     status: "new",
     difficulty: "advanced",
@@ -297,7 +291,7 @@
   },
   {
     id: "comfort-stock",
-    title: "든든한 국밥 같은 주식",
+    title: "안정 우량주",
     xp: 5000,
     status: "new",
     difficulty: "advanced",
@@ -309,7 +303,7 @@
   },
   {
     id: "turnaround",
-    title: "화려한 부활 (턴어라운드)",
+    title: "턴어라운드 초입",
     xp: 5000,
     status: "new",
     difficulty: "advanced",
@@ -321,7 +315,7 @@
   },
   {
     id: "money-printer",
-    title: "가성비 끝판왕 (돈 복사기)",
+    title: "고ROE 저평가주",
     xp: 5000,
     status: "new",
     difficulty: "advanced",
@@ -333,7 +327,7 @@
   },
   {
     id: "analyst-crush",
-    title: "전문가들의 짝사랑",
+    title: "전망 괴리주",
     xp: 5000,
     status: "new",
     difficulty: "advanced",
@@ -344,7 +338,6 @@
 - 애널리스트의 장밋빛 전망을 맹신하지 말고, 실제로 실적이 돌아서는 데이터가 확인될 때까지 기다리는 것이 안전합니다.`,
   },
 
-  // ===== 추가 초급 개념 =====
   {
     id: "value-stock",
     title: "가치주란 무엇일까?",
@@ -465,7 +458,7 @@
 - 흑자가 나도 거래처에서 돈을 못 받아 현금이 마르면 회사가 망하는 '흑자부도'가 발생할 수 있습니다.
 - 진짜 튼튼한 회사는 이익뿐만 아니라, 통장에 꽂히는 영업활동 현금흐름도 플러스(+)를 넉넉하게 유지합니다.`,
   },
-  {
+    {
     id: "common-vs-preferred",
     title: "보통주와 우선주는 뭐가 다를까?",
     xp: 3000,
@@ -682,7 +675,6 @@
 - 저항선을 뚫고 올라가면 강한 상승 추세로 변하고, 지지선이 깨져버리면 공포 매물이 쏟아지며 지하로 추락할 수 있습니다.`,
   },
 
-  // ===== 추가 중급 개념 =====
   {
     id: "interest-rate",
     title: "금리는 왜 주식에 영향을 줄까?",
@@ -912,10 +904,9 @@
 - 상승의 에너지가 부실한 '가짜 반등'일 가능성을 염두에 두고, 거래량이 제대로 터지며 추세를 굳히는지 반드시 확인해야 합니다.`,
   },
 
-  // ===== 추가 상급 개념 =====
   {
     id: "loss-aversion",
-    title: "왜 사람은 손실을 더 크게 느낄까?",
+    title: "손실 회피 심리",
     xp: 5000,
     status: "new",
     difficulty: "advanced",
@@ -927,7 +918,7 @@
   },
   {
     id: "herd-mentality",
-    title: "군중심리는 왜 위험할까?",
+    title: "군중 추종 심리",
     xp: 5000,
     status: "new",
     difficulty: "advanced",
@@ -939,7 +930,7 @@
   },
   {
     id: "liquidity",
-    title: "유동성이 많으면 왜 주식이 오를까?",
+    title: "유동성 장세",
     xp: 5000,
     status: "new",
     difficulty: "advanced",
@@ -951,7 +942,7 @@
   },
   {
     id: "bubble",
-    title: "버블은 어떻게 만들어질까?",
+    title: "버블 형성 구간",
     xp: 5000,
     status: "new",
     difficulty: "advanced",
@@ -963,7 +954,7 @@
   },
   {
     id: "debt-hidden-risk",
-    title: "좋아 보이는 숫자 뒤에 숨어 있는 부채 리스크",
+    title: "숨은 부채 리스크",
     xp: 5000,
     status: "new",
     difficulty: "advanced",
@@ -975,7 +966,7 @@
   },
   {
     id: "priced-in-good-news",
-    title: "실적은 좋은데 왜 주가가 안 오를까?",
+    title: "호재 선반영 구간",
     xp: 5000,
     status: "new",
     difficulty: "advanced",
@@ -987,7 +978,7 @@
   },
   {
     id: "false-rebound",
-    title: "반등처럼 보이지만 아직 위험한 구간",
+    title: "가짜 반등 구간",
     xp: 5000,
     status: "new",
     difficulty: "advanced",
@@ -999,7 +990,7 @@
   },
   {
     id: "true-breakout",
-    title: "진짜 상승 시작은 무엇이 다를까?",
+    title: "추세 돌파 신호",
     xp: 5000,
     status: "new",
     difficulty: "advanced",
@@ -1011,7 +1002,7 @@
   },
   {
     id: "overheat-signal",
-    title: "모든 사람이 좋다고 말할 때 생기는 위험",
+    title: "과열 신호 구간",
     xp: 5000,
     status: "new",
     difficulty: "advanced",
@@ -1023,7 +1014,7 @@
   },
   {
     id: "bad-news-strong-price",
-    title: "악재가 나왔는데도 안 떨어지는 종목의 의미",
+    title: "악재 내성 종목",
     xp: 5000,
     status: "new",
     difficulty: "advanced",
@@ -1035,7 +1026,7 @@
   },
   {
     id: "good-company-bad-price",
-    title: "좋은 기업인데도 투자 실패가 나는 이유",
+    title: "고평가 우량주",
     xp: 5000,
     status: "new",
     difficulty: "advanced",
@@ -1047,7 +1038,7 @@
   },
   {
     id: "leverage-risk",
-    title: "레버리지로 만든 수익의 위험성",
+    title: "레버리지 리스크",
     xp: 5000,
     status: "new",
     difficulty: "advanced",
@@ -1055,59 +1046,59 @@
     level: "상급",
     summary: `- 미수, 신용, 스탁론 등 빚(레버리지)을 끌어 써서 수익을 2배, 3배로 뻥튀기하려는 달콤하지만 치명적인 독약 같은 매매 방식입니다.
 - 상승장에서는 신이라도 된 듯 계좌가 불어나지만, 예상치 못한 폭락이 오면 반대매매를 당하며 원금을 넘어 빚쟁이로 전락하는 급행열차를 탑니다.
-- 단 한 번의 블랙스완(예측 불가능한 위기)만으로도 인생이 철저히 파멸할 수 있기에, 감당할 수 없는 레버리지는 절대 손대지 않는 것이 진리입니다.`,
+- 레버리지는 수익을 키우는 도구가 아니라, 잘못 쓰면 인생을 무너뜨리는 리스크 증폭 장치라는 사실을 절대 잊지 마세요.`,
   },
   {
     id: "expectation-collapse",
-    title: "기대가 무너질 때 주가가 급락하는 이유",
+    title: "기대 붕괴 구간",
     xp: 5000,
     status: "new",
     difficulty: "advanced",
     icon: "finsightLogo",
     level: "상급",
-    summary: `- 실적이 전년 대비 20%나 성장했는데도, 시장이 기대했던 30% 성장치(컨센서스)에 못 미쳤다는 이유 하나만으로 주가가 하한가로 내리꽂히는 현상입니다.
-- 성장주는 실적의 절대적 크기가 아니라 '성장 속도에 대한 환상'으로 높은 PER을 정당화하므로, 그 환상에 금이 가는 순간 무자비한 밸류에이션 붕괴가 일어납니다.
-- 남들의 기대감으로 부풀려진 가격표를 맹신하지 말고, 그 기대가 꺾일 때 시장이 얼마나 잔혹하게 주가를 난도질하는지 뼈저리게 인식해야 합니다.`,
+    summary: `- 완벽해 보이던 기업도 시장 기대치에 단 1%만 못 미치면, 실적은 잘 나왔는데도 주가가 처참하게 무너지는 기대 붕괴를 맞을 수 있습니다.
+- 주식 시장은 절대적인 숫자보다 '얼마나 더 좋을 줄 알았는데?'라는 상대적 실망감에 훨씬 더 잔인하게 반응합니다.
+- 좋은 기업 분석만으로는 부족하며, 시장이 지금 얼마나 과도한 기대를 선반영하고 있는지까지 읽어야 상급자입니다.`,
   },
   {
     id: "rotation",
-    title: "돈이 한 섹터에서 다른 섹터로 이동하는 현상",
+    title: "섹터 순환매",
     xp: 5000,
     status: "new",
     difficulty: "advanced",
     icon: "finsightLogo",
     level: "상급",
-    summary: `- 수십조 원의 메이저 자금이 2차전지에서 반도체로, 다시 제약·바이오로 메뚜기 떼처럼 순환하며 시장을 주도하는 '섹터 로테이션(순환매)'입니다.
-- 한 번 소외된 섹터는 아무리 실적이 좋아도 돈이 안 들어와 말라 죽고, 거대 자금이 꽂힌 섹터는 이유 없이 매일 폭등하는 수급의 마법이 펼쳐집니다.
-- 내 주식만 끌어안고 짝사랑하지 말고, 글로벌 금리/환율/정책 변화에 따라 다음 거대 자금이 어디로 이동할지 길목을 선점하는 맹수의 시각이 필요합니다.`,
+    summary: `- 어느 날까지 잘 가던 AI주가 멈추고, 갑자기 반도체 대신 바이오나 금융으로 수급이 이동하는 식으로 시장의 돈이 업종 간 이동하는 현상입니다.
+- 주식 시장은 항상 가장 매력적인 이야기를 좇아 자금이 움직이므로, 내 종목이 안 가는 이유가 개별 악재가 아니라 순환매 때문일 수도 있습니다.
+- 시장의 큰 물줄기가 어디에서 어디로 이동하는지를 읽지 못하면, 좋은 종목을 들고도 한참 소외되는 답답한 장을 맞게 됩니다.`,
   },
   {
     id: "liquidity-trap",
-    title: "유동성이 줄어들 때 생기는 함정",
+    title: "유동성 함정",
     xp: 5000,
     status: "new",
     difficulty: "advanced",
     icon: "finsightLogo",
     level: "상급",
-    summary: `- 중앙은행이 돈줄을 조이고(긴축, 금리 인상) 시장의 피(유동성)가 말라붙기 시작할 때 펀더멘탈과 무관하게 벌어지는 대학살극입니다.
-- 어제까지 수천 억씩 터지던 종목들이 쥐약 먹은 듯 거래량이 마르고, 매수 호가가 텅텅 비어 팔고 싶어도 팔 수 없는 끔찍한 유동성 감옥에 갇힙니다.
-- 바닷물이 빠지면 누가 발가벗고 수영했는지 드러나듯, 돈의 힘으로 억지 부양된 부실 기업부터 뼈대까지 박살 나는 긴축기의 공포를 경계하세요.`,
+    summary: `- 거래량이 너무 적은 종목은 사고 싶을 때 못 사고, 팔고 싶을 때 더 못 파는 유동성 문제로 인해 숫자보다 훨씬 큰 리스크를 품고 있습니다.
+- 평소엔 멀쩡해 보이지만 급락장에서는 매수 호가가 싹 사라져, 조금만 팔아도 주가가 폭포처럼 무너질 수 있습니다.
+- 좋은 기업 여부를 떠나, 실제 시장에서 빠져나올 수 있는 종목인지 확인하지 않으면 갇혀버리는 함정에 빠집니다.`,
   },
   {
     id: "strong-but-tired",
-    title: "계속 오르던 종목이 힘이 빠지는 순간",
+    title: "상승 둔화 구간",
     xp: 5000,
     status: "new",
     difficulty: "advanced",
     icon: "finsightLogo",
     level: "상급",
-    summary: `- 몇 달을 거침없이 우상향하던 주도주가 어느 순간부터 위꼬리를 길게 달고, 호재 뉴스가 떠도 예전처럼 시원하게 치고 나가지 못하는 산소 부족 상태입니다.
-- 저점에서 잡은 세력과 스마트 머니들이 조용히 물량을 던지며 수익을 확정 짓는 중이고, 뒤늦게 불나방처럼 달려든 개미들만 총알받이가 되고 있다는 징후입니다.
+    summary: `- 차트상으로는 여전히 강해 보이지만, 거래량이 줄고 고점 갱신 힘이 약해지며 상승 추세가 서서히 지쳐가는 국면입니다.
+- 겉으로는 멀쩡해 보여도 매수 에너지가 약해지고 있다면, 작은 악재에도 상승 추세가 무너질 수 있습니다.
 - 차트가 아직 무너지지 않았다고 안심할 게 아니라, 상승의 각도가 둔화되고 거래량이 지저분해지면 파티가 끝나간다는 것을 눈치채고 출구를 찾아야 합니다.`,
   },
   {
     id: "disconnection",
-    title: "기업과 주가가 따로 움직이는 이유",
+    title: "시장 가치 괴리",
     xp: 5000,
     status: "new",
     difficulty: "advanced",
@@ -1119,6 +1110,4 @@
   }
 ];
 
-
-
-module.exports = { educationLessons }
+module.exports = { educationLessons };

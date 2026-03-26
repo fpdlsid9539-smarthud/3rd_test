@@ -104,7 +104,7 @@ const Stocks = () => {
           const isBuy = typeText.includes('매수');
           const isSell = typeText.includes('매도');
 
-          const match = typeText.match(/^(.*)\s(\d+)주\s(매수|매도)$/);
+          const match = typeText.match(/^\[(매수|매도)\]\s(.*)\s(\d+)주$/);
 
           const dateObj = new Date(item.createdAt);
           const y = dateObj.getFullYear();
@@ -116,8 +116,8 @@ const Stocks = () => {
 
           if (!match) return null;
 
-          const stockName = match.at(1) || '알 수 없음';
-          const quantity = match.at(2) || '0';
+          const stockName = match.at(2) || '알 수 없음';
+          const quantity = match.at(3) || '0';
           const price = Math.abs(Number(item.changeAmount));
 
           return {

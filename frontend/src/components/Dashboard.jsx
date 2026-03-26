@@ -6,6 +6,7 @@ import bronze from '../assets/icons/ranked/bronze.png'
 import silver from '../assets/icons/ranked/silver.png'
 import gold from '../assets/icons/ranked/gold.png'
 import diamond from '../assets/icons/ranked/diamond.png'
+import NewsTicker from './NewsTicker';
 
 const EMPTY_ISR = {
   accuracy: 0,
@@ -290,6 +291,8 @@ const Dashboard = () => {
   return (
     <div className='dash-container'>
       <div className='breadcrumb'>대시보드</div>
+
+      <NewsTicker />
 
       <div className='dash-title'>
         <h1>

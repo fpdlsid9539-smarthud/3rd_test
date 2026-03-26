@@ -13,7 +13,8 @@ const isrRoutes = require("./src/routes/isrRoutes");
 const rankingRoutes = require("./src/routes/rankingRoutes");
 const billingRoutes = require("./src/routes/billingRoutes");
 const pointHistoryRoutes = require("./src/routes/pointHistoryRoutes");
-const faqRoutes = require('./src/routes/faqRoutes')
+const faqRoutes = require('./src/routes/faqRoutes');
+const newsController = require('./src/controllers/newsController');
 const app = express();
 
 // CORS: 로컬 기본값 + .env 의 FRONTEND_URL 을 허용 origin 에 추가
@@ -44,6 +45,7 @@ app.use("/", router);
 app.use("/api/auth", authRoutes);
 app.use("/api/stocks", stockRoutes);
 app.use("/api/quiz", quizRoutes);
+app.get("/api/news", newsController.getTodayStockNews);
 app.use("/api/education", educationRoutes);
 app.use("/api", achievementRoutes);
 app.use("/api/isr", isrRoutes);
