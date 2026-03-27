@@ -5,9 +5,21 @@ body {
 .main-body {
   min-height: 100vh;
   display: grid;
-  grid-template-columns: var(--nav-width, 280px) minmax(0, 1fr) var(--profile-width, 280px);
+  grid-template-columns: 280px minmax(0, 1fr) 280px;
   gap: 1.5rem;
   transition: grid-template-columns 0.4s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+.main-body.profile-collapsed {
+  grid-template-columns: 280px minmax(0, 1fr) 5.5rem;
+}
+
+.main-body.nav-collapsed {
+  grid-template-columns: 5.5rem minmax(0, 1fr) minmax(220px, 280px);
+}
+
+.main-body.nav-collapsed.profile-collapsed {
+  grid-template-columns: 5.5rem minmax(0, 1fr) 5.5rem;
 }
 
 .navigation-area,
@@ -28,15 +40,15 @@ body {
   }
 
   .profile-area {
-    order: 1;
+    order: 3;
   }
 
   .navigation-area {
-    order: 2;
+    order: 1;
   }
 
   .content-area {
-    order: 3;
+    order: 2;
   }
 }
 
@@ -52,14 +64,14 @@ body {
   }
 
   .profile-area {
-    order: 1;
+    order: 3;
   }
 
   .navigation-area {
-    order: 2;
+    order: 1;
   }
 
   .content-area {
-    order: 3;
+    order: 2;
   }
 }

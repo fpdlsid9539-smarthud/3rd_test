@@ -409,7 +409,7 @@ body {
   background: var(--bg);
   border: 1px solid var(--border);
   outline: 1px solid transparent;
-  border-radius: 1.5rem;
+  border-radius: 0.75rem;
 
   font-size: 0.875rem;
   font-weight: 600;
@@ -429,7 +429,7 @@ body {
 
 .landing-faq-chip.active {
   background: var(--primary-highlight2);
-  border: 2px solid var(--primary);
+  border: 1px solid var(--primary);
 }
 
 .landing-faq-search {
@@ -452,7 +452,7 @@ body {
 
 .landing-faq-search:focus {
   background: var(--box-bg-2);
-  outline: 2px solid var(--primary);
+  outline: 1px solid var(--primary);
 }
 
 .landing-faq-list {
@@ -463,7 +463,7 @@ body {
 
 .landing-faq-accordion {
   border: 1px solid var(--border);
-  border-radius: 1rem;
+  border-radius: 0.75rem;
   overflow: hidden;
   background: transparent;
   transition: all 0.3s ease;
@@ -471,16 +471,19 @@ body {
 
 .landing-faq-question-row {
   width: 100%;
-  padding: 0.5rem 0.75rem;
-  border: none;
-  background: var(--bg);
-  cursor: pointer;
+  padding: 0.75rem 1rem;
 
   display: flex;
   justify-content: space-between;
   align-items: center;
   gap: 1rem;
+
+  background: var(--bg);
+  border: none;
+
   text-align: left;
+
+  cursor: pointer;
 }
 
 .landing-faq-question-left {
@@ -491,15 +494,43 @@ body {
 }
 
 .landing-faq-badge {
+  min-width: 3rem;
+  padding: 0.5rem 0.75rem;
+
   display: flex;
   align-items: center;
   justify-content: center;
-  min-width: 3rem;
-  padding: 0.5rem 0.75rem;
-  border-radius: 1.5rem;
-  background: var(--primary-highlight2);
+
+  border-radius: 0.75rem;
+  border: 1px solid transparent;
+  background: transparent;
   font-size: 0.875rem;
   font-weight: 600;
+}
+
+.로그인 {
+  border-color: var(--danger);
+  background-color: var(--danger-highlight);
+}
+
+.학습 {
+  border-color: var(--primary);
+  background-color: var(--primary-highlight);
+}
+
+.투자 {
+  border-color: var(--secondary);
+  background-color: var(--secondary-highlight);
+}
+
+.성장 {
+  border-color: var(--warning);
+  background-color: var(--warning-highlight);
+}
+
+.기타 {
+  border-color: var(--text-highlight);
+  background-color: var(--text-trans);
 }
 
 .landing-faq-question-text {
@@ -901,13 +932,17 @@ body {
   position: relative;
   width: min(900px, 92vw);
   max-height: 85vh;
-  overflow-y: auto;
-  overflow-x: hidden;
+ 
+  /* container itself does NOT scroll — inner body does */
+  overflow: hidden;
  
   background: var(--bg);
   border: 1px solid var(--border);
-  border-radius: 3rem;
+  border-radius: 2rem;
   box-shadow: 0 0.5rem 1rem var(--shadow-1);
+ 
+  display: flex;
+  flex-direction: column;
  
   animation: faq-slide-up 0.25s cubic-bezier(0.4, 0, 0.2, 1);
 }
@@ -917,13 +952,29 @@ body {
   to   { opacity: 1; transform: translateY(0); }
 }
  
+/* sticky header row housing the close button */
+.faq-modal-header {
+  flex-shrink: 0;
+  display: flex;
+  justify-content: flex-end;
+  align-items: center;
+  padding: 0.875rem 1rem;
+  border-bottom: 1px solid var(--border);
+  background: var(--bg);
+}
+ 
+/* scrollable content area — scrollbar visible on right edge of modal */
+.faq-modal-body {
+  padding: 0 1.5rem;
+  flex: 1;
+  overflow-y: auto;
+  overflow-x: hidden;
+}
+ 
 .faq-modal-close {
   width: 2.5rem;
   height: 2.5rem;
-  position: absolute;
-  top: 1rem;
-  right: 1rem;
-  z-index: 10;
+  flex-shrink: 0;
  
   display: flex;
   align-items: center;
@@ -932,12 +983,10 @@ body {
   border: 1px solid var(--border);
   border-radius: 50%;
   background: var(--bg);
-
+ 
   font-size: 1rem;
   color: var(--text);
-
   cursor: pointer;
-
   transition: all 0.2s ease;
 }
  
@@ -945,20 +994,5 @@ body {
   background: var(--primary-highlight);
   border: 1px solid var(--primary);
   color: var(--danger);
-  box-shadow: 0 0.25rem 0.5rem var(--shadow-2)
-}
-
-::-webkit-scrollbar {
-  width: 0.5rem;
-  border-radius: 2rem;
-}
-
-::-webkit-scrollbar-track {
-  background: var(--box-bg);
-  border-radius: 2rem;
-}
-
-::-webkit-scrollbar-thumb {
-  background: var(--text-highlight);
-  border-radius: 2rem;
+  box-shadow: 0 0.25rem 0.5rem var(--shadow-2);
 }

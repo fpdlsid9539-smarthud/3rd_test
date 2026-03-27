@@ -335,7 +335,7 @@ const Landing = ({ setPage }) => {
                       onClick={() => toggleFaq(faq.faq_id)}
                     >
                       <div className='landing-faq-question-left'>
-                        <span className='landing-faq-badge'>{category}</span>
+                        <span className={`landing-faq-badge ${category}`}>{category}</span>
                         <span className='landing-faq-question-text'>
                           Q. {faq.question}
                         </span>
@@ -378,14 +378,18 @@ const Landing = ({ setPage }) => {
       {faqModalOpen && (
         <div className='faq-modal-overlay' onClick={closeFaqModal}>
           <div className='faq-modal-container' onClick={(e) => e.stopPropagation()}>
-            <button
-              className='faq-modal-close'
-              onClick={closeFaqModal}
-              aria-label='닫기'
-            >
-              <img src={close} alt="닫기" />
-            </button>
-            <FAQPage scrollTarget={faqModalTarget} />
+            <div className='faq-modal-header'>
+              <button
+                className='faq-modal-close'
+                onClick={closeFaqModal}
+                aria-label='닫기'
+              >
+                <img src={close} alt="닫기" />
+              </button>
+            </div>
+            <div className='faq-modal-body'>
+              <FAQPage scrollTarget={faqModalTarget} />
+            </div>
           </div>
         </div>
       )}

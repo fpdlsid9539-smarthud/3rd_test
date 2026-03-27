@@ -12,6 +12,22 @@ const PERFECT_BONUS = { 하: 5000, 중: 10000, 상: 20000 };
 const MAX_QUESTIONS = 10
 const DIFFICULTIES = ['하', '중', '상']
 
+const getReferenceDate = () => {
+  const today = new Date();
+  let offset = 1; // 기본적으로 무조건 하루 전(어제)을 기준으로 잡음
+  const day = today.getDay(); // 0:일, 1:월, 2:화 ... 6:토
+
+  // 주말 예외 처리
+  if (day === 1) {
+    offset = 3; // 월요일 접속 -> 3일 전인 금요일 장 마감 기준
+  } else if (day === 0) {
+    offset = 2; // 일요일 접속 -> 2일 전인 금요일 장 마감 기준
+  }
+
+  const targetDate = new Date(today.getTime() - offset * 24 * 60 * 60 * 1000);
+  return `${targetDate.getFullYear()}년 ${targetDate.getMonth() + 1}월 ${targetDate.getDate()}일`;
+};
+
 const QuizPage = () => {
   const [step, setStep] = useState('DIFFICULTY') // 'DIFFICULTY' | 'PLAYING' | 'RESULT' | 'SUMMARY'
   const [difficulty, setDifficulty] = useState(null)
@@ -21,6 +37,7 @@ const QuizPage = () => {
   const [resultData, setResultData] = useState(null)
   const [shuffledOptions, setShuffledOptions] = useState([])
   const [loading, setLoading] = useState(false)
+  const [isPremium, setIsPremium] = useState(false)
 
   // O/X 퀴즈 상태
   const [isOxModalOpen, setIsOxModalOpen] = useState(false);
@@ -38,6 +55,22 @@ const QuizPage = () => {
   const [quizRankingTab, setQuizRankingTab] = useState('accuracy'); // 'accuracy', 'total', 'weekly'
   const [quizRankings, setQuizRankings] = useState([]);
   const [rankingLoading, setRankingLoading] = useState(false);
+
+  React.useEffect(() => {
+    const fetchUserAuth = async () => {
+      try {
+        const res = await api.get('/api/auth/me');
+        const memberData = res?.data?.member || res?.data?.data?.member || res?.data;
+        const membership = String(memberData?.membership_type || '').toLowerCase();
+        
+        // 프리미엄 회원이면 true로 세팅!
+        setIsPremium(['premium', 'premium_member', 'paid'].includes(membership));
+      } catch (err) {
+        console.error('유저 정보 로딩 실패', err);
+      }
+    };
+    fetchUserAuth();
+  }, []);
 
   React.useEffect(() => {
     if (step === 'DIFFICULTY') {
@@ -291,16 +324,28 @@ const QuizPage = () => {
       <p className='quiz-subtitle'>먼저, 도전할 난이도를 선택해 주세요!</p>
       {loading && <p className='quiz-loading'>문제를 불러오는 중...</p>}
       <div className='difficulty-buttons'>
-        {DIFFICULTIES.map((level) => (
-          <button
-            key={level}
-            className='btn btn-difficulty'
-            onClick={() => startSession(level)}
-            disabled={loading}
-          >
-            난이도 {level}
-          </button>
-        ))}
+        {DIFFICULTIES.map((level) => {
+          // 🟢 3. '상' 난이도이면서, 프리미엄 회원이 아니면 버튼을 잠급니다.
+          const isLocked = level === '상' && !isPremium;
+
+          return (
+            <div key={level} className={`diff-btn-wrapper ${isLocked ? 'locked' : ''}`}>
+              <button
+                className='btn btn-difficulty'
+                onClick={() => startSession(level)}
+                disabled={loading || isLocked} // 잠겼으면 클릭 불가!
+              >
+                {isLocked && <span className="lock-icon">🔒</span>}
+                난이도 {level}
+              </button>
+              
+              {/* 마우스를 올렸을 때 나타날 말풍선 */}
+              {isLocked && (
+                <div className="premium-tooltip">구독 후 이용 가능합니다</div>
+              )}
+            </div>
+          )
+        })}
       </div>
       <div className='point-guide'>
         <div>
@@ -453,7 +498,6 @@ const QuizPage = () => {
       {/* 헤더 섹션 */}
       <div className="ox-modal-header">
         <div className="ox-header-title">
-          <span className="title-icon">💎</span>
           <h2>FinSight 일일 O/X 퀴즈</h2>
         </div>
         <button className="ox-modal-close" onClick={() => setIsOxModalOpen(false)}>✕</button>
@@ -482,6 +526,11 @@ const QuizPage = () => {
         ) : oxQuizData ? (
           <div className="ox-quiz-play">
             <div className="ox-question-card">
+              {oxQuizData.referenceDate && (
+                <div className="ox-reference-date">
+                  ({oxQuizData.referenceDate} 종가 기준)
+                </div>
+              )}
               <p className="ox-question-text">{oxQuizData.question}</p>
             </div>
             <div className="ox-btn-group">

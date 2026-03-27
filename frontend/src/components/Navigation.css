@@ -1,13 +1,12 @@
 .navigation {
-  position: fixed;
+  position: sticky;
   top: 0;
-  z-index: 9999;
   height: 100vh;
-  width: var(--nav-width, 280px);
+  width: 100%;
   background-color: var(--box-bg);
   border-right: 1px solid var(--border);
   box-sizing: border-box;
-  overflow: hidden;
+  overflow-y: auto;
 }
 
 .nav-content {
@@ -17,7 +16,7 @@
 
   display: flex;
   flex-direction: column;
-  justify-content: flex-start;
+  justify-content: space-between;
   align-items: center;
 }
 
@@ -26,7 +25,7 @@
 
   display: flex;
   flex-direction: column;
-  justify-content: flex-start;
+  justify-content: space-between;
   align-items: center;
   gap: 3rem;
 }
@@ -34,11 +33,10 @@
 .nav-header {
   width: 100%;
   height: fit-content;
+
   display: flex;
   justify-content: space-between;
-  align-items: center;
-  flex-shrink: 0;
-  transform: translateZ(0);
+  align-content: center;
 }
 
 .nav-logo-button {
@@ -60,14 +58,12 @@
   justify-content: center;
 
   border: 2px solid transparent;
-  border-radius: 0.75rem;
   background: transparent;
   cursor: pointer;
 }
 
 .collapse-button:hover {
-  background: var(--btn-prim);
-  border: 2px solid var(--border-prim);
+  box-shadow: 0 0.25rem 0 var(--primary);
 }
 
 .collapse-menu {
@@ -108,21 +104,20 @@
 
   font-size: 1.125rem;
   font-weight: 500;
-  border-radius: 0.75rem;
-  border: 2px solid transparent;
+  /* border-radius: 0.75rem; */
+  border: none;
   background: transparent;
-  transition: all 0.3s ease;
   cursor: pointer;
+
+  transition: all 0.3s ease;
 }
 
 .nav-menu:hover {
-  background: var(--btn-prim);
-  border: 2px solid var(--border-prim);
+  box-shadow: 0 0.25rem 0 var(--primary);
 }
 
 .nav-menu.active {
-  background: var(--btn-prim);
-  border: 2px solid var(--border-prim);
+  box-shadow: 0 0.25rem 0 var(--primary);
 }
 
 .nav-line {
@@ -147,7 +142,6 @@
   justify-content: center;
   align-items: center;
   gap: 0.5rem;
-  margin-top: auto;
 }
 
 .billing-action-wrap {
@@ -158,6 +152,8 @@
   align-items: center;
   justify-content: center;
   border-radius: 0.875rem;
+
+  transition: all 0.3s ease-out;
 }
 
 .billing-nav-button {
@@ -185,26 +181,18 @@
 }
 
 .billing-action-wrap:not(.premium):hover {
-  transform: translateY(-0.25rem);
+  transform: translateY(-0.2rem);
   box-shadow: 0 0.25rem 0.5rem var(--shadow-1);
 }
 
-.billing-nav-button.disabled {
+.billing-nav-button.disabled{
   background: var(--text-highlight);
   color: var(--box-bg);
   cursor: pointer;
   transform: none;
   filter: none;
-  transition: all 0.3s ease;
-}
 
-.billing-action-wrap:hover .billing-nav-button.disabled,
-.billing-nav-button:disabled {
-  background: var(--text-highlight);
-  color: var(--box-bg);
-  cursor: not-allowed;
-  transform: none;
-  filter: none;
+  transition: all 0.3s ease;
 }
 
 .billing-cancel-mini-btn {
@@ -217,7 +205,7 @@
 }
 
 .billing-cancel-mini-btn:hover {
-  color: #ff6b6b;
+  color: var(--danger);
   text-decoration: underline;
 }
 

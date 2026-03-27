@@ -132,22 +132,6 @@ async function seedDefaultGameLogForMember(memberId, conn = null) {
   if (count > 0) {
     return;
   }
-
-  await executor.query(
-    `
-    INSERT INTO gameLog
-    (
-      member_id, stock_code, prediction, bet_amount, pnl_amount, penalty_amount, status, created_at,
-      strategy_type_user, strategy_type_actual, holding_time, market_trend
-    )
-    VALUES
-    (?, '005930', 'UP',   100000, 12000, 0,    'SUCCESS', NOW(), 'SWING', 'SWING', 5,  'BULL'),
-    (?, '000660', 'DOWN',  80000, -10000, 2000,'FAIL',    NOW(), 'SHORT', 'SHORT', 2,  'BEAR'),
-    (?, '035420', 'UP',    50000, 7000,  0,    'SUCCESS', NOW(), 'LONG',  'LONG',  14, 'SIDEWAYS'),
-    (?, '005930', 'UP',    60000, 0,     0,    'PENDING', NOW(), 'SWING', 'SWING', 3,  'BULL')
-    `,
-    [memberId, memberId, memberId, memberId]
-  );
 }
 
 async function createMember(provider, providerId, nickname, profile_image) {

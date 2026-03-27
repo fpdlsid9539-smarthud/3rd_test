@@ -1,31 +1,33 @@
 .profile {
-  position: sticky;
-  top: 0;
   height: auto;
   min-height: 100vh;
   width: 100%;
   padding: 0.5rem;
+
+  position: sticky;
+  top: 0;
   overflow-y: visible;
-  overflow-x: hidden;
+  overflow-x: visible;
+
   background-color: var(--bg);
   border-left: 1px solid var(--border);
   box-sizing: border-box;
-  z-index: 30;
+  
+  z-index: 10;
 
-  transition: padding 0.25s ease;
+  transition:all 0.3s ease;
 }
 
 .profile--collapsed {
-  padding-left: 0.35rem;
-  padding-right: 0.35rem;
+  padding: 0 0.35rem;
   overflow: hidden;
+
+  transition:all 0.3s ease;
 }
 
 .profile--collapsed .profile-set {
-  justify-content: flex-start;
+  justify-content: center;
   gap: 0;
-  padding-left: 0.35rem;
-  padding-right: 0;
 }
 
 .profile-content {
@@ -33,10 +35,12 @@
   min-height: auto;
   box-sizing: border-box;
   overflow: visible;
+
+  position: relative;
   display: flex;
   flex-direction: column;
   gap: 0.5rem;
-  position: relative;
+
   z-index: 30;
 }
 
@@ -89,8 +93,7 @@
 }
 
 .set-icons--active {
-  background: var(--primary-highlight2);
-  border: 2px solid var(--primary);
+  box-shadow: 0 0.25rem 0 var(--primary);
 }
 
 .profile-master {
@@ -891,7 +894,7 @@
   width: 100%;
   aspect-ratio: 1;
   height: auto;
-  background-color: color-mix(in srgb, var(--bg) 95%, black 5%);
+  background-color: var(--border);
   border: 1px solid var(--border);
   border-radius: 50%;
   display: flex;
@@ -938,7 +941,7 @@
   border-radius: 0.8rem;
   box-shadow: 0 8px 25px rgba(0, 0, 0, 0.12);
   padding: 1rem;
-  z-index: 100;
+  z-index: 10000;
   border: 1px solid rgba(0, 0, 0, 0.05);
   visibility: hidden;
   opacity: 0;
@@ -1302,7 +1305,7 @@
   text-decoration: none;
   padding-bottom: 2px;
   font-weight: 700;
-  
+  cursor: pointer;
   transition: all 0.2s ease;
   display: inline-block;
   vertical-align: baseline;
@@ -1470,4 +1473,31 @@
 
 .profile-toggle-icon--collapsed {
   transform: rotate(0deg);
+}
+
+.point-history-more-row {
+  display: flex;
+  align-items: center;
+  margin-top: 0.25rem;
+}
+
+.point-history-more-row.single {
+  justify-content: center;
+}
+
+.point-history-more-row.double {
+  justify-content: center;
+  gap: 0.5rem;
+}
+
+.point-history-visible-count {
+  min-width: 56px;
+  text-align: center;
+  font-size: 0.88rem;
+  font-weight: 700;
+  color: var(--text-muted, #888);
+}
+
+.point-history-more-placeholder {
+  min-width: 70px;
 }

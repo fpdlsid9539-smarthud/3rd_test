@@ -3,6 +3,7 @@ import './Education.css'
 import arrowDown from '../assets/icons/arrow-down-line.svg'
 import check from '../assets/icons/check.svg'
 import finsightLogo from '../assets/finsight.svg'
+import crownIcon from '../assets/icons/crown.png'
 
 const API_BASE_URL = 'http://localhost:5000'
 
@@ -13,6 +14,7 @@ const getAccessToken = () => {
 const Education = () => {
   const [searchText, setSearchText] = useState('')
   const [openLessonId, setOpenLessonId] = useState(null)
+  const [showAllLessons, setShowAllLessons] = useState(false)
 
   const [countdown, setCountdown] = useState(0)
 
@@ -32,6 +34,8 @@ const Education = () => {
     percent: 0,
   })
   const [totalEarnedPoints, setTotalEarnedPoints] = useState(0)
+  const [membershipType, setMembershipType] = useState('free')
+
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState('')
   const [actionMessage, setActionMessage] = useState('')
@@ -55,13 +59,23 @@ const Education = () => {
 
   const getVisibleLessons = (lessons, statusFilter, difficultyFilter) => {
     let visible = [...lessons]
-    if (statusFilter === 'all') visible = visible.filter((lesson) => !lesson.isCompleted)
-    if (statusFilter === 'new')
+
+    if (statusFilter === 'all') {
+      visible = visible.filter((lesson) => !lesson.isCompleted)
+    }
+
+    if (statusFilter === 'new') {
       visible = visible.filter((lesson) => !lesson.isCompleted && lesson.status === 'new')
-    if (statusFilter === 'completed') visible = visible.filter((lesson) => lesson.isCompleted)
+    }
+
+    if (statusFilter === 'completed') {
+      visible = visible.filter((lesson) => lesson.isCompleted)
+    }
+
     if (difficultyFilter !== 'all') {
       visible = visible.filter((lesson) => lesson.difficulty === difficultyFilter)
     }
+
     return visible
   }
 
@@ -89,6 +103,7 @@ const Education = () => {
         setEducationLessons(data.lessons || [])
         setProgress(data.progress || { completedCount: 0, totalCount: 0, percent: 0 })
         setTotalEarnedPoints(data.totalEarnedPoints || 0)
+        setMembershipType(data.membership_type || 'free')
         setOpenLessonId(null)
       } catch (err) {
         console.error('교육 데이터 조회 실패:', err)
@@ -138,8 +153,18 @@ const Education = () => {
         return title.includes(keyword) || summary.includes(keyword)
       })
     }
+
     return filtered
   }, [searchText, selectedStatusFilter, selectedDifficultyFilter, educationLessons])
+
+  const displayedLessons = useMemo(() => {
+    return showAllLessons ? filteredLessons : filteredLessons.slice(0, 5)
+  }, [filteredLessons, showAllLessons])
+
+  useEffect(() => {
+    setShowAllLessons(false)
+    setOpenLessonId(null)
+  }, [searchText, selectedStatusFilter, selectedDifficultyFilter])
 
   useEffect(() => {
     if (filteredLessons.length === 0) {
@@ -147,19 +172,42 @@ const Education = () => {
       return
     }
     if (openLessonId === null) return
+
     const stillExists = filteredLessons.some((lesson) => lesson.id === openLessonId)
-    if (!stillExists) setOpenLessonId(filteredLessons.id)
+    if (!stillExists) setOpenLessonId(null)
   }, [filteredLessons, openLessonId])
 
+  const showSubscribeGuide = () => {
+    setActionMessage('상급 학습은 구독 후 이용할 수 있습니다.')
+  }
+
+  const handleDifficultyFilter = (difficulty) => {
+    setSelectedDifficultyFilter(difficulty)
+
+    if (difficulty === 'advanced' && membershipType !== 'premium') {
+      showSubscribeGuide()
+    }
+  }
+
   const handleToggleLesson = (lessonId) => {
+    const lesson = educationLessons.find((l) => l.id === lessonId)
+    if (!lesson) return
+
+    const isAdvancedLocked =
+      lesson.difficulty === 'advanced' && membershipType !== 'premium'
+
+    if (isAdvancedLocked) {
+      showSubscribeGuide()
+      return
+    }
+
     if (openLessonId === lessonId) {
       setOpenLessonId(null)
       setCountdown(0)
     } else {
       setOpenLessonId(lessonId)
-      const lesson = educationLessons.find((l) => l.id === lessonId)
 
-      if (lesson && !lesson.isCompleted) {
+      if (!lesson.isCompleted) {
         if (dailyCounts[lesson.difficulty] >= 5) {
           setCountdown(0)
         } else {
@@ -212,6 +260,7 @@ const Education = () => {
       setEducationLessons(data.lessons || [])
       setProgress(data.progress || { completedCount: 0, totalCount: 0, percent: 0 })
       setTotalEarnedPoints(data.totalEarnedPoints || 0)
+      setMembershipType(data.membership_type || membershipType)
 
       window.dispatchEvent(new Event('pointsUpdated'))
 
@@ -226,7 +275,11 @@ const Education = () => {
       )
       setOpenLessonId(nextVisibleLessons.length > 0 ? nextVisibleLessons[0]?.id ?? null : null)
     } catch (err) {
-      setError(err.message === 'UNAUTHORIZED' ? '로그인이 필요합니다.' : '학습 완료 처리에 실패했습니다.')
+      setError(
+        err.message === 'UNAUTHORIZED'
+          ? '로그인이 필요합니다.'
+          : '학습 완료 처리에 실패했습니다.'
+      )
     } finally {
       setProcessingLessonId(null)
     }
@@ -298,34 +351,38 @@ const Education = () => {
               완료
             </button>
           </div>
+
           <div className='education-filter-group right'>
             <button
               type='button'
               className={`education-filter-btn ${selectedDifficultyFilter === 'all' ? 'active' : ''}`}
-              onClick={() => setSelectedDifficultyFilter('all')}
+              onClick={() => handleDifficultyFilter('all')}
             >
               전체 난이도
             </button>
             <button
               type='button'
               className={`education-filter-btn ${selectedDifficultyFilter === 'beginner' ? 'active' : ''}`}
-              onClick={() => setSelectedDifficultyFilter('beginner')}
+              onClick={() => handleDifficultyFilter('beginner')}
             >
               초급
             </button>
             <button
               type='button'
               className={`education-filter-btn ${selectedDifficultyFilter === 'intermediate' ? 'active' : ''}`}
-              onClick={() => setSelectedDifficultyFilter('intermediate')}
+              onClick={() => handleDifficultyFilter('intermediate')}
             >
               중급
             </button>
             <button
               type='button'
-              className={`education-filter-btn ${selectedDifficultyFilter === 'advanced' ? 'active' : ''}`}
-              onClick={() => setSelectedDifficultyFilter('advanced')}
+              className={`education-filter-btn education-filter-btn-premium ${
+                selectedDifficultyFilter === 'advanced' ? 'active' : ''
+              }`}
+              onClick={() => handleDifficultyFilter('advanced')}
             >
-              상급
+              <img src={crownIcon} alt='premium crown' className='education-filter-crown' />
+              <span>상급</span>
             </button>
           </div>
         </div>
@@ -338,84 +395,114 @@ const Education = () => {
         {loading ? (
           <div className='education-empty-box'>교육 데이터를 불러오는 중입니다.</div>
         ) : filteredLessons.length > 0 ? (
-          filteredLessons.map((lesson) => {
-            const isOpen = openLessonId === lesson.id
-            const isQuotaFull = dailyCounts[lesson.difficulty] >= 5
+          <>
+            {displayedLessons.map((lesson) => {
+              const isOpen = openLessonId === lesson.id
+              const isQuotaFull = dailyCounts[lesson.difficulty] >= 5
+              const isAdvancedLocked =
+                lesson.difficulty === 'advanced' && membershipType !== 'premium'
 
-            return (
-              <div className={`education-accordion-item ${isOpen ? 'open' : ''}`} key={lesson.id}>
-                <button
-                  type='button'
-                  className='education-accordion-header'
-                  onClick={() => handleToggleLesson(lesson.id)}
+              return (
+                <div
+                  className={`education-accordion-item ${isOpen ? 'open' : ''} ${isAdvancedLocked ? 'locked' : ''}`}
+                  key={lesson.id}
                 >
-                  <div className='education-header-main'>
-                    <div className='education-icon-box'>
-                      <img src={finsightLogo} alt='Finsight Logo' className='education-logo' />
-                    </div>
-                    <div className='education-header-text'>
-                      <div className='education-header-title-row'>
-                        <span className='education-lesson-title'>{lesson.title}</span>
-                        {lesson.status === 'new' && !lesson.isCompleted && (
-                          <span className='education-badge education-badge-new'>신규</span>
-                        )}
-                        {lesson.isCompleted && (
-                          <span className='education-badge education-badge-completed'>완료</span>
-                        )}
+                  <button
+                    type='button'
+                    className='education-accordion-header'
+                    onClick={() => handleToggleLesson(lesson.id)}
+                  >
+                    <div className='education-header-main'>
+                      <div className='education-icon-box'>
+                        <img src={finsightLogo} alt='Finsight Logo' className='education-logo' />
                       </div>
-                      <div className='education-sub-info'>
-                        <span>{lesson.level}</span>
-                        <span>•</span>
-                        <span>+{lesson.xp}pt</span>
-                        {!lesson.isCompleted && (
-                          <span>(오늘 {dailyCounts[lesson.difficulty] || 0}/5)</span>
-                        )}
-                      </div>
-                    </div>
-                  </div>
-                  <img
-                    src={arrowDown}
-                    alt='collapsed'
-                    className={`arrow ${isOpen ? 'rotated' : ''}`}
-                  />
-                </button>
+                      <div className='education-header-text'>
+                        <div className='education-header-title-row'>
+                          <span className='education-lesson-title'>{lesson.title}</span>
+                          {lesson.status === 'new' && !lesson.isCompleted && (
+                            <span className='education-badge education-badge-new'>신규</span>
+                          )}
+                          {lesson.isCompleted && (
+                            <span className='education-badge education-badge-completed'>완료</span>
+                          )}
+                        </div>
+                        <div className='education-sub-info'>
+                          <span>{lesson.level}</span>
+                          <span>•</span>
+                          <span>+{lesson.xp}pt</span>
+                          {!lesson.isCompleted && (
+                            <span>(오늘 {dailyCounts[lesson.difficulty] || 0}/5)</span>
+                          )}
+                        </div>
 
-                {isOpen && (
-                  <div className='education-accordion-body'>
-                    <div className='education-lesson-summary'>
-                      {(lesson.summary || '')
-                        .split('\n')
-                        .filter((line) => line.trim() !== '')
-                        .map((line, index) => (
-                          <p key={index}>{line}</p>
+                        {isAdvancedLocked && (
+                          <div className='education-lock-hover-msg'>
+                            구독 후 이용할 수 있습니다
+                          </div>
+                        )}
+                      </div>
+                    </div>
+                    <img
+                      src={arrowDown}
+                      alt='collapsed'
+                      className={`arrow ${isOpen ? 'rotated' : ''} ${isAdvancedLocked ? 'locked-arrow' : ''}`}
+                    />
+                  </button>
+
+                  {isOpen && (
+                    <div className='education-accordion-body'>
+                      <div className='education-lesson-summary'>
+                        {(lesson.summary || '')
+                          .split('\n')
+                          .filter((line) => line.trim() !== '')
+                          .map((line, index) => (
+                            <p key={index}>{line}</p>
+                          ))}
+                      </div>
+
+                      {!lesson.isCompleted &&
+                        (isQuotaFull ? (
+                          <button type='button' className='education-xp-btn quota-full' disabled>
+                            오늘은 교육할당량이 충분합니다. 내일 교육해주세요.
+                          </button>
+                        ) : (
+                          <button
+                            type='button'
+                            className={`education-xp-btn ${countdown > 0 ? 'counting' : ''}`}
+                            onClick={() => handleCompleteLesson(lesson.id)}
+                            disabled={processingLessonId === lesson.id || countdown > 0}
+                          >
+                            {countdown > 0
+                              ? `${countdown}초 후 완료`
+                              : processingLessonId === lesson.id
+                                ? '처리 중...'
+                                : '학습 완료'}
+                            {countdown === 0 && <img src={check} alt='check' className='icons' />}
+                          </button>
                         ))}
                     </div>
+                  )}
+                </div>
+              )
+            })}
 
-                    {!lesson.isCompleted &&
-                      (isQuotaFull ? (
-                        <button type='button' className='education-xp-btn quota-full' disabled>
-                          오늘은 교육할당량이 충분합니다. 내일 교육해주세요.
-                        </button>
-                      ) : (
-                        <button
-                          type='button'
-                          className={`education-xp-btn ${countdown > 0 ? 'counting' : ''}`}
-                          onClick={() => handleCompleteLesson(lesson.id)}
-                          disabled={processingLessonId === lesson.id || countdown > 0}
-                        >
-                          {countdown > 0
-                            ? `${countdown}초 후 완료`
-                            : processingLessonId === lesson.id
-                              ? '처리 중...'
-                              : '학습 완료'}
-                          {countdown === 0 && <img src={check} alt='check' className='icons' />}
-                        </button>
-                      ))}
-                  </div>
-                )}
+            {filteredLessons.length > 5 && (
+              <div className='education-more-wrap'>
+                <button
+                  type='button'
+                  className='education-more-btn'
+                  onClick={() => setShowAllLessons((prev) => !prev)}
+                >
+                  <span className='education-more-btn-text'>
+                    {showAllLessons ? '학습 접기' : '학습 더보기'}
+                  </span>
+                  <span className={`education-more-btn-arrow ${showAllLessons ? 'open' : ''}`}>
+                    ▼
+                  </span>
+                </button>
               </div>
-            )
-          })
+            )}
+          </>
         ) : (
           <div className='education-empty-box'>
             {selectedStatusFilter === 'completed'

@@ -59,7 +59,7 @@ const getTooltipText = (item, fallback = '설명이 없습니다.') => {
   return item?.description || item?.desc || item?.detail || fallback
 }
 
-const Profile = ({ collapsed = false, setCollapsed = () => {} }) => {
+const Profile = ({ collapsed, setCollapsed }) => {
   const [member, setMember] = useState(null)
   const [ownedStocks, setOwnedStocks] = useState([])
   const [recentAchievements, setRecentAchievements] = useState([])
@@ -772,14 +772,59 @@ const Profile = ({ collapsed = false, setCollapsed = () => {} }) => {
                   {rangeLabelMap[pointHistoryRange]} 내역이 없습니다.
                 </div>
               )}
-                {visibleHistoryCount < filteredPointHistory.length && (
-                  <button
-                    className='title-equip-btn'
-                    onClick={() => setVisibleHistoryCount(prev => prev + 10)}
-                  >
-                    더보기 ({visibleHistoryCount} / {filteredPointHistory.length})
-                  </button>
-                )}
+              {filteredPointHistory.length > 10 && (
+                <div
+                  className={`point-history-more-row ${
+                    visibleHistoryCount <= 10 ? 'single' : 'double'
+                  }`}
+                >
+                  {visibleHistoryCount <= 10 ? (
+                    <button
+                      type='button'
+                      className='title-equip-btn'
+                      onClick={() =>
+                        setVisibleHistoryCount((prev) =>
+                          Math.min(prev + 10, filteredPointHistory.length)
+                        )
+                      }
+                    >
+                      더보기
+                    </button>
+                  ) : (
+                    <>
+                      {visibleHistoryCount < filteredPointHistory.length ? (
+                        <button
+                          type='button'
+                          className='title-equip-btn'
+                          onClick={() =>
+                            setVisibleHistoryCount((prev) =>
+                              Math.min(prev + 10, filteredPointHistory.length)
+                            )
+                          }
+                        >
+                          더보기
+                        </button>
+                      ) : (
+                        <div className='point-history-more-placeholder' />
+                      )}
+
+                      <span className='point-history-visible-count'>
+                        {visibleHistory.length} / {filteredPointHistory.length}
+                      </span>
+
+                      <button
+                        type='button'
+                        className='title-equip-btn'
+                        onClick={() =>
+                          setVisibleHistoryCount((prev) => Math.max(prev - 10, 10))
+                        }
+                      >
+                        접기
+                      </button>
+                    </>
+                  )}
+                </div>
+              )}
             </div>
           </div>
         </div>
@@ -944,14 +989,14 @@ const Profile = ({ collapsed = false, setCollapsed = () => {} }) => {
   // Profile Main //
 
   return (
-    <div className={`profile ${isProfileCollapsed ? 'profile--collapsed' : ''}`}>
+    <div className={`profile ${collapsed ? 'profile--collapsed' : ''}`}>
       <div className='profile-content'>
         <div className='profile-set'>
             
           <button
             type='button'
             className='icon-container set-icons'
-            onClick={() => setIsProfileCollapsed((prev) => !prev)}
+            onClick={() => setCollapsed(!collapsed)}
             title={isProfileCollapsed ? '프로필 펼치기' : '프로필 숨기기'}
           >
             <img

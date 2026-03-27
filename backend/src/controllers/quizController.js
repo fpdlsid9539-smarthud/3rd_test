@@ -427,6 +427,7 @@ exports.getDailyOxQuiz = async (req, res) => {
     let selectedPeriod = null;
     let pastPrice = 0;
     let currentPrice = 0;
+    let referenceDateStr = "";
 
     const periods = [
       { label: '일주일', days: 7 },
@@ -460,7 +461,7 @@ exports.getDailyOxQuiz = async (req, res) => {
         // 야후 파이낸스에서 과거 주가 가져오기 (과거일 ~ 어제)
         historicalData = await yf.historical(`${stock.code}.KS`, {
           period1: formatDate(pastDate),
-          period2: formatDate(targetDate), // 👈 어제 날짜로 요청!
+          period2: formatDate(targetDate),
           interval: '1d'
         });
 
@@ -471,7 +472,11 @@ exports.getDailyOxQuiz = async (req, res) => {
 
           if (validData.length >= 2) {
             pastPrice = validData[0]?.close;
-            currentPrice = validData[validData.length - 1].close; // 👈 이제 이게 '어제'의 종가입니다!
+            const latestValidData = validData[validData.length - 1];
+            currentPrice = latestValidData.close;
+
+            const actualDate = new Date(latestValidData.date);
+            referenceDateStr = `${actualDate.getFullYear()}년 ${actualDate.getMonth() + 1}월 ${actualDate.getDate()}일`;
           }
 
           // 종가가 정상적으로 세팅되었다면 루프 탈출
@@ -522,8 +527,10 @@ exports.getDailyOxQuiz = async (req, res) => {
     return success(res, "OX 퀴즈", {
       isLimitReached: false,
       todayCount: 0,
-      quiz: { question }
-    });
+      quiz: { 
+        question: question,
+        referenceDate: referenceDateStr
+    }});
   } catch (err) {
     console.error("OX 퀴즈 출제 오류:", err);
     return fail(res, "OX 퀴즈 실패", err.message);

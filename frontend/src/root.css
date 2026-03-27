@@ -16,6 +16,7 @@
   --primary-highlight: color-mix(in oklab, var(--primary) 4%, var(--bg) 96%);
   --primary-highlight2: color-mix(in oklab, var(--primary) 24%, var(--bg) 96%);
   --danger-highlight: color-mix(in oklab, var(--danger) 4%, var(--bg) 96%);
+  --secondary-highlight: color-mix(in oklab, var(--secondary) 24%, var(--bg) 96%);
   --warning-highlight: color-mix(in oklab, var(--warning) 12%, var(--bg));
   --warning-highlight-2: color-mix(in oklab, var(--warning) 4%, var(--bg));
 
@@ -23,12 +24,14 @@
   --box-bg-2: color-mix(in oklab, var(--bg) 98%, var(--text));
   --box-prim: color-mix(in oklab, var(--primary-70) 4%, transparent);
   --text-trans: color-mix(in oklab, var(--text) 64%, transparent);
+  --text-trans-2: color-mix(in oklab, var(--text) 2%, transparent);
   --bg-trans: color-mix(in oklab, var(--bg) 64%, transparent);
   --bg-trans2: color-mix(in oklab, var(--bg) 88%, transparent);
   --bg-trans3: color-mix(in oklab, var(--bg) 48%, transparent);
   --primary-70: color-mix(in oklab, var(--primary) 70%, var(--bg)100%);
 
   --progress-bar: linear-gradient(90deg, color-mix(in oklab, var(--primary), transparent 0%), color-mix(in oklab, #001F7A, transparent 0%));
+  --btn-gd: linear-gradient(135deg, color-mix(in oklab, var(--primary), transparent 0%), color-mix(in oklab, #FF4766, transparent 0%));
   --btn-prim: linear-gradient(90deg, var(--primary-70) 25%, hsla(225, 100%, 88%, 0.70) 100%);
   --btn-warn: linear-gradient(135deg, var(--warning), color-mix(in oklab, var(--warning), var(--danger) 40%));
   --bg-grad: linear-gradient(180deg, var(--bg-trans2), var(--bg-trans));
@@ -100,4 +103,20 @@ body {
 .achievment-description p {
   font-size: 1.125rem;
   font-weight: 600;
+}
+
+::-webkit-scrollbar {
+  width: 0.25rem;
+  height: 0.25rem;
+  border-radius: 2rem;
+}
+
+::-webkit-scrollbar-track {
+  background: var(--box-bg);
+  border-radius: 2rem;
+}
+
+::-webkit-scrollbar-thumb {
+  background: var(--text-trans);
+  border-radius: 2rem;
 }

@@ -14,6 +14,24 @@ function buildLessonReason(lessonId) {
   return `lesson_complete:${lessonId}`;
 }
 
+async function getUserMembershipType(memberId) {
+  const [rows] = await db.promise().query(
+    `
+    SELECT membership_type
+    FROM members
+    WHERE member_id = ?
+    LIMIT 1
+    `,
+    [memberId]
+  );
+
+  if (rows.length === 0) {
+    throw new Error("회원을 찾을 수 없습니다.");
+  }
+
+  return rows[0]?.membership_type || "free";
+}
+
 async function getUserCompletedLessonIds(memberId) {
   const [rows] = await db.promise().query(
     `
@@ -46,6 +64,7 @@ async function getUserTotalEarnedPoints(memberId) {
 }
 
 async function buildEducationResponse(memberId) {
+  const membershipType = await getUserMembershipType(memberId);
   const completedLessonIds = await getUserCompletedLessonIds(memberId);
   const completedSet = new Set(completedLessonIds);
 
@@ -64,6 +83,7 @@ async function buildEducationResponse(memberId) {
   const totalEarnedPoints = await getUserTotalEarnedPoints(memberId);
 
   return {
+    membership_type: membershipType,
     lessons,
     progress: {
       completedCount,
@@ -77,7 +97,6 @@ async function buildEducationResponse(memberId) {
 exports.getEducationData = async (req, res) => {
   try {
     const memberId = getUserKey(req);
-
     const data = await buildEducationResponse(memberId);
 
     return res.status(200).json({
@@ -118,7 +137,6 @@ exports.completeLesson = async (req, res) => {
 
     await connection.beginTransaction();
 
-    // 이미 이 학습으로 포인트를 받은 적 있는지 확인
     const [historyRows] = await connection.query(
       `
       SELECT history_id
@@ -132,7 +150,6 @@ exports.completeLesson = async (req, res) => {
     let awardedPoints = 0;
 
     if (historyRows.length === 0) {
-      // members.points 실제 적립
       const [updateResult] = await connection.query(
         `
         UPDATE members
@@ -146,7 +163,6 @@ exports.completeLesson = async (req, res) => {
         throw new Error("존재하지 않는 회원입니다.");
       }
 
-      // point_history 기록
       await connection.query(
         `
         INSERT INTO point_history (member_id, change_amount, reason)
@@ -159,7 +175,6 @@ exports.completeLesson = async (req, res) => {
     }
 
     await connection.commit();
-
 
     const achievementResult =
       await achievementService.checkAndGrantAchievements(memberId);

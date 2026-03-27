@@ -107,9 +107,12 @@ exports.calculateMyISR = async (req, res) => {
     }
 
     const logs = await getLogsByMemberId(memberId);
+    console.log(logs);
     const quizRows = await getQuizRowsByMemberId(memberId);
+    console.log(quizRows);
 
     if (!logs.length && !quizRows.length) {
+      console.log("조건문 실행");
       const emptyResult = {
         accuracy: 0,
         risk: 0,
@@ -121,6 +124,7 @@ exports.calculateMyISR = async (req, res) => {
       };
 
       await db.promise().query(
+        
         `UPDATE members SET isr_score = 0 WHERE member_id = ?`,
         [memberId]
       );
@@ -129,7 +133,9 @@ exports.calculateMyISR = async (req, res) => {
     }
 
     const result = calculateISR({ logs, quizRows });
+    console.log("결과",result);
     await saveISR(memberId, result);
+    
     await achievementService.checkAndGrantAchievements(memberId);
 
     return success(res, "내 ISR 계산 완료", result);
@@ -174,6 +180,7 @@ exports.calculateUserISR = async (req, res) => {
 
     const result = calculateISR({ logs, quizRows });
     await saveISR(memberId, result);
+    
     await achievementService.checkAndGrantAchievements(memberId);
 
     return success(res, "ISR 계산 완료", result);
@@ -222,6 +229,7 @@ exports.calculateAllISR = async (req, res) => {
 
       const result = calculateISR({ logs, quizRows });
       await saveISR(memberId, result);
+        
       await achievementService.checkAndGrantAchievements(memberId);
 
       results.push({

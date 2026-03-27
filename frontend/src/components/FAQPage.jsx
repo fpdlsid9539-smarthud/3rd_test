@@ -1,6 +1,8 @@
 import React, { useEffect, useMemo, useRef, useState } from 'react'
 import './FAQPage.css'
-import finsightLogo from '../assets/logo-long.svg'
+import minus from '../assets/icons/minus.svg'
+import plus from '../assets/icons/plus.svg'
+import close from '../assets/icons/close.svg'
 
 const API = 'http://localhost:5000/api/faq'
 
@@ -168,21 +170,6 @@ const FAQPage = ({ setPage, scrollTarget = 'top' }) => {
     setOpenFaqId((prev) => (prev === id ? null : id))
   }
 
-  const goHome = () => {
-    const currentToken = getStoredToken()
-
-    if (currentToken) {
-      window.location.hash = 'Dashboard'
-      if (typeof setPage === 'function') setPage('main')
-    } else {
-      window.location.hash = 'HOME'
-      if (typeof setPage === 'function') setPage('landing')
-    }
-
-    window.dispatchEvent(new HashChangeEvent('hashchange'))
-    window.scrollTo({ top: 0, behavior: 'smooth' })
-  }
-
   const resetForm = () => {
     setTitle('')
     setContent('')
@@ -215,7 +202,6 @@ const FAQPage = ({ setPage, scrollTarget = 'top' }) => {
     setGuestCommentNickname('')
     setGuestCommentPassword('')
     fetchComments(q.question_id)
-    window.scrollTo({ top: 0, behavior: 'smooth' })
   }
 
   const closeQuestionDetail = () => {
@@ -227,7 +213,6 @@ const FAQPage = ({ setPage, scrollTarget = 'top' }) => {
     setGuestCommentNickname('')
     setGuestCommentPassword('')
     resetForm()
-    window.scrollTo({ top: 0, behavior: 'smooth' })
   }
 
   const handleSubmit = async () => {
@@ -449,22 +434,107 @@ const FAQPage = ({ setPage, scrollTarget = 'top' }) => {
       alert('댓글 삭제 중 오류가 발생했습니다.')
     }
   }
+  const guard = (fn) => (e) => {
+    if (e.altKey) return
+    fn(e)
+  }
 
   return (
     <div className='faq-page' ref={topRef}>
       <div className='faq-topbar'>
-        <div>
-          <div className='faq-breadcrumb'>도움말 &gt; FAQ</div>
+        <div className='faq-header'>
           <h1 className='faq-title'>도움말 센터</h1>
           <p className='faq-desc'>
             자주 묻는 질문을 확인하고, 필요한 경우 바로 질문을 남길 수 있습니다.
           </p>
         </div>
-
-        <button type='button' className='faq-logo-btn' onClick={goHome} aria-label='홈으로 이동'>
-          <img src={finsightLogo} alt='FinSight' className='faq-logo-image' />
+        <button
+          type='button'
+          className='faq-secondary-btn'
+          onClick={guard(() => setOpenForm((prev) => !prev))}
+        >
+          {openForm ? '질문 작성 닫기' : '질문 남기기'}
         </button>
       </div>
+
+      {openForm && (
+        <section className='faq-panel' id='faq-form-section' ref={questionRef}>
+          <div className='faq-panel-head'>
+            <h2>{editQuestionId ? '질문 수정' : '질문 남기기'}</h2>
+          </div>
+
+          <div className='faq-form'>
+            <div className='faq-form-field'>
+              <label>제목</label>
+              <input
+                value={title}
+                onChange={(e) => setTitle(e.target.value)}
+                placeholder='질문 제목을 입력하세요'
+                maxLength={80}
+              />
+              <div className='faq-field-meta'>{title.length}/80</div>
+            </div>
+
+            <div className='faq-form-field'>
+              <label>내용</label>
+              <textarea
+                value={content}
+                onChange={(e) => setContent(e.target.value)}
+                placeholder='궁금한 내용을 조금 더 자세히 적어주세요'
+                rows='5'
+                maxLength={1000}
+              />
+              <div className='faq-field-meta'>{content.length}/1000</div>
+            </div>
+
+            <div className='faq-anonymous-section'>
+              <label className='faq-check-label'>
+                <input
+                  type='checkbox'
+                  checked={isAnonymous}
+                  onChange={() => setIsAnonymous(!isAnonymous)}
+                />
+                익명으로 작성
+              </label>
+
+              {!token && !isAnonymous && (
+                <div className='faq-form-field faq-nickname-stack'>
+                  <label>닉네임</label>
+                  <input
+                    value={nickname}
+                    onChange={(e) => setNickname(e.target.value)}
+                    placeholder='보여질 닉네임을 입력하세요'
+                    maxLength={20}
+                  />
+                  <div className='faq-field-meta'>{nickname.length}/20</div>
+                </div>
+              )}
+            </div>
+
+            {!token && (
+              <div className='faq-form-field faq-password-stack'>
+                <label>수정/삭제용 비밀번호</label>
+                <input
+                  type='password'
+                  value={editPassword}
+                  onChange={(e) => setEditPassword(e.target.value)}
+                  placeholder='비로그인 사용자는 비밀번호를 입력하세요'
+                  maxLength={30}
+                />
+              </div>
+            )}
+
+            <div className='faq-form-actions'>
+              <button type='button' className='faq-primary-btn' onClick={guard(handleSubmit)}>
+                {editQuestionId ? '질문 수정 저장' : '질문 등록'}
+              </button>
+              <button type='button' className='faq-secondary-btn' onClick={guard(resetForm)}>
+                초기화
+              </button>
+            </div>
+          </div>
+        </section>
+      )}
 
       {!selectedQuestion && (
         <>
@@ -479,9 +549,9 @@ const FAQPage = ({ setPage, scrollTarget = 'top' }) => {
             <button
               type='button'
               className='faq-open-form-btn'
-              onClick={() => setOpenForm((prev) => !prev)}
+              onClick={(e) => setSearch(e.target.value)}
             >
-              {openForm ? '질문 작성 닫기' : '질문 남기기'}
+              검색
             </button>
           </div>
 
@@ -498,18 +568,18 @@ const FAQPage = ({ setPage, scrollTarget = 'top' }) => {
                   const isOpen = openFaqId === faq.faq_id
 
                   return (
-                    <div key={faq.faq_id} className='faq-item'>
+                    <div key={faq.faq_id} className='landing-faq-accordion'>
                       <button
                         type='button'
-                        className='faq-question'
-                        onClick={() => toggleFaq(faq.faq_id)}
+                        className='landing-faq-question-row'
+                        onClick={guard(() => toggleFaq(faq.faq_id))}
                       >
                         <span className='faq-question-text'>{faq.question}</span>
-                        <span className='faq-toggle-icon'>{isOpen ? '−' : '+'}</span>
+                        <span className='landing-faq-toggle'><img src={isOpen ? minus : plus} alt="toggle" /></span>
                       </button>
 
                       {isOpen && (
-                        <div className='faq-answer'>
+                        <div className='landing-faq-answer-box'>
                           <span>{faq.answer}</span>
                         </div>
                       )}
@@ -520,96 +590,15 @@ const FAQPage = ({ setPage, scrollTarget = 'top' }) => {
             </div>
           </section>
 
-          {openForm && (
-            <section className='faq-panel' id='faq-form-section' ref={questionRef}>
-              <div className='faq-panel-head'>
-                <div>
-                  <h2>{editQuestionId ? '질문 수정' : '질문 남기기'}</h2>
-                </div>
-              </div>
-
-              <div className='faq-form'>
-                <div className='faq-form-field'>
-                  <label>제목</label>
-                  <input
-                    value={title}
-                    onChange={(e) => setTitle(e.target.value)}
-                    placeholder='질문 제목을 입력하세요'
-                    maxLength={80}
-                  />
-                  <div className='faq-field-meta'>{title.length}/80</div>
-                </div>
-
-                <div className='faq-form-field'>
-                  <label>내용</label>
-                  <textarea
-                    value={content}
-                    onChange={(e) => setContent(e.target.value)}
-                    placeholder='궁금한 내용을 조금 더 자세히 적어주세요'
-                    rows='5'
-                    maxLength={1000}
-                  />
-                  <div className='faq-field-meta'>{content.length}/1000</div>
-                </div>
-
-                <div className='faq-anonymous-section'>
-                  <label className='faq-check-label'>
-                    <input
-                      type='checkbox'
-                      checked={isAnonymous}
-                      onChange={() => setIsAnonymous(!isAnonymous)}
-                    />
-                    익명으로 작성
-                  </label>
-
-                  {!token && !isAnonymous && (
-                    <div className='faq-form-field faq-nickname-stack'>
-                      <label>닉네임</label>
-                      <input
-                        value={nickname}
-                        onChange={(e) => setNickname(e.target.value)}
-                        placeholder='보여질 닉네임을 입력하세요'
-                        maxLength={20}
-                      />
-                      <div className='faq-field-meta'>{nickname.length}/20</div>
-                    </div>
-                  )}
-                </div>
-
-                {!token && (
-                  <div className='faq-form-field faq-password-stack'>
-                    <label>수정/삭제용 비밀번호</label>
-                    <input
-                      type='password'
-                      value={editPassword}
-                      onChange={(e) => setEditPassword(e.target.value)}
-                      placeholder='비로그인 사용자는 비밀번호를 입력하세요'
-                      maxLength={30}
-                    />
-                  </div>
-                )}
-
-                <div className='faq-form-actions'>
-                  <button type='button' className='faq-primary-btn' onClick={handleSubmit}>
-                    {editQuestionId ? '질문 수정 저장' : '질문 등록'}
-                  </button>
-                  <button type='button' className='faq-secondary-btn' onClick={resetForm}>
-                    초기화
-                  </button>
-                </div>
-              </div>
-            </section>
-          )}
-
           <section className='faq-panel'>
-            <div className='faq-panel-head question-head'>
+            <div className='faq-panel-head'>
               <h2>유저 질문</h2>
 
               <div className='faq-sort-bar'>
                 <button
                   type='button'
                   className={sortType === 'latest' ? 'active' : ''}
-                  onClick={() => setSortType('latest')}
+                  onClick={guard(() => setSortType('latest'))}
                 >
                   최신순
                 </button>
@@ -617,18 +606,18 @@ const FAQPage = ({ setPage, scrollTarget = 'top' }) => {
                 <button
                   type='button'
                   className={sortType === 'oldest' ? 'active' : ''}
-                  onClick={() => setSortType('oldest')}
+                  onClick={guard(() => setSortType('oldest'))}
                 >
                   오래된순
                 </button>
               </div>
             </div>
+            <div className='question-board-head'>
+              <div className='question-col-title'>제목</div>
+              <div className='question-col-writer'>작성자</div>
+            </div>
 
             <div className='question-board'>
-              <div className='question-board-head'>
-                <div className='question-col-title'>제목</div>
-                <div className='question-col-writer'>작성자</div>
-              </div>
 
               {filteredQuestions.length === 0 ? (
                 <div className='question-board-empty'>등록된 질문이 없습니다.</div>
@@ -638,7 +627,7 @@ const FAQPage = ({ setPage, scrollTarget = 'top' }) => {
                     key={q.question_id}
                     type='button'
                     className='question-board-row simple'
-                    onClick={() => openQuestionDetail(q)}
+                    onClick={guard(() => openQuestionDetail(q))}
                   >
                     <div className='question-board-title'>
                       <span className='question-board-title-text'>{q.title}</span>
@@ -657,34 +646,29 @@ const FAQPage = ({ setPage, scrollTarget = 'top' }) => {
 
       {selectedQuestion && (
         <section className='faq-panel question-detail-panel'>
-          <div className='question-detail-topbar'>
+          <div className='question-detail-header'>
+            <div className='question-detail-title-row'>
+              <h2>{selectedQuestion.title}</h2>
+              <div className='question-detail-meta'>
+                <span>
+                  작성자:{' '}
+                  {selectedQuestion.is_anonymous
+                    ? '익명'
+                    : selectedQuestion.member_nickname || selectedQuestion.nickname}
+                </span>
+                <span>질문 등록: {formatDateTime(selectedQuestion.created_at)}</span>
+              </div>
+            </div>
             <button
               type='button'
-              className='faq-secondary-btn question-detail-back-btn'
+              className='faq-secondary-btn'
               onClick={closeQuestionDetail}
             >
               목록으로
             </button>
           </div>
 
-          <div className='question-detail-header'>
-            <div className='question-detail-title-row'>
-              <h2>{selectedQuestion.title}</h2>
-            </div>
-
-            <div className='question-detail-meta'>
-              <span>
-                작성자:{' '}
-                {selectedQuestion.is_anonymous
-                  ? '익명'
-                  : selectedQuestion.member_nickname || selectedQuestion.nickname}
-              </span>
-              <span>질문 등록: {formatDateTime(selectedQuestion.created_at)}</span>
-            </div>
-          </div>
-
           <div className='question-detail-content'>
-            <div className='question-detail-section-title'>질문 내용</div>
             <div className='question-detail-body'>{selectedQuestion.content}</div>
           </div>
 
@@ -735,16 +719,17 @@ const FAQPage = ({ setPage, scrollTarget = 'top' }) => {
                 <div className='comment-empty'>아직 등록된 댓글이 없습니다.</div>
               ) : (
                 commentList.map((comment) => (
-                  <div key={comment.comment_id} className='comment-item'>
-                    <div className='comment-meta'>
-                      <span className='comment-writer'>{comment.writer_name}</span>
-                      <span className='comment-date'>
-                        {formatDateTime(comment.created_at)}
-                      </span>
+                  <>
+                    <div key={comment.comment_id} className='comment-item'>
+                      <div className='comment-meta'>
+                        <span className='comment-writer'>{comment.writer_name}</span>
+                        <span className='comment-date'>
+                          {formatDateTime(comment.created_at)}
+                        </span>
+                      </div>
+
+                      <div className='comment-content'>{comment.content}</div>
                     </div>
-
-                    <div className='comment-content'>{comment.content}</div>
-
                     {comment.is_mine && (
                       <div className='comment-actions'>
                         <button
@@ -779,7 +764,7 @@ const FAQPage = ({ setPage, scrollTarget = 'top' }) => {
                         </button>
                       </div>
                     )}
-                  </div>
+                  </>
                 ))
               )}
             </div>
@@ -852,92 +837,6 @@ const FAQPage = ({ setPage, scrollTarget = 'top' }) => {
             </div>
           ) : null}
 
-          {openForm && (
-            <section className='faq-panel question-detail-edit-panel' id='faq-form-section'>
-              <div className='faq-panel-head'>
-                <div>
-                  <h2>{editQuestionId ? '질문 수정' : '질문 남기기'}</h2>
-                </div>
-              </div>
-
-              <div className='faq-form'>
-                <div className='faq-form-field'>
-                  <label>제목</label>
-                  <input
-                    value={title}
-                    onChange={(e) => setTitle(e.target.value)}
-                    placeholder='질문 제목을 입력하세요'
-                    maxLength={80}
-                  />
-                  <div className='faq-field-meta'>{title.length}/80</div>
-                </div>
-
-                <div className='faq-form-field'>
-                  <label>내용</label>
-                  <textarea
-                    value={content}
-                    onChange={(e) => setContent(e.target.value)}
-                    placeholder='궁금한 내용을 조금 더 자세히 적어주세요'
-                    rows='5'
-                    maxLength={1000}
-                  />
-                  <div className='faq-field-meta'>{content.length}/1000</div>
-                </div>
-
-                <div className='faq-anonymous-section'>
-                  <label className='faq-check-label'>
-                    <input
-                      type='checkbox'
-                      checked={isAnonymous}
-                      onChange={() => setIsAnonymous(!isAnonymous)}
-                    />
-                    익명으로 작성
-                  </label>
-
-                  {!token && !isAnonymous && (
-                    <div className='faq-form-field faq-nickname-stack'>
-                      <label>닉네임</label>
-                      <input
-                        value={nickname}
-                        onChange={(e) => setNickname(e.target.value)}
-                        placeholder='보여질 닉네임을 입력하세요'
-                        maxLength={20}
-                      />
-                    </div>
-                  )}
-                </div>
-
-                {!token && (
-                  <div className='faq-form-field faq-password-stack'>
-                    <label>수정/삭제용 비밀번호</label>
-                    <input
-                      type='password'
-                      value={editPassword}
-                      onChange={(e) => setEditPassword(e.target.value)}
-                      placeholder='비로그인 사용자는 비밀번호를 입력하세요'
-                      maxLength={30}
-                    />
-                  </div>
-                )}
-
-                <div className='faq-form-actions'>
-                  <button type='button' className='faq-primary-btn' onClick={handleSubmit}>
-                    {editQuestionId ? '질문 수정 저장' : '질문 등록'}
-                  </button>
-                  <button
-                    type='button'
-                    className='faq-secondary-btn'
-                    onClick={() => {
-                      resetForm()
-                      setOpenForm(false)
-                    }}
-                  >
-                    취소
-                  </button>
-                </div>
-              </div>
-            </section>
-          )}
         </section>
       )}
     </div>

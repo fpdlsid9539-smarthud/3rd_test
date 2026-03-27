@@ -179,28 +179,54 @@ const Ranking = () => {
           </section>
 
           <section className='ranking-guide-card'>
-            <h2>시즌 랭킹 안내</h2>
+            <h2>📊 시즌 랭킹 가이드</h2>
 
-            <p className='ranking-guide-text'>
-              현재 랭킹 점수는 <span className='guide-highlight-blue'>포인트 보유량</span>을
-              기준으로 산정되며, 현재 전체 1등 유저의 포인트를{' '}
-              <span className='guide-highlight-blue'>100점 기준</span>으로 계산합니다.
-            </p>
+            <div className="guide-content-wrap">
+              {/* 1. 랭킹 산정 방식 */}
+              <article className="guide-block">
+                <h3>1. 랭킹 점수 산정 방식 (상대 평가)</h3>
+                <p className='ranking-guide-text'>
+                  FinSight의 랭킹 점수는 유저가 획득한 <span className='guide-highlight-blue'>총 포인트</span>를 기준으로 산정됩니다.
+                  현재 전체 1등 유저의 포인트를 <span className='guide-highlight-blue'>100점(만점) 기준</span>으로 두고, 내 포인트가 1등 대비 어느 정도인지 상대적으로 계산합니다.
+                </p>
+                <p className='ranking-guide-formula'>
+                  내 랭킹 점수 = <span>(내 포인트 ÷ 현재 1등 포인트) × 100</span>
+                </p>
+                <ul className="guide-examples-list">
+                  <li><strong>상황 A :</strong> 내가 현재 전체 1등(100,000pt)이라면 → 랭킹 점수 <span className='highlight-value'>100.0점</span> 배정</li>
+                  <li><strong>상황 B :</strong> 내 포인트가 50,000pt이고 1등이 100,000pt라면 → 랭킹 점수 <span className='highlight-value'>50.0점</span> 배정</li>
+                  <li><strong>상황 C :</strong> 내 포인트는 그대로인데 1등이 200,000pt로 오르면 → 랭킹 점수 <span className='highlight-value'>25.0점</span>으로 하락</li>
+                </ul>
+                <p className='ranking-guide-warning'>
+                  ※ 1등 유저의 포인트가 더 높아지면, 내 포인트가 그대로여도 랭킹 점수(%)는 하락할 수 있습니다. 랭킹 방어를 위해 꾸준히 포인트를 모아보세요!
+                </p>
+              </article>
 
-            <p className='ranking-guide-formula'>
-              랭킹 점수 = <span>내 포인트 ÷ 현재 1등 포인트 × 100</span>
-            </p>
+              {/* 2. 티어(리그) 안내 */}
+              <article className="guide-block">
+                <h3>2. 리그 배정 기준</h3>
+                <p className='ranking-guide-text'>
+                  산정된 랭킹 점수(상대 점수) 커트라인에 따라 4개의 리그 중 하나에 자동으로 배정됩니다.
+                </p>
+                <ul className="guide-tier-list">
+                  <li><img src={bronze} alt="Bronze badge" className="guide-league-badge"/><span className="tier-name"></span> 랭킹 하위권 및 신규 가입 유저</li>
+                  <li><img src={silver} alt="Silver badge" className="guide-league-badge"/><span className="tier-name"></span> 랭킹 중위권 유저</li>
+                  <li><img src={gold} alt="Gold badge" className="guide-league-badge"/><span className="tier-name"></span> 랭킹 상위권 유저</li>
+                  <li><img src={diamond} alt="Diamond badge" className="guide-league-badge"/><span className="tier-name"></span> 랭킹 최상위권 (Top 랭커)</li>
+                </ul>
+              </article>
 
-            <div className='ranking-guide-example'>
-              <div className='guide-example-title'>예시</div>
-              <p>1등 유저 포인트가 100,000pt라면 1등 점수는 100점입니다.</p>
-              <p>내 포인트가 80,000pt라면 내 랭킹 점수는 80점으로 반영됩니다.</p>
+              {/* 3. 포인트 획득 방법 (생태계 안내) */}
+              <article className="guide-block">
+                <h3>3. 포인트는 어떻게 모으나요?</h3>
+                <ul className="guide-point-list">
+                  <li><strong> 가상 주식 매매:</strong> 전략실에서 모의 투자를 진행하고 수익금만큼 포인트를 늘려보세요.</li>
+                  <li><strong> 기초 지식 퀴즈:</strong> 교육실 퀴즈(하/중/상)를 풀고 정답 포인트와 완벽(100점) 보너스를 획득하세요.</li>
+                  <li><strong> 일일 O/X 퀴즈:</strong> 매일 1회 제공되는 실제 주가 데이터 기반의 O/X 퀴즈를 맞히면 500pt가 지급됩니다.</li>
+                  <li><strong> 업적 및 칭호:</strong> 숨겨진 다양한 퀘스트를 달성하여 대량의 추가 포인트를 노려보세요!</li>
+                </ul>
+              </article>
             </div>
-
-            <p className='ranking-guide-warning'>
-              ※ 이 랭킹은 절대 점수가 아닌 상대 평가 방식이며, 1등 유저의 포인트가
-              변동되면 다른 유저의 랭킹 점수도 함께 변동될 수 있습니다.
-            </p>
           </section>
         </>
       )}

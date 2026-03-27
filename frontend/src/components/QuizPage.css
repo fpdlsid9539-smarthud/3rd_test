@@ -1,4 +1,3 @@
-/* ─── Container ─────────────────────────────── */
 .quiz-container {
   margin-bottom: 1.5rem;
   box-sizing: border-box;
@@ -570,6 +569,14 @@
   margin-bottom: 25px;
 }
 
+.ox-reference-date {
+  color: #8a94a6;
+  font-size: 0.85rem;
+  margin-bottom: 12px;
+  text-align: center;
+  font-weight: 500;
+}
+
 /* 문제 카드 영역 */
 .ox-question-card {
   background: #232a35;
@@ -814,4 +821,71 @@
   font-weight: 800;
   font-size: 1.05rem;
   color: var(--primary);
+}
+
+.diff-btn-wrapper {
+  flex: 1;
+  position: relative;
+  display: flex;
+}
+
+.diff-btn-wrapper button {
+  width: 100%;
+  position: relative;
+  transition: all 0.2s ease;
+}
+
+/* 잠긴 버튼 디자인 (클릭 불가 느낌) */
+.diff-btn-wrapper.locked .btn-difficulty {
+  background-color: #e2e8f0;
+  color: #a0aec0;
+  border: 1px solid #cbd5e0;
+  cursor: default;
+  box-shadow: none;
+}
+
+.lock-icon {
+  margin-left: 8px;
+  font-size: 1.1rem;
+}
+
+/* 툴팁 (말풍선) 기본 숨김 세팅 */
+.premium-tooltip {
+  position: absolute;
+  bottom: calc(100% + 5px); /* 버튼 살짝 위 */
+  left: 50%;
+  transform: translateX(-50%);
+  background: #2d3748;
+  color: #fff;
+  padding: 10px 14px;
+  border-radius: 8px;
+  font-size: 0.9rem;
+  font-weight: 600;
+  white-space: nowrap;
+  
+  /* 부드럽게 나타나게 하기 위한 세팅 */
+  opacity: 0;
+  visibility: hidden;
+  transition: all 0.25s ease;
+  pointer-events: none; /* 툴팁에 마우스가 걸리지 않게 */
+  z-index: 100;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+}
+
+/* 말풍선 꼬리 (아래쪽 세모) */
+.premium-tooltip::after {
+  content: '';
+  position: absolute;
+  top: 100%;
+  left: 50%;
+  transform: translateX(-50%);
+  border: 6px solid transparent;
+  border-top-color: #2d3748;
+}
+
+/* 마우스를 올렸을 때 툴팁 나타나게 하기 */
+.diff-btn-wrapper.locked:hover .premium-tooltip {
+  opacity: 1;
+  visibility: visible;
+  bottom: calc(100% + 12px); /* 스르륵 위로 올라오는 효과 */
 }
