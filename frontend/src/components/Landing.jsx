@@ -15,7 +15,7 @@ import logo from '../assets/logo-long.svg'
 import idk from '../assets/idk.jpg'
 import BackgroundGrid from './BackgroundGrid'
 
-const BACKEND_URL = 'http://localhost:5000'
+const BACKEND_URL = import.meta.env.VITE_API_URL || 'http://localhost:5000'
 
 const Landing = ({ setPage }) => {
   const [faqList, setFaqList] = useState([])

@@ -2,21 +2,21 @@
 @import url(//spoqa.github.io/spoqa-han-sans/css/SpoqaHanSansNeo.css);
 
 :root {
-  --primary: #4775ff;
+  --primary: #4775FF;
   --bg: #FFFFFF;
-  --secondary: #00b849;
+  --secondary: #00B849;
   --text: #0B1532;
   --danger: #FF4766;
-  --warning: #ffad14;
+  --warning: #FFAD14;
 
   --border-prim: color-mix(in oklab, var(--primary) 70%, var(--bg)100%);
-  --border: color-mix(in oklab, var(--text) 8%, transparent);
+  --border: color-mix(in oklab, var(--text) 12%, var(--bg)88%);
 
   --text-highlight: color-mix(in oklab, var(--text) 48%, var(--bg));
   --primary-highlight: color-mix(in oklab, var(--primary) 4%, var(--bg) 96%);
   --primary-highlight2: color-mix(in oklab, var(--primary) 24%, var(--bg) 96%);
   --danger-highlight: color-mix(in oklab, var(--danger) 4%, var(--bg) 96%);
-  --secondary-highlight: color-mix(in oklab, var(--secondary) 24%, var(--bg) 96%);
+  --secondary-highlight: color-mix(in oklab, var(--secondary) 12%, var(--bg));
   --warning-highlight: color-mix(in oklab, var(--warning) 12%, var(--bg));
   --warning-highlight-2: color-mix(in oklab, var(--warning) 4%, var(--bg));
 
@@ -29,9 +29,14 @@
   --bg-trans2: color-mix(in oklab, var(--bg) 88%, transparent);
   --bg-trans3: color-mix(in oklab, var(--bg) 48%, transparent);
   --primary-70: color-mix(in oklab, var(--primary) 70%, var(--bg)100%);
+  --ps: color-mix(in oklab, color-mix(in oklab, var(--primary), var(--secondary)), var(--bg));
+  --ps2: color-mix(in oklab, color-mix(in oklab, var(--primary), var(--secondary) 56%) 24%, var(--bg));
+  --pd: color-mix(in oklab, color-mix(in oklab, var(--primary), var(--danger)), var(--bg));
+  --pd2: color-mix(in oklab, color-mix(in oklab, var(--primary), var(--danger) 56%) 24%, var(--bg));
 
   --progress-bar: linear-gradient(90deg, color-mix(in oklab, var(--primary), transparent 0%), color-mix(in oklab, #001F7A, transparent 0%));
-  --btn-gd: linear-gradient(135deg, color-mix(in oklab, var(--primary), transparent 0%), color-mix(in oklab, #FF4766, transparent 0%));
+  --btn-gd: linear-gradient(135deg, color-mix(in oklab, var(--primary), transparent 0%), color-mix(in oklab, var(--danger), transparent 0%));
+  --btn-gd2: linear-gradient(135deg, color-mix(in oklab, var(--primary), transparent 0%) 100%, color-mix(in oklab, var(--danger), transparent 0%)) 0;
   --btn-prim: linear-gradient(90deg, var(--primary-70) 25%, hsla(225, 100%, 88%, 0.70) 100%);
   --btn-warn: linear-gradient(135deg, var(--warning), color-mix(in oklab, var(--warning), var(--danger) 40%));
   --bg-grad: linear-gradient(180deg, var(--bg-trans2), var(--bg-trans));
@@ -117,6 +122,18 @@ body {
 }
 
 ::-webkit-scrollbar-thumb {
-  background: var(--text-trans);
+  background: var(--border);
   border-radius: 2rem;
+}
+
+input::-webkit-outer-spin-button,
+input::-webkit-inner-spin-button {
+  -webkit-appearance: none;
+  margin: 0;
+}
+
+/* Firefox */
+input[type=number] {
+  -moz-appearance: textfield;
+  appearance: textfield;
 }

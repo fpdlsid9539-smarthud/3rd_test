@@ -35,7 +35,9 @@ router.get('/', async (req, res) => {
   }
 })
 
-/* 질문 목록 */
+/* 질문 목록
+   ✅ 일반 유저 댓글이 1개 이상 있으면 is_answered = true
+*/
 router.get('/questions', async (req, res) => {
   try {
     const currentMemberId = getMemberIdFromHeader(req)
@@ -53,11 +55,28 @@ router.get('/questions', async (req, res) => {
         fq.created_at,
         fq.updated_at,
         fq.edit_password,
-        m.nickname AS member_nickname
+        m.nickname AS member_nickname,
+        COUNT(c.comment_id) AS comment_count
       FROM faq_questions fq
       LEFT JOIN members m
         ON fq.member_id = m.member_id
+      LEFT JOIN faq_question_comments c
+        ON fq.question_id = c.question_id
+       AND c.is_deleted = 0
       WHERE fq.is_deleted = 0
+      GROUP BY
+        fq.question_id,
+        fq.member_id,
+        fq.title,
+        fq.content,
+        fq.category,
+        fq.is_anonymous,
+        fq.nickname,
+        fq.is_deleted,
+        fq.created_at,
+        fq.updated_at,
+        fq.edit_password,
+        m.nickname
       ORDER BY fq.question_id DESC
     `)
 
@@ -69,6 +88,8 @@ router.get('/questions', async (req, res) => {
         currentMemberId && row.member_id
           ? Number(currentMemberId) === Number(row.member_id)
           : false,
+      comment_count: Number(row.comment_count || 0),
+      is_answered: Number(row.comment_count || 0) > 0,
     }))
 
     res.json({ success: true, data: mapped })
@@ -422,7 +443,7 @@ router.post('/questions/:id/comments', async (req, res) => {
       if (!guestNickname) {
         return res.status(400).json({
           success: false,
-          message: '비로그인 사용자는 닉네임을 입력하세요.',
+          message: '비로그인 사용자는 댓글 닉네임을 입력하세요.',
         })
       }
 

@@ -29,7 +29,7 @@ body {
 
 /* JOIN */
 .landing-header {
-  min-width: 88%;
+  width: 1280px;
   padding: 0.5rem;
   margin: auto;
   box-sizing: border-box;
@@ -120,57 +120,39 @@ body {
 .floating-nav {
   width: fit-content;
   box-sizing: border-box;
-
   display: flex;
   gap: 1rem;
 }
 
-.kakao_btn {
-  width: 100%;
-  padding: 0rem 1.5rem;
-
-  background-color: #FEE500;
-  border-radius: 0.75rem;
-  border: none;
-
-  display: flex;
-  justify-content: center;
-  align-items: center;
-  gap: 0.5rem;
-
-  font-size: 1rem;
-  font-weight: 600;
-
-  cursor: pointer;
-}
-
-.kakao_btn img {
-  height: auto;
-  width: 1.25rem;
-}
-
+.kakao_btn,
 .google_btn {
   width: 100%;
   padding: 0rem 1.5rem;
-
-  background-color: white;
   border-radius: 0.75rem;
-  border: 1px solid var(--border);
-
   display: flex;
   justify-content: center;
   align-items: center;
   gap: 0.5rem;
-
   font-size: 1rem;
   font-weight: 600;
-
   cursor: pointer;
 }
 
+.kakao_btn {
+  background-color: #FEE500;
+  border: none;
+}
+
+.google_btn {
+  background-color: white;
+  border: 1px solid var(--border);
+}
+
+.kakao_btn img,
 .google_btn img {
-  height: 1.25rem;
   width: 1.25rem;
+  height: 1.25rem;
+  object-fit: contain; 
 }
 
 .container {
@@ -226,23 +208,31 @@ body {
   line-height: 200%;
 }
 
-.intro-container {
-  width: fit-content;
-  height: fit-content;
+.intro-container,
+.ad-title {
   box-sizing: border-box;
-
-  display: flex;
-  justify-content: center;
-  align-items: center;
-  /* gap: 1rem; */
-
   background-color: var(--bg-trans3);
   border: 1px solid var(--border);
   border-radius: 1.5rem;
   backdrop-filter: blur(0.5rem);
   box-shadow: 0 0.5rem 1rem var(--shadow-2);
-
   line-height: 200%;
+}
+
+.intro-container {
+  width: fit-content;
+  height: fit-content;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+}
+
+.ad-title {
+  min-width: fit-content;
+  padding: 1.5rem;
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
 }
 
 .image-container {
@@ -310,38 +300,8 @@ body {
   grid-column: 2 / 4;
 }
 
-.ad-title {
-  min-width: fit-content;
-  padding: 1.5rem;
-  box-sizing: border-box;
-
-  display: flex;
-  flex-direction: column;
-  gap: 0.5rem;
-
-  background-color: var(--bg-trans3);
-  border: 1px solid var(--border);
-  border-radius: 1.5rem;
-  backdrop-filter: blur(0.5rem);
-
-  line-height: 200%;
-  box-shadow: 0 0.5rem 1rem var(--shadow-2);
-}
-
 .ad-title h2 {
   font-size: 2rem;
-}
-
-.ad-description {
-  display: flex;
-  flex-direction: column;
-  justify-content: center;
-  gap: 1.5rem;
-
-  padding-left: 1rem;
-
-  font-size: 1.125rem;
-  font-weight: 500;
 }
 
 /* FAQ 전체 섹션 */
@@ -399,37 +359,48 @@ body {
 
 .landing-faq-categories {
   display: flex;
-  gap: 0.5rem;
+  gap: 0rem;
   flex-wrap: wrap;
+
+  border-radius: 0.75rem;
+}
+
+.landing-faq-chip:first-child {
+  border-top-left-radius: 0.75rem;
+  border-bottom-left-radius: 0.75rem;
+}
+
+.landing-faq-chip:last-child {
+  border-top-right-radius: 0.75rem;
+  border-bottom-right-radius: 0.75rem;
 }
 
 .landing-faq-chip {
+  min-height: 2.5rem;
   padding: 0.5rem 0.75rem;
-
-  background: var(--bg);
-  border: 1px solid var(--border);
+  border: 1px solid var(--border-prim);
   outline: 1px solid transparent;
-  border-radius: 0.75rem;
-
-  font-size: 0.875rem;
-  font-weight: 600;
+  background-color: var(--primary-highlight);
+  color: var(--primary);
+  font-size: 0.85rem;
+  font-weight: 500;
   cursor: pointer;
-
-  transition: all 0.3s ease;
+  transition: all 0.2s ease;
 }
 
 .landing-faq-chip:hover {
-  background: var(--primary-highlight);
-  border: 1px solid var(--primary);
+  background-color: var(--primary-highlight2);
+  border-color: transparent;
+  color: var(--primary);
 }
 .landing-faq-chip:focus {
   background: var(--primary-highlight);
-  outline: 1px solid var(--primary);
 }
 
 .landing-faq-chip.active {
-  background: var(--primary-highlight2);
+  background: var(--primary);
   border: 1px solid var(--primary);
+  color: var(--bg);
 }
 
 .landing-faq-search {
@@ -471,7 +442,7 @@ body {
 
 .landing-faq-question-row {
   width: 100%;
-  padding: 0.75rem 1rem;
+  padding: 0.5rem;
 
   display: flex;
   justify-content: space-between;
@@ -774,8 +745,9 @@ body {
   color: #555;
 }
 
-@media (max-width: 1100px) {
+@media (max-width: 1400px) {
   .landing-header {
+    width: 88%;
     gap: 1rem;
   }
 
@@ -792,16 +764,6 @@ body {
   .container {
     gap: 6rem;
     padding: 1.5rem;
-  }
-
-  .landing-logo {
-    display: none;
-  }
-
-  .landing-logo2 {
-    height: 2rem;
-
-    display: flex;
   }
 
   .ad-grid {
@@ -840,10 +802,18 @@ body {
     padding: 0.5rem;
   }
 
+  .landing-logo {
+    display: none;
+  }
+
   .landing-navigation-menu {
     flex-direction: column;
     padding: 0.5rem;
     font-size: 0.875rem;
+  }
+
+  .landing-navigation-menu > p {
+    display: none;
   }
 
   .floating-nav {
@@ -852,7 +822,7 @@ body {
   }
 
   .landing-logo2 {
-    height: 2.5rem;
+    height: 1.5rem;
 
     display: flex;
   }
@@ -860,7 +830,7 @@ body {
   .kakao_btn,
   .google_btn {
     justify-content: center;
-    padding: 1rem;
+    padding: 0.5rem;
   }
 
   .kakao_btn>span,

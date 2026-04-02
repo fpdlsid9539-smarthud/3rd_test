@@ -5,17 +5,17 @@ body {
 .main-body {
   min-height: 100vh;
   display: grid;
-  grid-template-columns: 280px minmax(0, 1fr) 280px;
+  grid-template-columns: 240px 1fr 280px;
   gap: 1.5rem;
   transition: grid-template-columns 0.4s cubic-bezier(0.4, 0, 0.2, 1);
 }
 
 .main-body.profile-collapsed {
-  grid-template-columns: 280px minmax(0, 1fr) 5.5rem;
+  grid-template-columns: 240px minmax(0, 1fr) 5.5rem;
 }
 
 .main-body.nav-collapsed {
-  grid-template-columns: 5.5rem minmax(0, 1fr) minmax(220px, 280px);
+  grid-template-columns: 5.5rem minmax(0, 1fr) 280px;
 }
 
 .main-body.nav-collapsed.profile-collapsed {
@@ -28,50 +28,26 @@ body {
   min-width: 0;
 }
 
+.content-area {
+  padding-bottom: 1.5rem;
+}
+
 /* =========================
    Tablet
    - 프로필을 가장 위로
 ========================= */
-@media (max-width: 1200px) {
+@media (max-width: 1024px) {
   .main-body {
-    display: grid;
-    grid-template-columns: 1fr;
-    gap: 1rem;
-  }
-
-  .profile-area {
-    order: 3;
-  }
-
-  .navigation-area {
-    order: 1;
-  }
-
-  .content-area {
-    order: 2;
-  }
-}
-
-/* =========================
-   Mobile
-   - 프로필 최상단 유지
-========================= */
-@media (max-width: 768px) {
-  .main-body {
+    width: 100%;
+    overflow-x: hidden;
     display: flex;
     flex-direction: column;
     gap: 1rem;
-  }
-
-  .profile-area {
-    order: 3;
-  }
-
-  .navigation-area {
-    order: 1;
+    padding: 5rem 0;
   }
 
   .content-area {
-    order: 2;
+    padding: 0 1rem;
+    /* order: 2; */
   }
 }

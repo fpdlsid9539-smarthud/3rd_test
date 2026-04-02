@@ -379,7 +379,9 @@ const FAQPage = ({ setPage, scrollTarget = 'top' }) => {
       setCommentContent('')
       setGuestCommentNickname('')
       setGuestCommentPassword('')
-      fetchComments(selectedQuestion.question_id, currentToken)
+
+      await fetchData(currentToken)
+      await fetchComments(selectedQuestion.question_id, currentToken)
     } catch (err) {
       console.error('댓글 등록 실패:', err)
       alert('댓글 등록 중 오류가 발생했습니다.')
@@ -428,12 +430,15 @@ const FAQPage = ({ setPage, scrollTarget = 'top' }) => {
         ...prev,
         [comment.comment_id]: '',
       }))
-      fetchComments(selectedQuestion.question_id, currentToken)
+
+      await fetchData(currentToken)
+      await fetchComments(selectedQuestion.question_id, currentToken)
     } catch (err) {
       console.error('댓글 삭제 실패:', err)
       alert('댓글 삭제 중 오류가 발생했습니다.')
     }
   }
+
   const guard = (fn) => (e) => {
     if (e.altKey) return
     fn(e)
@@ -575,7 +580,9 @@ const FAQPage = ({ setPage, scrollTarget = 'top' }) => {
                         onClick={guard(() => toggleFaq(faq.faq_id))}
                       >
                         <span className='faq-question-text'>{faq.question}</span>
-                        <span className='landing-faq-toggle'><img src={isOpen ? minus : plus} alt="toggle" /></span>
+                        <span className='landing-faq-toggle'>
+                          <img src={isOpen ? minus : plus} alt='toggle' />
+                        </span>
                       </button>
 
                       {isOpen && (
@@ -612,13 +619,13 @@ const FAQPage = ({ setPage, scrollTarget = 'top' }) => {
                 </button>
               </div>
             </div>
+
             <div className='question-board-head'>
               <div className='question-col-title'>제목</div>
               <div className='question-col-writer'>작성자</div>
             </div>
 
             <div className='question-board'>
-
               {filteredQuestions.length === 0 ? (
                 <div className='question-board-empty'>등록된 질문이 없습니다.</div>
               ) : (
@@ -630,7 +637,12 @@ const FAQPage = ({ setPage, scrollTarget = 'top' }) => {
                     onClick={guard(() => openQuestionDetail(q))}
                   >
                     <div className='question-board-title'>
-                      <span className='question-board-title-text'>{q.title}</span>
+                      <div className='question-board-title-line'>
+                        <span className='question-board-title-text'>{q.title}</span>
+                        {q.is_answered && (
+                          <span className='question-badge answered'>답변완료</span>
+                        )}
+                      </div>
                     </div>
 
                     <div className='question-board-writer'>
@@ -648,7 +660,13 @@ const FAQPage = ({ setPage, scrollTarget = 'top' }) => {
         <section className='faq-panel question-detail-panel'>
           <div className='question-detail-header'>
             <div className='question-detail-title-row'>
-              <h2>{selectedQuestion.title}</h2>
+              <div className='question-detail-title-wrap'>
+                <h2>{selectedQuestion.title}</h2>
+                {selectedQuestion.is_answered && (
+                  <span className='question-badge answered'>답변완료</span>
+                )}
+              </div>
+
               <div className='question-detail-meta'>
                 <span>
                   작성자:{' '}
@@ -659,6 +677,7 @@ const FAQPage = ({ setPage, scrollTarget = 'top' }) => {
                 <span>질문 등록: {formatDateTime(selectedQuestion.created_at)}</span>
               </div>
             </div>
+
             <button
               type='button'
               className='faq-secondary-btn'
@@ -719,8 +738,8 @@ const FAQPage = ({ setPage, scrollTarget = 'top' }) => {
                 <div className='comment-empty'>아직 등록된 댓글이 없습니다.</div>
               ) : (
                 commentList.map((comment) => (
-                  <>
-                    <div key={comment.comment_id} className='comment-item'>
+                  <React.Fragment key={comment.comment_id}>
+                    <div className='comment-item'>
                       <div className='comment-meta'>
                         <span className='comment-writer'>{comment.writer_name}</span>
                         <span className='comment-date'>
@@ -730,6 +749,7 @@ const FAQPage = ({ setPage, scrollTarget = 'top' }) => {
 
                       <div className='comment-content'>{comment.content}</div>
                     </div>
+
                     {comment.is_mine && (
                       <div className='comment-actions'>
                         <button
@@ -764,7 +784,7 @@ const FAQPage = ({ setPage, scrollTarget = 'top' }) => {
                         </button>
                       </div>
                     )}
-                  </>
+                  </React.Fragment>
                 ))
               )}
             </div>
@@ -836,7 +856,6 @@ const FAQPage = ({ setPage, scrollTarget = 'top' }) => {
               )}
             </div>
           ) : null}
-
         </section>
       )}
     </div>

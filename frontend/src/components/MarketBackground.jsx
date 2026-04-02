@@ -57,7 +57,7 @@ const MarketBackground = () => {
 
     // ── Candlesticks ──────────────────────────────────────
     const drawCandles = () => {
-      const W = canvas.width, H = canvas.height;
+      const W = window.innerWidth, H = window.innerHeight;
       const colW = W / COLS;
 
       candles.forEach((c) => {
@@ -89,7 +89,7 @@ const MarketBackground = () => {
 
     // ── Price lines ───────────────────────────────────────
     const drawLines = () => {
-      const W = canvas.width, H = canvas.height;
+      const W = window.innerWidth, H = window.innerHeight;
       const PTS = 120;
 
       lineSeeds.forEach(({ color, offset, opacity, yBase }) => {
@@ -117,7 +117,7 @@ const MarketBackground = () => {
 
     // ── Particles ─────────────────────────────────────────
     const drawParticles = () => {
-      const W = canvas.width, H = canvas.height;
+      const W = window.innerWidth, H = window.innerHeight;
 
       particles.forEach((p) => {
         p.x += p.vx;
@@ -150,7 +150,7 @@ const MarketBackground = () => {
     draw();
 
     const handleScroll = () => {
-      canvas.style.top = `${88+window.scrollY * 1.1}px`;
+      canvas.style.transform = `translateY(${88 + window.scrollY * 1.1}px)`;
     };
 
     window.addEventListener("scroll", handleScroll, { passive: true });

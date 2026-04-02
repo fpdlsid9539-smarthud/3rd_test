@@ -1,12 +1,13 @@
-    import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect } from 'react';
 import { api } from '../config/api';
 import './NewsTicker.css';
+import close from '../assets/icons/close.svg'
 
 const NewsTicker = () => {
   const [newsList, setNewsList] = useState([]);
   const [currentIndex, setCurrentIndex] = useState(0);
   const [loading, setLoading] = useState(true);
-  
+
   // 🟢 모달 창 열림/닫힘 상태
   const [isModalOpen, setIsModalOpen] = useState(false);
 
@@ -61,8 +62,8 @@ const NewsTicker = () => {
         <div className="news-modal-overlay" onClick={() => setIsModalOpen(false)}>
           <div className="news-modal-content" onClick={(e) => e.stopPropagation()}>
             <div className="news-modal-header">
-              <h3>📈 오늘의 실시간 주식 뉴스</h3>
-              <button className="news-modal-close" onClick={() => setIsModalOpen(false)}>✕</button>
+              <h3>오늘의 실시간 주식 뉴스</h3>
+              <img src={close} alt="close" onClick={() => setIsModalOpen(false)} />
             </div>
             <div className="news-modal-list">
               {newsList.map((news) => (

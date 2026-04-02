@@ -3,7 +3,7 @@ import './Education.css'
 import arrowDown from '../assets/icons/arrow-down-line.svg'
 import check from '../assets/icons/check.svg'
 import finsightLogo from '../assets/finsight.svg'
-import crownIcon from '../assets/icons/crown.png'
+import crownIcon from '../assets/icons/premium.svg'
 
 const API_BASE_URL = 'http://localhost:5000'
 
@@ -11,10 +11,48 @@ const getAccessToken = () => {
   return localStorage.getItem('token') || ''
 }
 
+const parseJwt = (token) => {
+  try {
+    if (!token) return null
+    const base64Url = token.split('.')[1]
+    if (!base64Url) return null
+
+    const base64 = base64Url.replace(/-/g, '+').replace(/_/g, '/')
+    const jsonPayload = decodeURIComponent(
+      atob(base64)
+        .split('')
+        .map((char) => `%${(`00${char.charCodeAt(0).toString(16)}`).slice(-2)}`)
+        .join('')
+    )
+
+    return JSON.parse(jsonPayload)
+  } catch (error) {
+    console.error('JWT 파싱 실패:', error)
+    return null
+  }
+}
+
+const getMemberIdFromToken = () => {
+  const token = getAccessToken()
+  const payload = parseJwt(token)
+
+  return (
+    payload?.member_id ??
+    payload?.id ??
+    payload?.memberId ??
+    null
+  )
+}
+
+const getDailyCountsStorageKey = (memberId) => {
+  return memberId ? `educationDailyCounts_${memberId}` : 'educationDailyCounts_guest'
+}
+
 const Education = () => {
   const [searchText, setSearchText] = useState('')
   const [openLessonId, setOpenLessonId] = useState(null)
   const [showAllLessons, setShowAllLessons] = useState(false)
+  const [visibleCount, setVisibleCount] = useState(5)
 
   const [countdown, setCountdown] = useState(0)
 
@@ -41,21 +79,44 @@ const Education = () => {
   const [actionMessage, setActionMessage] = useState('')
   const [processingLessonId, setProcessingLessonId] = useState(null)
 
+  const [memberId, setMemberId] = useState(null)
+
   useEffect(() => {
+    const resolvedMemberId = getMemberIdFromToken()
+    setMemberId(resolvedMemberId)
+  }, [])
+
+  useEffect(() => {
+    if (!memberId) {
+      setDailyCounts({
+        beginner: 0,
+        intermediate: 0,
+        advanced: 0,
+      })
+      return
+    }
+
     const today = new Date().toDateString()
-    const storedData = JSON.parse(localStorage.getItem('educationDailyCounts') || '{}')
+    const storageKey = getDailyCountsStorageKey(memberId)
+    const storedData = JSON.parse(localStorage.getItem(storageKey) || '{}')
 
     if (storedData.date === today) {
-      setDailyCounts(storedData.counts)
+      setDailyCounts(
+        storedData.counts || {
+          beginner: 0,
+          intermediate: 0,
+          advanced: 0,
+        }
+      )
     } else {
       const resetCounts = { beginner: 0, intermediate: 0, advanced: 0 }
       setDailyCounts(resetCounts)
       localStorage.setItem(
-        'educationDailyCounts',
+        storageKey,
         JSON.stringify({ date: today, counts: resetCounts })
       )
     }
-  }, [])
+  }, [memberId])
 
   const getVisibleLessons = (lessons, statusFilter, difficultyFilter) => {
     let visible = [...lessons]
@@ -88,6 +149,9 @@ const Education = () => {
 
         const token = getAccessToken()
         if (!token) throw new Error('UNAUTHORIZED')
+
+        const resolvedMemberId = getMemberIdFromToken()
+        setMemberId(resolvedMemberId)
 
         const res = await fetch(`${API_BASE_URL}/api/education`, {
           method: 'GET',
@@ -158,23 +222,41 @@ const Education = () => {
   }, [searchText, selectedStatusFilter, selectedDifficultyFilter, educationLessons])
 
   const displayedLessons = useMemo(() => {
-    return showAllLessons ? filteredLessons : filteredLessons.slice(0, 5)
-  }, [filteredLessons, showAllLessons])
+    return filteredLessons.slice(0, visibleCount)
+  }, [filteredLessons, visibleCount])
 
+  // 🟢 수정 3: 검색이나 필터를 바꾸면 다시 초기 5개로 리셋
   useEffect(() => {
-    setShowAllLessons(false)
+    setVisibleCount(5)
     setOpenLessonId(null)
+    setCountdown(0)
   }, [searchText, selectedStatusFilter, selectedDifficultyFilter])
+
+  // 🟢 추가: 더보기 / 접기 버튼 동작 함수
+  const handleLoadMore = () => {
+    setVisibleCount((prev) => prev + 10) // 10개씩 추가
+  }
+
+  const handleCollapse = () => {
+    setVisibleCount((prev) => {
+      const newCount = prev - 10
+      return newCount < 5 ? 5 : newCount
+    })
+  }
 
   useEffect(() => {
     if (filteredLessons.length === 0) {
       setOpenLessonId(null)
+      setCountdown(0)
       return
     }
     if (openLessonId === null) return
 
     const stillExists = filteredLessons.some((lesson) => lesson.id === openLessonId)
-    if (!stillExists) setOpenLessonId(null)
+    if (!stillExists) {
+      setOpenLessonId(null)
+      setCountdown(0)
+    }
   }, [filteredLessons, openLessonId])
 
   const showSubscribeGuide = () => {
@@ -243,13 +325,19 @@ const Education = () => {
       const data = result?.data || {}
 
       const completedLesson = educationLessons.find((l) => l.id === lessonId)
-      if (completedLesson) {
+
+      if (completedLesson && memberId) {
         const difficulty = completedLesson.difficulty
-        const newCounts = { ...dailyCounts, [difficulty]: dailyCounts[difficulty] + 1 }
+        const newCounts = {
+          ...dailyCounts,
+          [difficulty]: (dailyCounts[difficulty] || 0) + 1,
+        }
 
         setDailyCounts(newCounts)
+
+        const storageKey = getDailyCountsStorageKey(memberId)
         localStorage.setItem(
-          'educationDailyCounts',
+          storageKey,
           JSON.stringify({
             date: new Date().toDateString(),
             counts: newCounts,
@@ -268,12 +356,8 @@ const Education = () => {
         setActionMessage(`학습 완료! ${data.awardedPoints}pt를 획득했습니다.`)
       }
 
-      const nextVisibleLessons = getVisibleLessons(
-        data.lessons || [],
-        selectedStatusFilter,
-        selectedDifficultyFilter
-      )
-      setOpenLessonId(nextVisibleLessons.length > 0 ? nextVisibleLessons[0]?.id ?? null : null)
+      setOpenLessonId(null)
+      setCountdown(0)
     } catch (err) {
       setError(
         err.message === 'UNAUTHORIZED'
@@ -299,13 +383,6 @@ const Education = () => {
           </p>
         </div>
 
-        <div className='education-top-meta'>
-          <div className='education-meta-chip'>
-            오늘 학습 초급 {dailyCounts.beginner}/5 · 중급 {dailyCounts.intermediate}/5 · 상급 {dailyCounts.advanced}/5
-          </div>
-          <div className='education-meta-chip'>누적 포인트 {totalEarnedPoints}pt</div>
-        </div>
-
         <div className='education-progress-wrap'>
           <div className='education-progress-top'>
             <span>학습 진행도</span>
@@ -316,6 +393,19 @@ const Education = () => {
           <div className='education-progress-bar'>
             <div className='education-progress-fill' style={{ width: `${progress.percent}%` }} />
           </div>
+        </div>
+
+        <div className='education-top-meta'>
+          <div className='education-meta-chip'>
+            초급 {dailyCounts.beginner}/5
+          </div>
+          <div className='education-meta-chip'>
+            중급 {dailyCounts.intermediate}/5
+          </div>
+          <div className='education-meta-chip'>
+            상급 {dailyCounts.advanced}/5
+          </div>
+          <div className='education-meta-chip'>누적 포인트 {totalEarnedPoints}pt</div>
         </div>
       </div>
 
@@ -376,13 +466,23 @@ const Education = () => {
             </button>
             <button
               type='button'
-              className={`education-filter-btn education-filter-btn-premium ${
-                selectedDifficultyFilter === 'advanced' ? 'active' : ''
-              }`}
-              onClick={() => handleDifficultyFilter('advanced')}
+              className={`education-filter-btn ${selectedDifficultyFilter === 'advanced' ? 'active' : ''}
+                education-filter-btn-premium ${membershipType !== 'premium' ? 'locked' : ''}`}
+              onClick={() => {
+                // 프리미엄 회원이 아닐 경우 아예 클릭 이벤트를 무시합니다.
+                if (membershipType !== 'premium') return;
+                handleDifficultyFilter('advanced');
+              }}
             >
-              <img src={crownIcon} alt='premium crown' className='education-filter-crown' />
-              <span>상급</span>
+              <span className='education-filter-crown' >
+                {membershipType !== 'premium' && <img src={crownIcon} alt='premium crown' />}
+                상급
+              </span>
+              {membershipType !== 'premium' && (
+                <div className="premium-tooltip">
+                  구독 후 이용 가능합니다
+                </div>
+              )}
             </button>
           </div>
         </div>
@@ -435,13 +535,13 @@ const Education = () => {
                           )}
                         </div>
 
-                        {isAdvancedLocked && (
-                          <div className='education-lock-hover-msg'>
-                            구독 후 이용할 수 있습니다
-                          </div>
-                        )}
                       </div>
                     </div>
+                    {isAdvancedLocked && (
+                      <div className='education-lock-hover-msg'>
+                        구독 후 이용할 수 있습니다
+                      </div>
+                    )}
                     <img
                       src={arrowDown}
                       alt='collapsed'
@@ -463,7 +563,7 @@ const Education = () => {
                       {!lesson.isCompleted &&
                         (isQuotaFull ? (
                           <button type='button' className='education-xp-btn quota-full' disabled>
-                            오늘은 교육할당량이 충분합니다. 내일 교육해주세요.
+                            오늘의 정해진 {lesson.level} 교육 할당량을 모두 달성했습니다.
                           </button>
                         ) : (
                           <button
@@ -477,7 +577,6 @@ const Education = () => {
                               : processingLessonId === lesson.id
                                 ? '처리 중...'
                                 : '학습 완료'}
-                            {countdown === 0 && <img src={check} alt='check' className='icons' />}
                           </button>
                         ))}
                     </div>
@@ -488,18 +587,31 @@ const Education = () => {
 
             {filteredLessons.length > 5 && (
               <div className='education-more-wrap'>
-                <button
-                  type='button'
-                  className='education-more-btn'
-                  onClick={() => setShowAllLessons((prev) => !prev)}
-                >
-                  <span className='education-more-btn-text'>
-                    {showAllLessons ? '학습 접기' : '학습 더보기'}
-                  </span>
-                  <span className={`education-more-btn-arrow ${showAllLessons ? 'open' : ''}`}>
-                    ▼
-                  </span>
-                </button>
+
+                {/* 5개 이상 열렸을 때만 '학습 접기' 버튼 표시 */}
+                {visibleCount > 5 && (
+                  <button
+                    type='button'
+                    className='education-more-btn'
+                    onClick={handleCollapse}
+                  >
+                    <span className='education-more-btn-text'>학습 접기 (10개)</span>
+                    <span className='education-more-btn-arrow'>▲</span>
+                  </button>
+                )}
+
+                {/* 현재 보여주는 개수가 전체 개수보다 작을 때만 '학습 더보기' 버튼 표시 */}
+                {visibleCount < filteredLessons.length && (
+                  <button
+                    type='button'
+                    className='education-more-btn'
+                    onClick={handleLoadMore}
+                  >
+                    <span className='education-more-btn-text'>학습 더보기 (10개)</span>
+                    <span className='education-more-btn-arrow'>▼</span>
+                  </button>
+                )}
+
               </div>
             )}
           </>

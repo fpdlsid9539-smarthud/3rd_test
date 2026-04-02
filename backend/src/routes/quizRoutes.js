@@ -4,21 +4,20 @@ const router = express.Router();
 const quizController = require("../controllers/quizController");
 const authMiddleware = require("../../middlewares/authMiddleware");
 
-/* API 확인 페이지 */
-
 router.get("/all", quizController.getAllQuizzes);
-
 router.get("/random", quizController.getRandomQuiz);
-
-router.post("/check", authMiddleware, quizController.checkAnswer);
-
-router.get("/status/me", authMiddleware, quizController.getMyQuestStatus);
-
 router.get("/ranking", quizController.getQuizRanking);
 
-router.get("/ox", authMiddleware, quizController.getDailyOxQuiz);
+router.get("/status/me", authMiddleware, quizController.getMyQuestStatus);
+router.get("/wrong-notes/me", authMiddleware, quizController.getWrongAnswerNotes);
 
-router.post("/ox/submit", authMiddleware, quizController.submitOxQuiz);
+router.post("/check-ai", authMiddleware, quizController.checkAiAnswer);
+router.post("/check", authMiddleware, quizController.checkAnswer);
+router.post("/bonus", authMiddleware, quizController.bonusReward);
+router.post("/generate", authMiddleware, quizController.generateLLMQuiz);
+
+router.get("/ox", authMiddleware, quizController.getDailyOxQuiz);
+router.post("/ox/submit", authMiddleware, quizController.submitOxAnswer);
 
 router.get("/:quiz_id", quizController.getQuizById);
 

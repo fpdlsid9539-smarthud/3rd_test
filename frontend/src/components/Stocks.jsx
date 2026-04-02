@@ -1,4 +1,7 @@
 import React, { useState, useEffect, useMemo } from 'react';
+import close from '../assets/icons/close.svg'
+import minusD from '../assets/icons/minus_default.svg'
+import plusD from '../assets/icons/plus_default.svg'
 import {
   Chart as ChartJS,
   CategoryScale,
@@ -27,6 +30,21 @@ ChartJS.register(
   zoomPlugin
 );
 
+const UP_COLOR = '#FF4766';
+const DOWN_COLOR = '#4775FF';
+
+const originalDraw = CandlestickElement.prototype.draw;
+CandlestickElement.prototype.draw = function (ctx) {
+  const { o, c } = this;
+  const isUp = c >= o;
+
+  // Force the color properties the draw method actually reads
+  this.options.color = isUp ? UP_COLOR : DOWN_COLOR;
+  this.options.borderColor = isUp ? UP_COLOR : DOWN_COLOR;
+
+  originalDraw.call(this, ctx);
+};
+
 const tabTitleMap = {
   popular: '인기 종목',
   rising: '급상승 종목',
@@ -42,6 +60,8 @@ const RANGES = [
 
 const Stocks = () => {
   const [activeTab, setActiveTab] = useState('popular');
+  const [openStockCode, setOpenStockCode] = useState(null);
+  const [openLikeCode, setOpenLikeCode] = useState(null);
   const [searchKeyword, setSearchKeyword] = useState('');
   const [stocks, setStocks] = useState([]);
   const [loading, setLoading] = useState(true);
@@ -49,13 +69,15 @@ const Stocks = () => {
   const [expandedSymbol, setExpandedSymbol] = useState(null);
   const [chartData, setChartData] = useState(null);
   const [selectedRangeLabel, setSelectedRangeLabel] = useState('일');
+  const chartContainerRef = React.useRef(null);
+  const chartInstanceRef = React.useRef(null);
 
   const [tradeModal, setTradeModal] = useState({
     isOpen: false,
     type: '',
     stock: null,
   });
-  const [tradeQuantity, setTradeQuantity] = useState(1);
+  const [tradeQuantity, setTradeQuantity] = useState(0);
   const [tradeLoading, setTradeLoading] = useState(false);
 
   const [tradeHistory, setTradeHistory] = useState([]);
@@ -89,8 +111,8 @@ const Stocks = () => {
       const list = Array.isArray(payload?.data)
         ? payload.data
         : Array.isArray(payload)
-        ? payload
-        : [];
+          ? payload
+          : [];
 
       const tradeData = list
         .filter((item) => {
@@ -227,12 +249,7 @@ const Stocks = () => {
       setChartData({
         datasets: [
           {
-            data: resultData,
-            color: {
-              up: '#26a69a',
-              down: '#ef4444',
-              unchanged: '#999',
-            },
+            data: resultData, // colors are now controlled by CandlestickElement.defaults above
           },
         ],
       });
@@ -264,13 +281,13 @@ const Stocks = () => {
       type,
       stock: toTradeStock(stock),
     });
-    setTradeQuantity(1);
+    setTradeQuantity(0); // 0으로 변경
   };
 
   const closeTradeModal = () => {
     if (tradeLoading) return;
     setTradeModal({ isOpen: false, type: '', stock: null });
-    setTradeQuantity(1);
+    setTradeQuantity(0); // 0으로 변경
   };
 
   const isLiked = (stockCode) => likedCodeSet.has(String(stockCode).padStart(6, '0'));
@@ -342,6 +359,12 @@ const Stocks = () => {
       ]);
 
       window.dispatchEvent(new Event('pointsUpdated'));
+
+      // 매수/매도 후 ISR 재계산 (fire-and-forget)
+      api.post('/api/isr/me/calculate').catch((err) => {
+        console.error('ISR 재계산 실패:', err)
+      })
+
       closeTradeModal();
     } catch (err) {
       console.error('거래 실패:', err);
@@ -350,6 +373,23 @@ const Stocks = () => {
       setTradeLoading(false);
     }
   };
+
+  // Resize the Chart.js canvas whenever the container width changes.
+  // This fires after nav/profile collapse transitions complete so the
+  // canvas repaints at the correct column width instead of overflowing.
+  useEffect(() => {
+    const container = chartContainerRef.current;
+    if (!container || !expandedSymbol) return;
+
+    const ro = new ResizeObserver(() => {
+      if (chartInstanceRef.current) {
+        chartInstanceRef.current.resize();
+      }
+    });
+
+    ro.observe(container);
+    return () => ro.disconnect();
+  }, [expandedSymbol, chartData]);
 
   let timeUnit = 'month';
   let xFormat = 'MM/dd';
@@ -402,7 +442,7 @@ const Stocks = () => {
           maxRotation: 0,
           color: '#8b95a1',
           font: {
-            size: 11,
+            size: 14,
             weight: '500',
           },
         },
@@ -410,7 +450,7 @@ const Stocks = () => {
       y: {
         position: 'right',
         grid: {
-          color: '#f2f4f6',
+          color: '#ececec',
           drawBorder: false,
         },
         border: {
@@ -418,7 +458,7 @@ const Stocks = () => {
         },
         ticks: {
           color: '#8b95a1',
-          font: { size: 11 },
+          font: { size: 14 },
           callback: function (value) {
             return Number(value).toLocaleString();
           },
@@ -429,18 +469,18 @@ const Stocks = () => {
       legend: { display: false },
       tooltip: {
         backgroundColor: 'rgba(0, 0, 0, 0.8)',
-        padding: 10,
-        titleFont: { size: 13 },
-        bodyFont: { size: 13 },
+        padding: 8,
+        titleFont: { size: 14 },
+        bodyFont: { size: 14 },
         callbacks: {
           label: (context) => {
             const point = context.raw;
             if (!point) return '';
             return [
-              `시가: ${Number(point.o).toLocaleString()}원`,
-              `고가: ${Number(point.h).toLocaleString()}원`,
-              `저가: ${Number(point.l).toLocaleString()}원`,
-              `종가: ${Number(point.c).toLocaleString()}원`,
+              `시가: ${Number(point.o).toLocaleString()}pt`,
+              `고가: ${Number(point.h).toLocaleString()}pt`,
+              `저가: ${Number(point.l).toLocaleString()}pt`,
+              `종가: ${Number(point.c).toLocaleString()}pt`,
             ];
           },
         },
@@ -467,7 +507,7 @@ const Stocks = () => {
 
   return (
     <div className='stocks-container'>
-      <div className='stocks-breadcrumb'>대시보드 &gt; 전략실 &gt; 주식</div>
+      <div className='breadcrumb'>대시보드 &gt; 주식</div>
 
       <div className='stocks-layout'>
         <div className='stocks-main'>
@@ -515,8 +555,7 @@ const Stocks = () => {
                   return (
                     <div key={stockCode} className='stock-item-wrap'>
                       <div className='stocks-list-item'>
-                        <div
-                          className='stock-info-clickable'
+                        <div className='stock-info-clickable'
                           onClick={() => handleStockClick(stockCode)}
                         >
                           <div className='stocks-info-group'>
@@ -524,9 +563,6 @@ const Stocks = () => {
 
                             <div className='stocks-item-left'>
                               <span className='stocks-item-title'>{stock.name}</span>
-                              <span className='stocks-item-price'>
-                                {Number(stock.price || 0).toLocaleString()}원
-                              </span>
                               {ownedInfo ? (
                                 <span className='stocks-owned-badge'>
                                   보유 {ownedInfo.quantity}주
@@ -536,18 +572,25 @@ const Stocks = () => {
                           </div>
 
                           <div className='stocks-item-right'>
-                            <span
-                              className={Number(stock.change || 0) >= 0 ? 'stocks-up' : 'stocks-down'}
-                            >
-                              {Number(stock.change || 0) >= 0 ? '+' : ''}
-                              {Number(stock.change || 0).toLocaleString()}원
+                            <span className='stocks-item-price'>
+                              {Number(stock.price || 0).toLocaleString()}
+                              <span>pt</span>
                             </span>
-                            <span
-                              className={Number(stock.rate || 0) >= 0 ? 'stocks-up' : 'stocks-down'}
-                            >
-                              {Number(stock.rate || 0) >= 0 ? '+' : ''}
-                              {Number(stock.rate || 0).toFixed(2)}%
-                            </span>
+                            <div className='stocks-description'>
+                              <span className=
+                                {Number(stock.change || 0) >= 0 ? 'stocks-up' : 'stocks-down'}
+                              >
+                                {Number(stock.change || 0) >= 0 ? '+' : ''}
+                                {Number(stock.change || 0).toLocaleString()}
+                                <span>pt</span>
+                              </span>
+                              <span
+                                className={Number(stock.rate || 0) >= 0 ? 'stocks-up' : 'stocks-down'}
+                              >
+                                ({Number(stock.rate || 0) >= 0 ? '+' : ''}
+                                {Number(stock.rate || 0).toFixed(2)}%)
+                              </span>
+                            </div>
                           </div>
                         </div>
 
@@ -592,9 +635,8 @@ const Stocks = () => {
                               {RANGES.map((r) => (
                                 <button
                                   key={r.label}
-                                  className={`chart-range-btn ${
-                                    selectedRangeLabel === r.label ? 'active' : ''
-                                  }`}
+                                  className={`chart-range-btn ${selectedRangeLabel === r.label ? 'active' : ''
+                                    }`}
                                   onClick={(e) => {
                                     e.stopPropagation();
                                     fetchStockChart(stockCode, r);
@@ -606,9 +648,13 @@ const Stocks = () => {
                             </div>
                           </div>
 
-                          <div className='chart-render-area'>
+                          <div className='chart-render-area' ref={chartContainerRef}>
                             {chartData ? (
-                              <Chart type='candlestick' data={chartData} options={chartOptions} />
+                              <Chart
+                                key={`${expandedSymbol}-${selectedRangeLabel}`}
+                                ref={chartInstanceRef}
+                                type='candlestick' data={chartData}
+                                options={chartOptions} />
                             ) : (
                               <div className='stocks-empty'>차트 로딩 중...</div>
                             )}
@@ -631,50 +677,61 @@ const Stocks = () => {
 
         <div className='stocks-side'>
           <div className='stocks-card'>
-            <h3>💹 보유 주식</h3>
+            <h3>보유 주식</h3>
             <div className='stocks-card-body'>
               {ownedStocks.length > 0 ? (
                 ownedStocks.map((stock) => (
-                  <div key={`owned-${stock.stockCode}`} className='side-stock-item'>
-                    <div className='side-stock-top'>
-                      <p>{stock.stockName}</p>
-                      <p>
-                        {stock.price !== null && stock.price !== undefined
-                          ? `${Number(stock.price).toLocaleString()}원`
-                          : '-'}
-                      </p>
-                    </div>
+                  <>
+                    <div key={`owned-${stock.stockCode}`}
+                      className='side-stock-item'
+                      onClick={() =>
+                        setOpenStockCode((prev) =>
+                          prev === stock.stockCode ? null : stock.stockCode
+                        )
+                      }
+                    >
+                      <div className='side-stock-top'>
+                        <p>{stock.stockName}</p>
+                        <p>
+                          {stock.price !== null && stock.totalPrice !== undefined
+                            ? `${Number(stock.totalPrice).toLocaleString()}`
+                            : '-'}
+                          <span>pt</span>
+                        </p>
+                      </div>
 
-                    <div className='side-stock-mid'>
-                      <span>
-                        {stock.quantity}주 (평단가 {Number(stock.avgPrice || 0).toLocaleString()}원)
-                      </span>
-                      <span
-                        className={Number(stock.changeRate || 0) >= 0 ? 'stocks-up' : 'stocks-down'}
-                      >
-                        {stock.changeRate !== null && stock.changeRate !== undefined
-                          ? `${Number(stock.changeRate) >= 0 ? '+' : ''}${Number(
-                              stock.changeRate
+                      <div className='side-stock-mid'>
+                        <span>
+                          {stock.quantity}주 (평단가 {Number(stock.avgPrice || 0).toLocaleString()})
+                        </span>
+                        <span
+                          className={Number(stock.myChangeRate || 0) >= 0 ? 'stocks-up' : 'stocks-down'}
+                        >
+                          {stock.myChangeRate !== null && stock.myChangeRate !== undefined
+                            ? `${Number(stock.myChangeRate) >= 0 ? '+' : ''}${Number(
+                              stock.myChangeRate
                             ).toFixed(2)}%`
-                          : '-'}
-                      </span>
-                    </div>
+                            : '-'}
+                        </span>
+                      </div>
 
-                    <div className='side-stock-actions'>
-                      <button
-                        className='trade-btn buy side'
-                        onClick={(e) => openTradeModal('buy', stock, e)}
-                      >
-                        매수
-                      </button>
-                      <button
-                        className='trade-btn sell side'
-                        onClick={(e) => openTradeModal('sell', stock, e)}
-                      >
-                        매도
-                      </button>
+                      <div className={`side-stock-actions ${openStockCode === stock.stockCode ? 'flex' : ''}`}>
+                        <button
+                          className='trade-btn buy side'
+                          onClick={(e) => openTradeModal('buy', stock, e)}
+                        >
+                          매수
+                        </button>
+                        <button
+                          className='trade-btn sell side'
+                          onClick={(e) => openTradeModal('sell', stock, e)}
+                        >
+                          매도
+                        </button>
+                      </div>
                     </div>
-                  </div>
+                    <div className='hr' />
+                  </>
                 ))
               ) : (
                 <div className='stocks-empty side-empty'>보유 주식이 없습니다.</div>
@@ -683,44 +740,56 @@ const Stocks = () => {
           </div>
 
           <div className='stocks-card'>
-            <h3>💖 찜한 주식</h3>
+            <h3>찜한 주식</h3>
             <div className='stocks-card-body'>
               {likedStocks.length > 0 ? (
                 likedStocks.map((stock) => {
                   const liked = isLiked(stock.stockCode);
 
                   return (
-                    <div key={`liked-${stock.stockCode}`} className='side-stock-item'>
-                      <div className='side-stock-top'>
-                        <p>{stock.stockName}</p>
-                        <p>
-                          {stock.price !== null && stock.price !== undefined
-                            ? `현재가 ${Number(stock.price).toLocaleString()}원`
-                            : '-'}
-                        </p>
-                      </div>
+                    <>
+                      <div key={`liked-${stock.stockCode}`}
+                        className={`side-stock-item ${openLikeCode === stock.stockCode ? 'flex' : ''}`}
+                        onClick={() =>
+                          setOpenLikeCode((prev) =>
+                            prev === stock.stockCode ? null : stock.stockCode
+                          )
+                        }
+                      >
+                        <div className='side-stock-top'>
+                          <p>{stock.stockName}</p>
+                          <div className='side-stock-description'>
+                            <p>
+                              {stock.price !== null && stock.price !== undefined
+                                ? `${Number(stock.price).toLocaleString()}`
+                                : '-'}
+                              <span>pt</span>
+                            </p>
+                          </div>
+                        </div>
 
-                      <div className='side-stock-mid'></div>
+                        <div className={`side-liked-actions ${openLikeCode === stock.stockCode ? 'flex' : ''}`}>
 
-                      <div className='side-liked-actions'>
-                        <button
-                          type='button'
-                          className='trade-btn buy liked-buy'
-                          onClick={(e) => openTradeModal('buy', stock, e)}
-                        >
-                          매수
-                        </button>
+                          <button
+                            type='button'
+                            className='side-like-btn liked'
+                            onClick={(e) => handleToggleLike(stock, e)}
+                            title='찜 해제'
+                          >
+                            ♥
+                          </button>
+                          <button
+                            type='button'
+                            className='trade-btn buy'
+                            onClick={(e) => openTradeModal('buy', stock, e)}
+                          >
+                            매수
+                          </button>
 
-                        <button
-                          type='button'
-                          className='side-like-btn liked'
-                          onClick={(e) => handleToggleLike(stock, e)}
-                          title='찜 해제'
-                        >
-                          ♥
-                        </button>
-                      </div>
-                    </div>
+                        </div>
+                      </div >
+                      <div className='hr' />
+                    </>
                   );
                 })
               ) : (
@@ -736,32 +805,35 @@ const Stocks = () => {
                 <div className='stocks-empty side-empty'>매매 내역이 없습니다.</div>
               ) : (
                 tradeHistory.map((item) => (
-                  <div key={item.id} className='st-history-item'>
-                    <div className='st-history-left'>
-                      <div className='st-history-name'>{item.stockName}</div>
-                      <div className='st-history-date'>{item.date}</div>
-                    </div>
-
-                    <div
-                      className={`st-history-right ${
-                        item.type === 'buy'
-                          ? 'buy'
-                          : item.type === 'sell'
-                          ? 'sell'
-                          : 'buy'
-                      }`}
-                    >
-                      <div className='st-history-action'>
-                        {item.type === 'buy' && `매수 ${item.quantity}주`}
-                        {item.type === 'sell' && `매도 ${item.quantity}주`}
-                        {item.type === 'like' && '찜하기'}
-                        {item.type === 'unlike' && '찜 해제'}
+                  <>
+                    <div key={item.id} className='st-history-item'>
+                      <div className='st-history-left'>
+                        <div className='st-history-name'>{item.stockName}</div>
+                        <div
+                          className={`st-history-right ${item.type === 'buy'
+                            ? 'buy'
+                            : item.type === 'sell'
+                              ? 'sell'
+                              : 'buy'
+                            }`}
+                        >
+                          <div className='st-history-action'>
+                            {item.type === 'buy' && `매수 ${item.quantity}주`}
+                            {item.type === 'sell' && `매도 ${item.quantity}주`}
+                            {item.type === 'like' && '찜하기'}
+                            {item.type === 'unlike' && '찜 해제'}
+                          </div>
+                        </div>
                       </div>
-                      <div className='st-history-price'>
-                        {item.price ? `${item.price.toLocaleString()}원` : '0원'}
+                      <div className='st-history-left'>
+                        <div className='st-history-date'>{item.date}</div>
+                        <div className='st-history-price'>
+                          {item.price ? `${item.price.toLocaleString()}pt` : '0pt'}
+                        </div>
                       </div>
                     </div>
-                  </div>
+                    <div className='hr' />
+                  </>
                 ))
               )}
             </div>
@@ -769,78 +841,88 @@ const Stocks = () => {
         </div>
       </div>
 
-      {tradeModal.isOpen && tradeModal.stock && (
-        <div className='trade-modal-overlay' onClick={closeTradeModal}>
-          <div className='trade-modal-content' onClick={(e) => e.stopPropagation()}>
-            <div className='trade-modal-header'>
-              <h2>{tradeModal.stock.name}</h2>
-              <button className='trade-modal-close' onClick={closeTradeModal}>
-                &times;
-              </button>
-            </div>
-
-            <div className='trade-modal-body'>
-              <div className='trade-info-row'>
-                <span>현재가</span>
-                <strong>{Number(tradeModal.stock.price || 0).toLocaleString()}원</strong>
+      {
+        tradeModal.isOpen && tradeModal.stock && (
+          <div className='trade-modal-overlay' onClick={closeTradeModal}>
+            <div className='trade-modal-content' onClick={(e) => e.stopPropagation()}>
+              <div className='trade-modal-header'>
+                <h2>{tradeModal.stock.name}</h2>
+                <button className='trade-modal-close' onClick={closeTradeModal}>
+                  <img src={close} alt="닫기" />
+                </button>
               </div>
 
-              <div className='trade-quantity-control'>
-                <span>수량</span>
-                <div className='quantity-buttons'>
-                  <button
-                    type='button'
-                    onClick={() => setTradeQuantity((prev) => Math.max(1, prev - 1))}
-                    disabled={tradeLoading}
-                  >
-                    -
-                  </button>
-                  <input
-                    type='number'
-                    min='1'
-                    value={tradeQuantity}
-                    onChange={(e) => {
-                      const value = Number(e.target.value);
-                      setTradeQuantity(
-                        Number.isFinite(value) && value > 0 ? Math.floor(value) : 1
-                      );
+              <div className='trade-modal-body'>
+                <div className='trade-info-row'>
+                  <span>현재가</span>
+                  <strong>{Number(tradeModal.stock.price || 0).toLocaleString()}pt</strong>
+                </div>
+
+                <div className='trade-quantity-control'>
+                  <span>수량</span>
+                    <div className='quantity-buttons'>
+                    <button
+                      type='button'
+                      onClick={() => setTradeQuantity((prev) => Math.max(0, Number(prev) - 1))}
+                      disabled={tradeLoading}
+                    >
+                      <img src={minusD} alt="빼기" />
+                    </button>
+                    <input
+                      type='number'
+                      min='0'
+                      placeholder='0'
+                      value={tradeQuantity === 0 ? '' : tradeQuantity} /* 0일 땐 빈칸으로 둬서 바로 입력되게 함 */
+                      onFocus={(e) => (e.target.placeholder = '')} /* 🟢 마우스로 클릭하면 회색 '0' 삭제 */
+                      onBlur={(e) => (e.target.placeholder = '0')} /* 🟢 다른 곳을 누르면 다시 회색 '0' 복구 */
+                      onChange={(e) => {
+                        const val = e.target.value;
+                        if (val === '') {
+                          setTradeQuantity(0);
+                        } else {
+                          const num = Number(val);
+                          if (Number.isFinite(num) && num >= 0) {
+                            setTradeQuantity(Math.floor(num));
+                          }
+                        }
                     }}
                     disabled={tradeLoading}
-                  />
-                  <button
-                    type='button'
-                    onClick={() => setTradeQuantity((prev) => prev + 1)}
-                    disabled={tradeLoading}
-                  >
-                    +
-                  </button>
+                    />
+                    <button
+                      type='button'
+                      onClick={() => setTradeQuantity((prev) => Number(prev) + 1)}
+                      disabled={tradeLoading}
+                    >
+                      <img src={plusD} alt="더하기" />
+                    </button>
+                  </div>
+                </div>
+
+                <div className='trade-total-price'>
+                  <span>총 주문 금액</span>
+                  <strong className={tradeModal.type === 'buy' ? 'text-red' : 'text-blue'}>
+                    {(Number(tradeModal.stock.price || 0) * tradeQuantity).toLocaleString()}pt
+                  </strong>
                 </div>
               </div>
 
-              <div className='trade-total-price'>
-                <span>총 주문 금액</span>
-                <strong className={tradeModal.type === 'buy' ? 'text-red' : 'text-blue'}>
-                  {(Number(tradeModal.stock.price || 0) * tradeQuantity).toLocaleString()}원
-                </strong>
+              <div className='trade-modal-footer'>
+                <button className='btn-cancel' onClick={closeTradeModal} disabled={tradeLoading}>
+                  취소
+                </button>
+                <button
+                  className={`submit-btn ${tradeModal.type}`}
+                  onClick={handleTradeSubmit}
+                  disabled={tradeLoading}
+                >
+                  {tradeLoading ? '처리 중...' : tradeModal.type === 'buy' ? '매수하기' : '매도하기'}
+                </button>
               </div>
             </div>
-
-            <div className='trade-modal-footer'>
-              <button className='btn-cancel' onClick={closeTradeModal} disabled={tradeLoading}>
-                취소
-              </button>
-              <button
-                className={`btn-submit ${tradeModal.type}`}
-                onClick={handleTradeSubmit}
-                disabled={tradeLoading}
-              >
-                {tradeLoading ? '처리 중...' : tradeModal.type === 'buy' ? '매수하기' : '매도하기'}
-              </button>
-            </div>
           </div>
-        </div>
-      )}
-    </div>
+        )
+      }
+    </div >
   );
 };
 

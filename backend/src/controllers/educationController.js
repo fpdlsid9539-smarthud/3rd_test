@@ -1,12 +1,10 @@
 const db = require("../../config/db");
-const { educationLessons } = require("../data/educationData");
 const achievementService = require("../services/achievementService");
 
 function getUserKey(req) {
   if (!req.user?.member_id) {
     throw new Error("member_id가 토큰에 없습니다.");
   }
-
   return Number(req.user.member_id);
 }
 
@@ -16,81 +14,70 @@ function buildLessonReason(lessonId) {
 
 async function getUserMembershipType(memberId) {
   const [rows] = await db.promise().query(
-    `
-    SELECT membership_type
-    FROM members
-    WHERE member_id = ?
-    LIMIT 1
-    `,
+    "SELECT membership_type FROM members WHERE member_id = ? LIMIT 1",
     [memberId]
   );
-
-  if (rows.length === 0) {
-    throw new Error("회원을 찾을 수 없습니다.");
-  }
-
+  if (rows.length === 0) throw new Error("회원을 찾을 수 없습니다.");
   return rows[0]?.membership_type || "free";
 }
 
 async function getUserCompletedLessonIds(memberId) {
   const [rows] = await db.promise().query(
-    `
-    SELECT reason
-    FROM point_history
-    WHERE member_id = ?
-      AND reason LIKE 'lesson_complete:%'
-    `,
+    "SELECT reason FROM point_history WHERE member_id = ? AND reason LIKE 'lesson_complete:%'",
     [memberId]
   );
-
   return rows
     .map((row) => String(row.reason || ""))
-    .filter((reason) => reason.startsWith("lesson_complete:"))
     .map((reason) => reason.replace("lesson_complete:", ""));
 }
 
 async function getUserTotalEarnedPoints(memberId) {
   const [rows] = await db.promise().query(
-    `
-    SELECT COALESCE(SUM(change_amount), 0) AS totalEarnedPoints
-    FROM point_history
-    WHERE member_id = ?
-      AND reason LIKE 'lesson_complete:%'
-    `,
+    "SELECT COALESCE(SUM(change_amount), 0) AS totalEarnedPoints FROM point_history WHERE member_id = ? AND reason LIKE 'lesson_complete:%'",
     [memberId]
   );
-
-  return Number(rows[0]?.totalEarnedPoints || 0);
+  return Number(rows?.totalEarnedPoints || 0);
 }
 
+// 🟢 프론트엔드가 요구하는 구조로 응답 데이터를 생성하는 함수
 async function buildEducationResponse(memberId) {
-  const membershipType = await getUserMembershipType(memberId);
+  const membership_type = await getUserMembershipType(memberId);
   const completedLessonIds = await getUserCompletedLessonIds(memberId);
-  const completedSet = new Set(completedLessonIds);
-
-  const lessons = educationLessons.map((lesson) => ({
-    ...lesson,
-    status: lesson.status || "default",
-    isCompleted: completedSet.has(lesson.id),
-    isRewardClaimed: completedSet.has(lesson.id),
-  }));
-
-  const totalCount = educationLessons.length;
-  const completedCount = completedLessonIds.length;
-  const percent =
-    totalCount === 0 ? 0 : Math.round((completedCount / totalCount) * 100);
-
   const totalEarnedPoints = await getUserTotalEarnedPoints(memberId);
 
+  // 1. DB에서 모든 교육 데이터 가져오기
+  const [dbLessons] = await db.promise().query(
+    "SELECT * FROM education_lessons ORDER BY created_at ASC"
+  );
+
+  // 2. 프론트엔드 형식으로 매핑
+  const lessons = dbLessons.map(lesson => ({
+    id: lesson.lesson_id,
+    title: lesson.title,
+    xp: lesson.xp,
+    status: lesson.status,
+    difficulty: lesson.difficulty,
+    icon: lesson.icon,
+    level: lesson.level_name,
+    summary: lesson.summary,
+    isCompleted: completedLessonIds.includes(lesson.lesson_id)
+  }));
+
+  // 3. 학습 진행도 계산
+  const totalCount = lessons.length;
+  const completedCount = lessons.filter(l => l.isCompleted).length;
+  const percent = totalCount > 0 ? Math.round((completedCount / totalCount) * 100) : 0;
+
+  // 4. 프론트엔드(Education.jsx)가 기대하는 객체 구조로 반환
   return {
-    membership_type: membershipType,
+    membership_type,
+    totalEarnedPoints,
     lessons,
     progress: {
       completedCount,
       totalCount,
-      percent,
-    },
-    totalEarnedPoints,
+      percent
+    }
   };
 }
 
@@ -106,7 +93,6 @@ exports.getEducationData = async (req, res) => {
     });
   } catch (error) {
     console.error("getEducationData error:", error);
-
     return res.status(500).json({
       success: false,
       message: "교육 데이터 조회 실패",
@@ -117,76 +103,57 @@ exports.getEducationData = async (req, res) => {
 
 exports.completeLesson = async (req, res) => {
   const connection = await db.promise().getConnection();
-
   try {
     const { lessonId } = req.params;
     const memberId = getUserKey(req);
 
-    const lesson = educationLessons.find((item) => item.id === lessonId);
+    // 1. DB에서 해당 학습 정보 조회
+    const [lessonRows] = await connection.query(
+      "SELECT xp FROM education_lessons WHERE lesson_id = ? LIMIT 1",
+      [lessonId]
+    );
 
-    if (!lesson) {
+    if (lessonRows.length === 0) {
       return res.status(404).json({
         success: false,
         message: "해당 학습 항목을 찾을 수 없습니다.",
-        error: null,
       });
     }
 
+    const lessonPoint = Number(lessonRows.xp || 0);
     const reason = buildLessonReason(lessonId);
-    const lessonPoint = Number(lesson.xp || 0);
 
     await connection.beginTransaction();
 
+    // 중복 완료 체크
     const [historyRows] = await connection.query(
-      `
-      SELECT history_id
-      FROM point_history
-      WHERE member_id = ? AND reason = ?
-      LIMIT 1
-      `,
+      "SELECT history_id FROM point_history WHERE member_id = ? AND reason = ? LIMIT 1",
       [memberId, reason]
     );
 
     let awardedPoints = 0;
-
     if (historyRows.length === 0) {
-      const [updateResult] = await connection.query(
-        `
-        UPDATE members
-        SET points = points + ?
-        WHERE member_id = ?
-        `,
+      // 포인트 업데이트
+      await connection.query(
+        "UPDATE members SET points = points + ? WHERE member_id = ?",
         [lessonPoint, memberId]
       );
-
-      if (updateResult.affectedRows === 0) {
-        throw new Error("존재하지 않는 회원입니다.");
-      }
-
+      // 내역 저장
       await connection.query(
-        `
-        INSERT INTO point_history (member_id, change_amount, reason)
-        VALUES (?, ?, ?)
-        `,
+        "INSERT INTO point_history (member_id, change_amount, reason) VALUES (?, ?, ?)",
         [memberId, lessonPoint, reason]
       );
-
       awardedPoints = lessonPoint;
     }
 
     await connection.commit();
 
-    const achievementResult =
-      await achievementService.checkAndGrantAchievements(memberId);
-
+    const achievementResult = await achievementService.checkAndGrantAchievements(memberId);
     const data = await buildEducationResponse(memberId);
 
     return res.status(200).json({
       success: true,
-      message:
-        awardedPoints > 0
-          ? "학습 완료 및 포인트 지급 성공"
-          : "학습 완료 처리 성공",
+      message: awardedPoints > 0 ? "학습 완료 및 포인트 지급 성공" : "학습 완료 처리 성공",
       data: {
         awardedPoints,
         achievements: achievementResult,
@@ -196,7 +163,6 @@ exports.completeLesson = async (req, res) => {
   } catch (error) {
     await connection.rollback();
     console.error("completeLesson error:", error);
-
     return res.status(500).json({
       success: false,
       message: "학습 완료 처리 실패",

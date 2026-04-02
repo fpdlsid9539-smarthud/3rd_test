@@ -76,25 +76,155 @@ async function insertTradeHistory(
   quantity,
   price
 ) {
-  try {
+  await executor.query(
+    `
+    INSERT INTO trade_history
+    (member_id, stock_code, stock_name, trade_type, quantity, price, created_at)
+    VALUES (?, ?, ?, ?, ?, ?, NOW())
+    `,
+    [
+      memberId,
+      normalizeStockCode(stockCode),
+      stockName,
+      tradeType,
+      Number(quantity || 0),
+      Number(price || 0),
+    ]
+  );
+}
+
+async function insertGameLogOnBuy(
+  executor,
+  memberId,
+  stockCode,
+  quantity,
+  unitPrice
+) {
+  const normalizedStockCode = normalizeStockCode(stockCode);
+  const betAmount = Math.round(Number(quantity || 0) * Number(unitPrice || 0));
+
+  await executor.query(
+    `
+    INSERT INTO gameLog
+    (
+      member_id,
+      stock_code,
+      prediction,
+      bet_amount,
+      pnl_amount,
+      penalty_amount,
+      status,
+      created_at,
+      strategy_type_user,
+      strategy_type_actual,
+      holding_time,
+      market_trend
+    )
+    VALUES (?, ?, ?, ?, ?, ?, ?, NOW(), ?, ?, ?, ?)
+    `,
+    [
+      memberId,
+      normalizedStockCode,
+      "UP",
+      betAmount,
+      0,
+      0,
+      "PENDING",
+      "SWING",
+      "SWING",
+      null,
+      "UNKNOWN",
+    ]
+  );
+}
+
+async function settleGameLogOnSell(
+  executor,
+  memberId,
+  stockCode,
+  sellQuantity,
+  sellUnitPrice,
+  avgBuyPrice
+) {
+  const normalizedStockCode = normalizeStockCode(stockCode);
+  const quantity = Number(sellQuantity || 0);
+  const unitPrice = Number(sellUnitPrice || 0);
+  const avgPrice = Number(avgBuyPrice || 0);
+
+  const pnlAmount = Math.round((unitPrice - avgPrice) * quantity);
+  const penaltyAmount = pnlAmount < 0 ? Math.abs(pnlAmount) : 0;
+  const status = pnlAmount >= 0 ? "SUCCESS" : "FAIL";
+
+  const [[pendingRow]] = await executor.query(
+    `
+    SELECT log_id
+    FROM gameLog
+    WHERE member_id = ?
+      AND stock_code = ?
+      AND status = 'PENDING'
+    ORDER BY created_at DESC, log_id DESC
+    LIMIT 1
+    `,
+    [memberId, normalizedStockCode]
+  );
+
+  if (pendingRow?.log_id) {
     await executor.query(
       `
-      INSERT INTO trade_history
-      (member_id, stock_code, stock_name, trade_type, quantity, price, created_at)
-      VALUES (?, ?, ?, ?, ?, ?, NOW())
+      UPDATE gameLog
+      SET
+        pnl_amount = ?,
+        penalty_amount = ?,
+        status = ?,
+        strategy_type_actual = ?,
+        market_trend = ?
+      WHERE log_id = ?
       `,
       [
-        memberId,
-        normalizeStockCode(stockCode),
-        stockName,
-        tradeType,
-        Number(quantity || 0),
-        Number(price || 0),
+        pnlAmount,
+        penaltyAmount,
+        status,
+        "SWING",
+        pnlAmount >= 0 ? "BULL" : "BEAR",
+        pendingRow.log_id,
       ]
     );
-  } catch (err) {
-    console.warn("insertTradeHistory warning =", err.message);
+    return;
   }
+
+  await executor.query(
+    `
+    INSERT INTO gameLog
+    (
+      member_id,
+      stock_code,
+      prediction,
+      bet_amount,
+      pnl_amount,
+      penalty_amount,
+      status,
+      created_at,
+      strategy_type_user,
+      strategy_type_actual,
+      holding_time,
+      market_trend
+    )
+    VALUES (?, ?, ?, ?, ?, ?, ?, NOW(), ?, ?, ?, ?)
+    `,
+    [
+      memberId,
+      normalizedStockCode,
+      unitPrice >= avgPrice ? "UP" : "DOWN",
+      Math.round(quantity * avgPrice),
+      pnlAmount,
+      penaltyAmount,
+      status,
+      "SWING",
+      "SWING",
+      null,
+      pnlAmount >= 0 ? "BULL" : "BEAR",
+    ]
+  );
 }
 
 function toDateOnlyString(value) {
@@ -262,7 +392,6 @@ async function checkAndGrantStockAchievements(memberId, context = {}) {
   const last10SellEvents = sellEvents.slice(-10);
   const maxProfitStreak = getMaxProfitStreak(sellEvents);
 
-  // 3번 야수의 심장 - 보유 포인트의 50% 이상을 한 번의 매수에 사용하기
   if (
     context.tradeType === "buy" &&
     Number(context.preTradePoints || 0) > 0 &&
@@ -275,7 +404,6 @@ async function checkAndGrantStockAchievements(memberId, context = {}) {
     if (granted) grantedIds.push(3);
   }
 
-  // 4번 성실한 거북이 - 3일 연속으로 매수하기
   if (hasConsecutiveDays(buyDates, 3)) {
     const granted = await achievementService.grantAchievementIfNotExists(
       memberId,
@@ -284,7 +412,6 @@ async function checkAndGrantStockAchievements(memberId, context = {}) {
     if (granted) grantedIds.push(4);
   }
 
-  // 5번 철벽의 방어자 - 최근 3번의 매도 거래 손익률을 모두 -5% 이상으로 유지하기
   if (
     last3SellEvents.length === 3 &&
     last3SellEvents.every((item) => Number(item.profitRate) >= -5)
@@ -296,7 +423,6 @@ async function checkAndGrantStockAchievements(memberId, context = {}) {
     if (granted) grantedIds.push(5);
   }
 
-  // 6번 족집게 도사 - 최근 10번의 매도 거래 중 70% 이상 수익 거래 달성하기
   if (last10SellEvents.length === 10) {
     const recentWinCount = last10SellEvents.filter(
       (item) => item.isProfit
@@ -312,7 +438,6 @@ async function checkAndGrantStockAchievements(memberId, context = {}) {
     }
   }
 
-  // 7번 추세 탈승주 - 3번 연속 수익 거래에 성공하기
   if (maxProfitStreak >= 3) {
     const granted = await achievementService.grantAchievementIfNotExists(
       memberId,
@@ -321,7 +446,6 @@ async function checkAndGrantStockAchievements(memberId, context = {}) {
     if (granted) grantedIds.push(7);
   }
 
-  // 8번 맨날 틀자가 - 손실 거래 이후 다음 수익 거래에 성공하기
   for (let i = 1; i < sellEvents.length; i += 1) {
     const prev = sellEvents[i - 1];
     const curr = sellEvents[i];
@@ -336,7 +460,6 @@ async function checkAndGrantStockAchievements(memberId, context = {}) {
     }
   }
 
-  // 9번 KOSPI 추격가 - 서로 다른 30개 종목을 거래하기
   if (distinctStockCount >= 30) {
     const granted = await achievementService.grantAchievementIfNotExists(
       memberId,
@@ -345,7 +468,6 @@ async function checkAndGrantStockAchievements(memberId, context = {}) {
     if (granted) grantedIds.push(9);
   }
 
-  // 14번 짜릿한 첫 승 - 첫 수익 거래에 성공하기
   if (totalProfitTrades >= 1) {
     const granted = await achievementService.grantAchievementIfNotExists(
       memberId,
@@ -354,7 +476,6 @@ async function checkAndGrantStockAchievements(memberId, context = {}) {
     if (granted) grantedIds.push(14);
   }
 
-  // 15번 연승 가도 - 5번 연속 수익 거래에 성공하기
   if (maxProfitStreak >= 5) {
     const granted = await achievementService.grantAchievementIfNotExists(
       memberId,
@@ -363,7 +484,6 @@ async function checkAndGrantStockAchievements(memberId, context = {}) {
     if (granted) grantedIds.push(15);
   }
 
-  // 16번 예언자 - 7번 연속 수익 거래에 성공하기
   if (maxProfitStreak >= 7) {
     const granted = await achievementService.grantAchievementIfNotExists(
       memberId,
@@ -372,7 +492,6 @@ async function checkAndGrantStockAchievements(memberId, context = {}) {
     if (granted) grantedIds.push(16);
   }
 
-  // 17번 백발백중 - 누적 수익 거래 50회 달성하기
   if (totalProfitTrades >= 50) {
     const granted = await achievementService.grantAchievementIfNotExists(
       memberId,
@@ -381,7 +500,6 @@ async function checkAndGrantStockAchievements(memberId, context = {}) {
     if (granted) grantedIds.push(17);
   }
 
-  // 18번 강철 멘탈 - 손실 거래 이후 수익 거래로 이전 손실을 회복하기
   {
     let pendingLoss = 0;
     let recovered = false;
@@ -407,7 +525,6 @@ async function checkAndGrantStockAchievements(memberId, context = {}) {
     }
   }
 
-  // 24번 착실히 극복 - 3일 연속으로 거래하기
   if (hasConsecutiveDays(tradeDates, 3)) {
     const granted = await achievementService.grantAchievementIfNotExists(
       memberId,
@@ -416,7 +533,6 @@ async function checkAndGrantStockAchievements(memberId, context = {}) {
     if (granted) grantedIds.push(24);
   }
 
-  // 25번 습관의 승리 - 30일 연속으로 거래하기
   if (hasConsecutiveDays(tradeDates, 30)) {
     const granted = await achievementService.grantAchievementIfNotExists(
       memberId,
@@ -425,7 +541,6 @@ async function checkAndGrantStockAchievements(memberId, context = {}) {
     if (granted) grantedIds.push(25);
   }
 
-  // 27번 분산 투자자 - 서로 다른 5개 종목을 거래하기
   if (distinctStockCount >= 5) {
     const granted = await achievementService.grantAchievementIfNotExists(
       memberId,
@@ -434,7 +549,6 @@ async function checkAndGrantStockAchievements(memberId, context = {}) {
     if (granted) grantedIds.push(27);
   }
 
-  // 28번 KOSPI 탐험가 - 서로 다른 15개 종목을 거래하기
   if (distinctStockCount >= 15) {
     const granted = await achievementService.grantAchievementIfNotExists(
       memberId,
@@ -579,7 +693,10 @@ exports.getAllStocks = async (req, res) => {
           row.stock_name || row["한글 종목명"] || Object.values(row)[1] || ""
         );
 
-        if ((name.includes(keyword) || code.includes(keyword)) && !seenCodes.has(code)) {
+        if (
+          (name.includes(keyword) || code.includes(keyword)) &&
+          !seenCodes.has(code)
+        ) {
           seenCodes.add(code);
           uniqueRows.push({ code, name });
         }
@@ -613,11 +730,8 @@ exports.getAllStocks = async (req, res) => {
     let realResults = [];
 
     if (cachedStocks && Date.now() - lastFetchTime < CACHE_TTL) {
-      console.log(`⚡ [${type}] 캐시된 데이터 사용`);
       realResults = [...cachedStocks];
     } else {
-      console.log(`🚀 [${type}] 야후에서 100개 실시간 데이터 새로 조회 중...`);
-
       const querySymbols = TOP_100_STOCKS.map((code) => `${code}.KS`);
       const quotes = await Promise.all(
         querySymbols.map((sym) => yahooFinance.quote(sym).catch(() => null))
@@ -667,74 +781,71 @@ exports.getAllStocks = async (req, res) => {
 ========================= */
 exports.getStockChart = async (req, res) => {
   try {
-    const { symbol } = req.params;
+    const rawSymbol = req.params.symbol || req.params.stockCode;
     const { range = "1y", interval = "1d" } = req.query;
-    const cleanCode = normalizeStockCode(symbol);
+
+    if (!rawSymbol) {
+      return fail(res, "종목 코드가 없습니다.", null, 400);
+    }
+
+    const cleanCode = normalizeStockCode(rawSymbol);
     const yahooFinance = await getYahooFinance();
 
-    let result = null;
-    let currentPrice = null;
+    const endDate = new Date();
+    const startDate = new Date();
 
-    try {
-      const quoteKS = await yahooFinance.quote(`${cleanCode}.KS`).catch(() => null);
-      if (quoteKS?.regularMarketPrice) {
-        currentPrice = quoteKS.regularMarketPrice;
-      } else {
-        const quoteKQ = await yahooFinance.quote(`${cleanCode}.KQ`).catch(() => null);
-        if (quoteKQ?.regularMarketPrice) {
-          currentPrice = quoteKQ.regularMarketPrice;
-        }
-      }
-    } catch (e) {
-      // ignore
+    if (range.endsWith("mo")) {
+      startDate.setMonth(endDate.getMonth() - parseInt(range, 10));
+    } else if (range.endsWith("y")) {
+      startDate.setFullYear(endDate.getFullYear() - parseInt(range, 10));
+    } else if (range.endsWith("d")) {
+      startDate.setDate(endDate.getDate() - parseInt(range, 10));
+    } else {
+      startDate.setFullYear(endDate.getFullYear() - 1);
     }
 
+    const period1 = startDate;
+    const period2 = endDate;
+
+    let result = null;
+
     try {
-      result = await yahooFinance.chart(`${cleanCode}.KS`, { range, interval });
+      result = await yahooFinance.chart(`${cleanCode}.KS`, {
+        period1,
+        period2,
+        interval,
+      });
     } catch (e) {
       try {
-        result = await yahooFinance.chart(`${cleanCode}.KQ`, { range, interval });
+        result = await yahooFinance.chart(`${cleanCode}.KQ`, {
+          period1,
+          period2,
+          interval,
+        });
       } catch (err) {
-        result = null;
+        console.error(
+          `[차트 에러] ${cleanCode} 데이터를 야후에서 가져올 수 없습니다.`,
+          err.message
+        );
+        return fail(res, "야후 파이낸스 차트 데이터 로딩 실패", err.message, 404);
       }
     }
 
-    if (result?.quotes?.length > 0) {
+    if (result && result.quotes && result.quotes.length > 0) {
       const prices = result.quotes
-        .filter((q) => q.open != null)
+        .filter((q) => q.open != null && q.close != null)
         .map((item) => ({
           x: new Date(item.date).getTime(),
           o: item.open,
           h: item.high,
           l: item.low,
           c: item.close,
-          v: item.volume,
         }));
 
       return success(res, "차트 성공", prices);
+    } else {
+      return fail(res, "유효한 차트 데이터가 없습니다.", null, 404);
     }
-
-    const fallbackPrices = [];
-    let basePrice = currentPrice ? currentPrice : 15000;
-    const volatility = basePrice * 0.01;
-    const now = Date.now();
-
-    for (let i = 50; i >= 0; i--) {
-      const open = basePrice + (Math.random() * (volatility * 2) - volatility);
-      const close = open + (Math.random() * (volatility * 3) - volatility * 1.5);
-
-      fallbackPrices.push({
-        x: now - i * 86400000,
-        o: open,
-        h: Math.max(open, close) + volatility * 0.5,
-        l: Math.min(open, close) - volatility * 0.5,
-        c: close,
-      });
-
-      basePrice = close;
-    }
-
-    return success(res, "임시 차트 성공 (Fallback)", fallbackPrices);
   } catch (err) {
     console.error("getStockChart error =", err);
     return fail(res, "차트 에러", err.message, 500);
@@ -860,8 +971,10 @@ exports.getOwnedStocks = async (req, res) => {
           quantity,
           avgPrice,
           price,
+          principal: avgPrice * quantity,
           totalPrice: price * quantity,
-          changeAmount: (price - avgPrice) * quantity,
+          changeAmount: Number((price - avgPrice) * quantity),
+          myChangeRate: avgPrice > 0 ? Number((((price - avgPrice) / avgPrice) * 100).toFixed(2)) : 0,
           changeRate,
           createdAt: row.created_at,
           updatedAt: row.updated_at,
@@ -988,6 +1101,14 @@ exports.buyStock = async (req, res) => {
       return fail(res, "사용자 정보를 찾을 수 없습니다.", null, 404);
     }
 
+    const currentPoints = Number(memberRow.points || 0);
+    const totalCost = Math.round(unitPrice * quantity);
+
+    if (currentPoints < totalCost) {
+      await conn.rollback();
+      return fail(res, "보유 포인트가 부족합니다.", null, 400);
+    }
+
     const [[stockRow]] = await conn.query(
       `
       SELECT stock_code, stock_name
@@ -1004,13 +1125,6 @@ exports.buyStock = async (req, res) => {
     }
 
     const stockName = stockRow.stock_name || stockCode;
-    const totalCost = Math.round(unitPrice * quantity);
-    const currentPoints = Number(memberRow.points || 0);
-
-    if (currentPoints < totalCost) {
-      await conn.rollback();
-      return fail(res, "포인트가 부족합니다.", null, 400);
-    }
 
     const [[ownedRow]] = await conn.query(
       `
@@ -1063,14 +1177,23 @@ exports.buyStock = async (req, res) => {
       conn,
       memberId,
       -totalCost,
-      `${stockName} ${quantity}주 매수`
+      `[매수] ${stockName} ${quantity}주`
     );
+
     await insertTradeHistory(
       conn,
       memberId,
       stockCode,
       stockName,
       "buy",
+      quantity,
+      unitPrice
+    );
+
+    await insertGameLogOnBuy(
+      conn,
+      memberId,
+      stockCode,
       quantity,
       unitPrice
     );
@@ -1195,6 +1318,7 @@ exports.sellStock = async (req, res) => {
     }
 
     const currentQty = Number(ownedRow.quantity || 0);
+    const avgPrice = Number(ownedRow.avg_price || 0);
 
     if (currentQty < quantity) {
       await conn.rollback();
@@ -1241,8 +1365,9 @@ exports.sellStock = async (req, res) => {
       conn,
       memberId,
       totalSale,
-      `${stockName} ${quantity}주 매도`
+      `[매도] ${stockName} ${quantity}주`
     );
+
     await insertTradeHistory(
       conn,
       memberId,
@@ -1251,6 +1376,15 @@ exports.sellStock = async (req, res) => {
       "sell",
       quantity,
       unitPrice
+    );
+
+    await settleGameLogOnSell(
+      conn,
+      memberId,
+      stockCode,
+      quantity,
+      unitPrice,
+      avgPrice
     );
 
     const [[updatedMember]] = await conn.query(
@@ -1293,36 +1427,5 @@ exports.sellStock = async (req, res) => {
     return fail(res, "매도 실패", err.message, 500);
   } finally {
     if (conn) conn.release();
-  }
-};
-
-/* =========================
-   9) 최근 매매 내역 10개
-========================= */
-exports.getTradeHistory = async (req, res) => {
-  try {
-    const memberId = extractMemberId(req);
-    if (!memberId) return fail(res, "인증이 필요합니다.", null, 401);
-
-    const sql = `
-      SELECT 
-        history_id AS id,
-        stock_name AS stockName,
-        trade_type AS type,
-        quantity,
-        price,
-        DATE_FORMAT(created_at, '%Y. %m. %d %H:%i') AS date
-      FROM trade_history
-      WHERE member_id = ?
-      ORDER BY created_at DESC
-      LIMIT 10
-    `;
-
-    const [rows] = await db.promise().query(sql, [memberId]);
-
-    return success(res, "매매 내역 조회 성공", rows);
-  } catch (err) {
-    console.error("getTradeHistory error =", err);
-    return fail(res, "매매 내역을 불러오지 못했습니다.", err.message, 500);
   }
 };

@@ -82,16 +82,57 @@ const Main = () => {
     }
 
     window.addEventListener('hashchange', handleHashChange)
-    return () => window.removeEventListener('hashchange', handleHashChange)
+
+    // api.js 가 401 을 받으면 hard-redirect 대신 이 이벤트를 발생시킴
+    const handleAuthExpired = () => {
+      window.location.hash = ''
+      window.location.href = '/'
+    }
+    window.addEventListener('auth:expired', handleAuthExpired)
+
+    return () => {
+      window.removeEventListener('hashchange', handleHashChange)
+      window.removeEventListener('auth:expired', handleAuthExpired)
+    }
   }, [])
 
   useEffect(() => {
     localStorage.setItem('profile_collapsed', String(profileCollapsed))
   }, [profileCollapsed])
 
+  // 토큰 만료 전 자동 갱신 — 45분마다 실행 (만료 1시간 기준, 여유 있게 갱신)
+  useEffect(() => {
+    const token = localStorage.getItem('token')
+    if (!token) return
+
+    const intervalId = setInterval(async () => {
+      const currentToken = localStorage.getItem('token')
+      if (!currentToken) return
+
+      try {
+        const res = await fetch(
+          `${import.meta.env.VITE_API_URL || 'http://localhost:5000'}/api/auth/refresh`,
+          {
+            method: 'POST',
+            headers: { Authorization: `Bearer ${currentToken}` },
+          }
+        )
+        const data = await res.json()
+        const newToken = data?.data?.token
+        if (newToken) {
+          localStorage.setItem('token', newToken)
+        }
+      } catch (err) {
+        console.warn('토큰 자동 갱신 실패 (무시됨):', err.message)
+      }
+    }, 45 * 60 * 1000) // 45분마다
+
+    return () => clearInterval(intervalId)
+  }, [])
+
   const fetchMembership = async (token) => {
     try {
-      const res = await fetch('http://localhost:5000/api/billing/membership', {
+      const res = await fetch(`${import.meta.env.VITE_API_URL || 'http://localhost:5000'}/api/billing/membership`, {
         headers: {
           Authorization: `Bearer ${token}`,
         },
@@ -114,14 +155,18 @@ const Main = () => {
 
   const fetchRole = async (token) => {
     try {
-      const res = await fetch('http://localhost:5000/api/auth/me', {
+      const res = await fetch(`${import.meta.env.VITE_API_URL || 'http://localhost:5000'}/api/auth/me`, {
         headers: {
           Authorization: `Bearer ${token}`,
         },
       })
 
       const data = await res.json()
-      const userRole = data?.data?.role || 'user'
+      // response shape: { success, data: { member: { role } } }  or  { success, data: { role } }
+      const userRole =
+        data?.data?.member?.role ??
+        data?.data?.role ??
+        'user'
       setRole(userRole)
     } catch (err) {
       console.error('role 조회 실패:', err)

@@ -90,11 +90,8 @@ async function buildLoginResponseData(result, token) {
 function buildFrontendRedirectUrl(data) {
   const frontendUrl = process.env.FRONTEND_URL || "http://localhost:5173";
 
-  const params = new URLSearchParams({
-    token: data.token,
-    nickname: data.member.nickname || "",
-    provider: data.member.provider || "",
-  });
+  // token 만 전달 — App.jsx 가 읽은 뒤 즉시 URL 을 정리함
+  const params = new URLSearchParams({ token: data.token });
 
   return `${frontendUrl}/?${params.toString()}`;
 }

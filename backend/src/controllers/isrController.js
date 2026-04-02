@@ -1,5 +1,5 @@
 const db = require("../../config/db");
-const { calculateISR } = require("../engines/isrEngine");
+const { calculateISR, getISRGrade, getISRSummary } = require("../engines/isrEngine");
 const achievementService = require("../services/achievementService");
 
 function success(res, message, data = null, status = 200) {
@@ -50,7 +50,7 @@ async function saveISR(memberId, result) {
       memberId,
       result.accuracy,
       result.risk,
-      result.strategy,
+      0, // strategy 제거
       result.stability,
       result.discipline,
       result.adaptability,
@@ -72,27 +72,40 @@ async function getLogsByMemberId(memberId) {
   return rows;
 }
 
-async function getQuizRowsByMemberId(memberId) {
-  const [rows] = await db.promise().query(
-    `
-    SELECT
-      h.history_id,
-      h.member_id,
-      h.quiz_id,
-      h.selected_answer,
-      h.is_correct,
-      h.solved_at,
-      q.difficulty,
-      q.answer
-    FROM member_quiz_history h
-    INNER JOIN quizzes q
-      ON h.quiz_id = q.quiz_id
-    WHERE h.member_id = ?
-    ORDER BY h.solved_at ASC, h.history_id ASC
-    `,
-    [memberId]
-  );
-  return rows;
+function buildEmptyResult() {
+  const emptyBase = {
+    accuracy: 0,
+    risk: 0,
+    stability: 0,
+    discipline: 0,
+    adaptability: 0,
+    strategy: 0,
+    isr: 0,
+  };
+
+  return {
+    ...emptyBase,
+    judgment: 0,
+    riskManagement: 0,
+    consistency: 0,
+    investmentHabit: 0,
+    marketResponse: 0,
+    grade: getISRGrade(0),
+    summary: "아직 투자 기록이 없어 ISR 분석 결과를 생성할 수 없습니다.",
+  };
+}
+
+function normalizeISRResult(result) {
+  return {
+    ...result,
+    judgment: result.accuracy,
+    riskManagement: result.risk,
+    consistency: result.stability,
+    investmentHabit: result.discipline,
+    marketResponse: result.adaptability,
+    grade: getISRGrade(result.isr),
+    summary: getISRSummary(result),
+  };
 }
 
 /* =========================
@@ -107,38 +120,30 @@ exports.calculateMyISR = async (req, res) => {
     }
 
     const logs = await getLogsByMemberId(memberId);
-    console.log(logs);
-    const quizRows = await getQuizRowsByMemberId(memberId);
-    console.log(quizRows);
+    
 
-    if (!logs.length && !quizRows.length) {
-      console.log("조건문 실행");
-      const emptyResult = {
-        accuracy: 0,
-        risk: 0,
-        stability: 0,
-        discipline: 0,
-        strategy: 0,
-        adaptability: 0,
-        isr: 0,
-      };
+    if (!logs.length) {
+
 
       await db.promise().query(
-        
         `UPDATE members SET isr_score = 0 WHERE member_id = ?`,
         [memberId]
       );
 
-      return success(res, "기록이 없어 ISR 0으로 처리되었습니다.", emptyResult);
+      return success(
+        res,
+        "기록이 없어 ISR 0으로 처리되었습니다.",
+        buildEmptyResult()
+      );
     }
 
-    const result = calculateISR({ logs, quizRows });
-    console.log("결과",result);
-    await saveISR(memberId, result);
+    const result = calculateISR({ logs });
     
+
+    await saveISR(memberId, result);
     await achievementService.checkAndGrantAchievements(memberId);
 
-    return success(res, "내 ISR 계산 완료", result);
+    return success(res, "내 ISR 계산 완료", normalizeISRResult(result));
   } catch (err) {
     console.error("calculateMyISR error =", err);
     return fail(res, "내 ISR 계산 실패", err.message, 500);
@@ -157,33 +162,26 @@ exports.calculateUserISR = async (req, res) => {
     }
 
     const logs = await getLogsByMemberId(memberId);
-    const quizRows = await getQuizRowsByMemberId(memberId);
 
-    if (!logs.length && !quizRows.length) {
-      const emptyResult = {
-        accuracy: 0,
-        risk: 0,
-        stability: 0,
-        discipline: 0,
-        strategy: 0,
-        adaptability: 0,
-        isr: 0,
-      };
-
+    if (!logs.length) {
       await db.promise().query(
         `UPDATE members SET isr_score = 0 WHERE member_id = ?`,
         [memberId]
       );
 
-      return success(res, "기록이 없어 ISR 0으로 처리되었습니다.", emptyResult);
+      return success(
+        res,
+        "기록이 없어 ISR 0으로 처리되었습니다.",
+        buildEmptyResult()
+      );
     }
 
-    const result = calculateISR({ logs, quizRows });
+    const result = calculateISR({ logs });
     await saveISR(memberId, result);
-    
+
     await achievementService.checkAndGrantAchievements(memberId);
 
-    return success(res, "ISR 계산 완료", result);
+    return success(res, "ISR 계산 완료", normalizeISRResult(result));
   } catch (err) {
     console.error("calculateUserISR error =", err);
     return fail(res, "ISR 계산 실패", err.message, 500);
@@ -203,11 +201,9 @@ exports.calculateAllISR = async (req, res) => {
 
     for (const member of members) {
       const memberId = Number(member.member_id);
-
       const logs = await getLogsByMemberId(memberId);
-      const quizRows = await getQuizRowsByMemberId(memberId);
 
-      if (!logs.length && !quizRows.length) {
+      if (!logs.length) {
         await db.promise().query(
           `UPDATE members SET isr_score = 0 WHERE member_id = ?`,
           [memberId]
@@ -215,26 +211,20 @@ exports.calculateAllISR = async (req, res) => {
 
         results.push({
           memberId,
-          accuracy: 0,
-          risk: 0,
-          stability: 0,
-          discipline: 0,
-          strategy: 0,
-          adaptability: 0,
-          isr: 0,
+          ...buildEmptyResult(),
         });
 
         continue;
       }
 
-      const result = calculateISR({ logs, quizRows });
+      const result = calculateISR({ logs });
       await saveISR(memberId, result);
-        
+
       await achievementService.checkAndGrantAchievements(memberId);
 
       results.push({
         memberId,
-        ...result,
+        ...normalizeISRResult(result),
       });
     }
 
@@ -277,18 +267,29 @@ exports.getLatestISR = async (req, res) => {
     );
 
     if (!rows.length) {
-      return success(res, "저장된 ISR 데이터가 없습니다.", {
-        accuracy: 0,
-        risk: 0,
-        stability: 0,
-        discipline: 0,
-        strategy: 0,
-        adaptability: 0,
-        isr: 0,
-      });
+      return success(res, "저장된 ISR 데이터가 없습니다.", buildEmptyResult());
     }
 
-    return success(res, "최신 ISR 조회 성공", rows[0]);
+    const row = rows[0];
+    const normalized = {
+      ...row,
+      judgment: Number(row.accuracy || 0),
+      riskManagement: Number(row.risk || 0),
+      consistency: Number(row.stability || 0),
+      investmentHabit: Number(row.discipline || 0),
+      marketResponse: Number(row.adaptability || 0),
+      grade: getISRGrade(Number(row.isr || 0)),
+      summary: getISRSummary({
+        accuracy: Number(row.accuracy || 0),
+        risk: Number(row.risk || 0),
+        stability: Number(row.stability || 0),
+        discipline: Number(row.discipline || 0),
+        adaptability: Number(row.adaptability || 0),
+        isr: Number(row.isr || 0),
+      }),
+    };
+
+    return success(res, "최신 ISR 조회 성공", normalized);
   } catch (err) {
     console.error("getLatestISR error =", err);
     return fail(res, "최신 ISR 조회 실패", err.message, 500);

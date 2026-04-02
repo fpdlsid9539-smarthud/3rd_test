@@ -8,7 +8,6 @@ import gold from '../assets/icons/ranked/gold.png'
 import diamond from '../assets/icons/ranked/diamond.png'
 import NewsTicker from './NewsTicker'
 
-
 const EMPTY_ISR = {
   accuracy: 0,
   risk: 0,
@@ -17,6 +16,17 @@ const EMPTY_ISR = {
   strategy: 0,
   adaptability: 0,
   isr: 0,
+  judgment: 0,
+  riskManagement: 0,
+  consistency: 0,
+  investmentHabit: 0,
+  marketResponse: 0,
+  grade: {
+    code: 'D',
+    label: '위험형 투자자',
+    description: '아직 투자 기록이 없어 분석 결과가 없습니다.',
+  },
+  summary: '아직 투자 기록이 없어 ISR 분석 결과를 생성할 수 없습니다.',
 }
 
 const EMPTY_QUEST = {
@@ -48,6 +58,7 @@ const Dashboard = () => {
     diamond: [],
   })
   const [selectedLeague, setSelectedLeague] = useState(null)
+  const [userLeague, setUserLeague] = useState(null)
   const [isrData, setIsrData] = useState(EMPTY_ISR)
   const [questStatus, setQuestStatus] = useState(EMPTY_QUEST)
   const [loading, setLoading] = useState(true)
@@ -153,7 +164,7 @@ const Dashboard = () => {
           const changeAmount =
             Number(stock?.changeAmount ?? stock?.profitLoss ?? 0) || ((price - avgPrice) * quantity)
 
-          const changeRate = Number(stock?.changeRate ?? stock?.rate ?? 0)
+          const changeRate = Number(stock?.myChangeRate ?? stock?.rate ?? 0)
 
           return {
             ...stock,
@@ -184,6 +195,15 @@ const Dashboard = () => {
           strategy: Number(rawIsr?.strategy || 0),
           adaptability: Number(rawIsr?.adaptability || 0),
           isr: Number(rawIsr?.isr || 0),
+
+          judgment: Number(rawIsr?.judgment ?? rawIsr?.accuracy ?? 0),
+          riskManagement: Number(rawIsr?.riskManagement ?? rawIsr?.risk ?? 0),
+          consistency: Number(rawIsr?.consistency ?? rawIsr?.stability ?? 0),
+          investmentHabit: Number(rawIsr?.investmentHabit ?? rawIsr?.discipline ?? 0),
+          marketResponse: Number(rawIsr?.marketResponse ?? rawIsr?.adaptability ?? 0),
+
+          grade: rawIsr?.grade || EMPTY_ISR.grade,
+          summary: rawIsr?.summary || EMPTY_ISR.summary,
         })
       } else {
         setIsrData(EMPTY_ISR)
@@ -201,6 +221,22 @@ const Dashboard = () => {
         }
 
         setLeagueRanks(normalizedLeagues)
+
+        const rawMember = memberRes.status === 'fulfilled'
+          ? (getResponseData(memberRes.value)?.member || getResponseData(memberRes.value) || {})
+          : {}
+        const currentMemberId = getMemberIdValue(rawMember)
+
+        const detectedLeague = currentMemberId
+          ? (['bronze', 'silver', 'gold', 'diamond'].find((key) =>
+            normalizedLeagues[key].some(
+              (m) => getMemberIdValue(m) === currentMemberId
+            )
+          ) || null)
+          : null
+
+        setUserLeague(detectedLeague)
+        setSelectedLeague(detectedLeague)
 
         const mergedRanking = [
           ...normalizedLeagues.bronze,
@@ -253,6 +289,57 @@ const Dashboard = () => {
     }
   }, [])
 
+  const getStockPrincipal = (stock) => {
+    const directTotalPrice = Number(
+      stock?.totalPrice ??
+      stock?.principal ??
+      stock?.price ??
+      0
+    )
+
+    if (directTotalPrice > 0) return directTotalPrice
+
+    const quantity = Number(stock?.quantity || 0)
+    const avgPrice = Number(stock?.avgPrice ?? stock?.avg_price ?? 0)
+    return quantity * avgPrice
+  }
+
+  const getStockProfit = (stock) => {
+    return Number(
+      stock?.changeAmount ??
+      stock?.change_amount ??
+      stock?.profit ??
+      stock?.pnl_amount ??
+      0
+    )
+  }
+
+  const investmentSummary = useMemo(() => {
+    return ownedStocks.reduce(
+      (acc, stock) => {
+        acc.totalInvested += getStockPrincipal(stock)
+        acc.totalProfit += getStockProfit(stock)
+        return acc
+      },
+      { totalInvested: 0, totalProfit: 0 }
+    )
+  }, [ownedStocks])
+
+  const displayTotalInvested =
+    Number(investmentSummary.totalInvested || 0) > 0
+      ? investmentSummary.totalInvested
+      : Number(member?.bet_amount || 0)
+
+  const displayTotalProfit =
+    Number(investmentSummary.totalProfit || 0) !== 0
+      ? investmentSummary.totalProfit
+      : Number(member?.pnl_amount || 0)
+
+  const totalProfitRate =
+    Number(displayTotalInvested) > 0
+      ? (Number(displayTotalProfit) / Number(displayTotalInvested)) * 100
+      : 0
+
   useEffect(() => {
     loadDashboard(true)
 
@@ -265,12 +352,12 @@ const Dashboard = () => {
   }, [loadDashboard])
 
   const formatNumber = (value) => {
-    const num = Number(value || 0)
-    return num.toLocaleString('ko-KR')
-  }
+    const num = Math.round(Number(value || 0))
+  return num.toLocaleString('ko-KR')
+}
 
   const formatSignedNumber = (value) => {
-    const num = Number(value || 0)
+    const num = Math.round(Number(value || 0))
     const prefix = num > 0 ? '+' : ''
     return `${prefix}${num.toLocaleString('ko-KR')}`
   }
@@ -282,52 +369,52 @@ const Dashboard = () => {
   }
 
   const formatScore = (value) => {
-    return Number(value || 0).toFixed(2)
+    return Number(value || 0).toFixed(1)
   }
 
   const formatRankingPoint = (value) => {
     return Number(value || 0).toFixed(1)
   }
 
-  const isrDescription = '사용자의 투자 과정과 행동의 질을 평가하는 기준.'
+  const isrDescription = '수익률이 아니라 사용자의 투자 과정과 행동의 질을 평가하는 기준.'
 
   const isrItems = useMemo(
     () => [
       {
         key: 'accuracy',
-        label: 'Accuracy',
+        label: '판단력',
         value: isrData.accuracy,
-        description: '사용자의 판단력의 정확도를 수치화. (수치가 높으면 능숙 / 낮으면 숙지 필요)',
+        description: '성공/실패 기준으로 투자 방향을 얼마나 정확하게 판단했는지 보여줍니다.',
       },
       {
         key: 'risk',
-        label: 'Risk',
+        label: '위험관리',
         value: isrData.risk,
-        description: '손실 대비 베팅 규모, 무리한 투자 여부 수치화. (수치 높을수록 손실 관리 잘함)',
+        description: '손실 대비 베팅 규모와 패널티를 기준으로 손실을 얼마나 잘 통제했는지 보여줍니다.',
       },
       {
         key: 'stability',
-        label: 'Stability',
+        label: '일관성',
         value: isrData.stability,
-        description: '투자 자본 변동성, 수익 안전성을 수치화. (높은 점수일수록 증가율 안전적으로 오름, 낮음은 변동 심함)',
+        description: '손익 변동성이 너무 크지 않은지 기준으로 투자 패턴의 안정성을 보여줍니다.',
       },
       {
         key: 'discipline',
-        label: 'Discipline',
+        label: '투자습관',
         value: isrData.discipline,
-        description: '손절 여부 및 목표 전햑 준수 여부, 미완료 행동을 수치화. (규칙적으로 투자를 하는지(높음), 아니면 랜덤으로 하는지(낮음))',
+        description: 'PENDING 비율을 기준으로 미완료 행동이 적고 규칙적으로 투자하는지 보여줍니다.',
       },
       {
         key: 'strategy',
-        label: 'Strategy',
+        label: '전략성',
         value: isrData.strategy,
-        description: '주식을 어떤 목적으로 구매. (초단타, 며칠 ~ 몇 주, 장기 투자)',
+        description: '투자 전략을 얼마나 일관되고 적절하게 사용했는지 보여줍니다.',
       },
       {
         key: 'adaptability',
-        label: 'Adaptability',
+        label: '시장대응력',
         value: isrData.adaptability,
-        description: '사용자가 주식의 변동에 적응하는지 수치화. (높으면 잘 따름, 낮으면 한가지 방법으로만 투자하는 성향)',
+        description: '시장 상황 변화에 얼마나 유연하게 대응하는지 보여줍니다.',
       },
     ],
     [isrData]
@@ -340,14 +427,20 @@ const Dashboard = () => {
 
   const displayedRankingList = useMemo(() => {
     if (!selectedLeague) {
-      return rankingList.slice(0, 7)
+      return rankingList
     }
 
     const selectedList = (leagueRanks[selectedLeague] || [])
       .slice()
-      .sort((a, b) => Number(b.rankingPoint || 0) - Number(a.rankingPoint || 0))
+      .sort((a, b) => {
+        // Sort by leagueRank ascending if available, otherwise fall back to rankingPoint descending
+        const rankA = Number(a.leagueRank || 0)
+        const rankB = Number(b.leagueRank || 0)
+        if (rankA > 0 && rankB > 0) return rankA - rankB
+        return Number(b.rankingPoint || 0) - Number(a.rankingPoint || 0)
+      })
 
-    return selectedList.slice(0, 7)
+    return selectedList
   }, [selectedLeague, rankingList, leagueRanks])
 
   const isMyRankMember = (rankMember) => {
@@ -359,7 +452,8 @@ const Dashboard = () => {
   }
 
   const handleLeagueClick = (leagueKey) => {
-    setSelectedLeague((prev) => (prev === leagueKey ? null : leagueKey))
+    if (selectedLeague === leagueKey) return   // ← bail early, no re-render
+    setSelectedLeague(leagueKey)
   }
 
   const selectedLeagueLabel = useMemo(() => {
@@ -400,13 +494,14 @@ const Dashboard = () => {
 
       <div className='dash-master'>
         <div className='tool-box'>
-          <span>📋퀘스트 현황</span>
+          <span>퀘스트 현황</span>
           <div className='quest-status-box'>
-            <div className='quest-summary'>
-              <div className='quest-summary-score'>
-                {Number(questStatus.dailyPercent || 0).toFixed(2)}%
+            <div className='dash-summary'>
+              <div className='dash-score'>
+                {Number(questStatus.dailyPercent || 0).toFixed(1)}
+                <span>%</span>
               </div>
-              <div className='quest-summary-desc'>
+              <div className='dash-summary-desc'>
                 오늘 {questStatus.dailyGoal}문제 목표 기준
               </div>
             </div>
@@ -434,7 +529,7 @@ const Dashboard = () => {
               <li className='quest-item'>
                 <span>누적 정답률</span>
                 <strong>
-                  {Number(questStatus.accuracy || 0).toFixed(2)}%
+                  {Number(questStatus.accuracy || 0).toFixed(1)}%
                 </strong>
               </li>
             </ul>
@@ -443,16 +538,30 @@ const Dashboard = () => {
 
         <div className='tool-box'>
           <div className='isr-header'>
-            <span>🎯ISR 지표</span>
+            <span>ISR 지표</span>
             <div className='isr-tooltip-wrap'>
               <span className='isr-tooltip-icon'>ⓘ</span>
               <span className='isr-tooltip-text'>{isrDescription}</span>
             </div>
           </div>
-          <div className='isr-summary'>
-            <div className='isr-summary-score'>{formatScore(isrData.isr)}</div>
-            <div className='isr-summary-desc'>
-              {isrDescription}
+
+          <div className='dash-summary'>
+            <div className='dash-score'>{formatScore(isrData.isr)}</div>
+            <div className='isr-one-line'>
+              <strong>한 줄 분석</strong>
+              <p>{isrData?.summary || '아직 분석 결과가 없습니다.'}</p>
+            </div>
+          </div>
+
+          <div>
+            <div className='isr-grade-box'>
+              <div className='isr-grade-code'>
+                {isrData?.grade?.code || 'D'}
+              </div>
+              <div className='isr-grade-texts'>
+                <strong>{isrData?.grade?.label || '위험형 투자자'}</strong>
+                <p>{isrData?.grade?.description || '아직 분석 결과가 없습니다.'}</p>
+              </div>
             </div>
           </div>
 
@@ -482,8 +591,8 @@ const Dashboard = () => {
           </ul>
         </div>
 
-        <div className='dash-rank'>
-          <span>🏆 {rankingTitle}</span>
+        <div className='tool-box'>
+          <span>{rankingTitle}</span>
           <div className='rank-box'>
             <ul className='rank-league'>
               {LEAGUE_META.map((league) => (
@@ -527,13 +636,13 @@ const Dashboard = () => {
                           alt='account_image'
                           className='rank-profile'
                         />
-                        <span className={isMine ? 'rank-name-mine' : ''}>
+                        <span>
                           {rankMember.nickname || '사용자'}
                         </span>
                       </div>
 
-                      <div className={`rank-num ${isMine ? 'rank-score-mine' : ''}`}>
-                        {formatRankingPoint(rankMember.rankingPoint)}
+                      <div className='rank-point'>
+                        {Number(rankMember.points || 0).toLocaleString('ko-KR')}pt
                       </div>
                     </li>
                   )
@@ -546,7 +655,7 @@ const Dashboard = () => {
 
       <div className='dash-thread'>
         <div className='dash-box'>
-          <span>💖찜한 주식</span>
+          <span>찜한 주식</span>
           <div className='stock-box'>
             <ul className='stock-list'>
               <li className='stock-item stock-head liked-grid'>
@@ -563,8 +672,14 @@ const Dashboard = () => {
                     className='stock-item liked-grid'
                   >
                     <p>{stock.stockName || stock.stockCode}</p>
-                    <p className='numbers'>{formatNumber(stock.price)}</p>
-                    <p className='numbers'>{formatSignedNumber(stock.change)}</p>
+                    <p className='numbers'>{formatNumber(stock.price)}pt</p>
+                    <p className={`numbers 
+                        ${Number(stock.changeRate || stock.changeRate || 0) >= 0
+                        ? 'gain'
+                        : 'loss'
+                      }`}>
+                      {formatSignedNumber(stock.change)}pt
+                    </p>
                   </li>
                 ))
               )}
@@ -573,7 +688,7 @@ const Dashboard = () => {
         </div>
 
         <div className='dash-box'>
-          <span>💹보유 주식</span>
+          <span>보유 주식</span>
           <div className='stock-box'>
             <ul className='stock-list'>
               <li className='stock-item stock-head owned-grid'>
@@ -592,9 +707,13 @@ const Dashboard = () => {
                   >
                     <p>{stock.stockName || stock.stockCode}</p>
                     <p className='numbers'>{stock.quantity}</p>
-                    <p className='numbers'>{formatNumber(stock.principal)}</p>
-                    <p className='numbers'>
-                      {formatSignedNumber(stock.changeAmount)}({formatSignedPercent(stock.changeRate)})
+                    <p className='numbers'>{formatNumber(stock.principal)}pt</p>
+                    <p className={`numbers 
+                        ${Number(stock.myChangeRate || stock.myChangeRate || 0) >= 0
+                        ? 'gain'
+                        : 'loss'
+                      }`}>
+                      {formatSignedNumber(stock.changeAmount)}pt({formatSignedPercent(stock.myChangeRate)})
                     </p>
                   </li>
                 ))

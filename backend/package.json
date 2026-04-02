@@ -17,9 +17,11 @@
     "dotenv": "^17.3.1",
     "express": "^5.2.1",
     "jsonwebtoken": "^9.0.3",
+    "lib": "^5.1.0",
     "multer": "^2.1.1",
     "mysql2": "^3.19.0",
     "nodemon": "^3.1.14",
+    "openai": "^6.33.0",
     "swagger-jsdoc": "^6.2.8",
     "swagger-ui-express": "^5.0.1",
     "yahoo-finance2": "^3.13.2"

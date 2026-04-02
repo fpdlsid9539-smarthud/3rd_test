@@ -18,6 +18,7 @@
   flex-direction: column;
   justify-content: space-between;
   align-items: center;
+  gap: 1.5rem;
 }
 
 .nav-wrapper {
@@ -26,7 +27,7 @@
   display: flex;
   flex-direction: column;
   justify-content: space-between;
-  align-items: center;
+  align-items: flex-start;
   gap: 3rem;
 }
 
@@ -62,7 +63,9 @@
   cursor: pointer;
 }
 
-.collapse-button:hover {
+.collapse-button:hover,
+.nav-menu:hover,
+.nav-menu.active {
   box-shadow: 0 0.25rem 0 var(--primary);
 }
 
@@ -87,11 +90,9 @@
   box-sizing: border-box;
   display: flex;
   flex-direction: column;
-  justify-content: start;
+  justify-content: space-between;
   gap: 1.5rem;
   list-style-type: none;
-  padding: 0;
-  margin: 0;
 }
 
 .nav-menu {
@@ -110,14 +111,6 @@
   cursor: pointer;
 
   transition: all 0.3s ease;
-}
-
-.nav-menu:hover {
-  box-shadow: 0 0.25rem 0 var(--primary);
-}
-
-.nav-menu.active {
-  box-shadow: 0 0.25rem 0 var(--primary);
 }
 
 .nav-line {
@@ -171,8 +164,8 @@
   background: linear-gradient(90deg, #ffd54a, #ffb300);
   color: var(--text);
 
-  font-size: 0.875rem;
-  font-weight: 700;
+  font-size: 1rem;
+  font-weight: 500;
   cursor: pointer;
 }
 
@@ -185,7 +178,7 @@
   box-shadow: 0 0.25rem 0.5rem var(--shadow-1);
 }
 
-.billing-nav-button.disabled{
+.billing-nav-button.disabled {
   background: var(--text-highlight);
   color: var(--box-bg);
   cursor: pointer;
@@ -195,107 +188,6 @@
   transition: all 0.3s ease;
 }
 
-.billing-cancel-mini-btn {
-  font-size: 0.875rem;
-  background: transparent;
-  border: none;
-  color: var(--text-highlight);
-  cursor: pointer;
-  transition: all 0.3s ease;
-}
-
-.billing-cancel-mini-btn:hover {
-  color: var(--danger);
-  text-decoration: underline;
-}
-
-/* =========================
-   Tablet
-========================= */
-@media (max-width: 1200px) {
-  .navigation {
-    position: static;
-    height: auto;
-    border-right: none;
-    border-bottom: 1px solid var(--border);
-    overflow: visible;
-  }
-
-  .nav-content {
-    align-items: stretch;
-    gap: 1.25rem;
-  }
-
-  .nav-logo-button {
-    margin-top: 0.5rem;
-    align-self: flex-start;
-  }
-
-  .nav-logo {
-    height: 2.2rem;
-  }
-
-  .nav-list {
-    gap: 0.875rem;
-  }
-
-  .nav-menu {
-    min-height: 3.2rem;
-    font-size: 1rem;
-    padding: 0.8rem 0;
-  }
-
-  .sub-list {
-    align-items: flex-start;
-    transform: translate(0, -1rem);
-    padding-left: 0.5rem;
-    font-size: 1rem;
-  }
-
-  .nav-mixed.open .sub-list {
-    transform: translate(0, 0);
-    max-height: 10rem;
-    margin-top: 0.5rem;
-  }
-
-  .line-item {
-    width: 100%;
-    margin-left: 0;
-    padding: 0 0.875rem;
-    gap: 0.875rem;
-  }
-}
-
-/* =========================
-   Mobile
-========================= */
-@media (max-width: 768px) {
-  .navigation {
-    padding: 0.875rem;
-  }
-
-  .nav-logo {
-    height: 1.9rem;
-  }
-
-  .nav-menu {
-    min-height: 3rem;
-    font-size: 0.95rem;
-  }
-
-  .icon-btn {
-    padding: 0.75rem;
-  }
-
-  .arrow {
-    padding: 0 0.75rem;
-  }
-
-  .billing-nav-button {
-    height: 3rem;
-    font-size: 0.95rem;
-  }
-}
 
 /* =========================
    Collapsed state
@@ -314,7 +206,7 @@
 }
 
 .navigation.collapsed .nav-wrapper {
-  width: fit-content;
+  /* width: fit-content; */
   height: fit-content;
   box-sizing: border-box;
 }
@@ -402,4 +294,68 @@
 
 .navigation.collapsed .icon-btn {
   padding: 0.75rem;
+}
+
+
+/* =========================
+   Tablet
+========================= */
+@media (max-width: 1024px) {
+  .navigation.collapsed,
+  .navigation {
+    width: calc(100% - 2rem);
+    height: fit-content;
+
+    position: fixed;
+    top: auto;
+    bottom: calc(0% + 1rem);
+    left: calc(0% + 1rem);
+
+    background-color: var(--bg-trans2);
+    border-right: none;
+    border-bottom: 1px solid var(--border);
+    border-radius: 1.5rem;
+
+    backdrop-filter: blur(0.5rem);
+    box-shadow: 0 0.5rem 1rem var(--shadow-1);
+
+    z-index: 9999;
+  }
+
+  .nav-header {
+    display: none;
+  }
+
+  .collapse-button {
+    display: none;
+    visibility: hidden;
+  }
+
+  .nav-content {
+    padding: 0.5rem 0.5rem 0.5rem 1rem;
+    flex-direction: row;
+    gap: 1rem;
+  }
+
+  .nav-wrapper {
+    flex-direction: row;
+    gap: 1rem;
+  }
+
+  .nav-list {
+    flex-direction: row;
+    gap: 0rem;
+  }
+
+  .nav-line span {
+    font-size: 1rem;
+  }
+
+  .billing-nav {
+    width: auto;
+  }
+
+  .billing-nav-button span {
+    font-size: 1rem;
+  }
 }
