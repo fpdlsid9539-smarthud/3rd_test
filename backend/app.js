@@ -1,4 +1,8 @@
-require("dotenv").config({ path: __dirname + "/.env" });
+try {
+  if (!process.env.VERCEL) {
+    require("dotenv").config({ path: __dirname + "/.env" });
+  }
+} catch (e) {}
 
 const express = require("express");
 const cors = require("cors");
