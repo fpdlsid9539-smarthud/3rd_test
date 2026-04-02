@@ -253,7 +253,7 @@
 
 .education-accordion-item.locked > .education-accordion-header {
   display: grid;
-  grid-template-columns: 2fr 2fr 1.5rem;
+  grid-template-columns: 2fr 2fr 2.5rem;
 }
 
 .education-header-main {

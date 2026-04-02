@@ -1,6 +1,9 @@
 import React, { useState, useEffect } from 'react'
 import { api } from '../config/api'
 import './QuizPage.css'
+import close from '../assets/icons/close.svg'
+import minus from '../assets/icons/minus.svg'
+import plus from '../assets/icons/plus.svg'
 
 const POINT_TABLE = {
   하: { correct: 1000, wrong: 0 },
@@ -82,6 +85,7 @@ const QuizPage = () => {
 
   const [llmKeywords, setLlmKeywords] = useState('')
   const [llmQuizLoading, setLlmQuizLoading] = useState(false)
+  const [sessionTopic, setSessionTopic] = useState([])
 
   const sessionLength = allQuizzes.length || MAX_QUESTIONS
 
@@ -308,6 +312,7 @@ const QuizPage = () => {
     }
 
     setLlmQuizLoading(true)
+    setSessionTopic(parsedKeywords)
 
     try {
       const res = await api.post('/api/quiz/generate', {
@@ -423,8 +428,8 @@ const QuizPage = () => {
       const correct = Boolean(payload.isCorrect)
       const pts = Number(
         payload.rewardPoints ??
-          POINT_TABLE[difficulty]?.[correct ? 'correct' : 'wrong'] ??
-          0
+        POINT_TABLE[difficulty]?.[correct ? 'correct' : 'wrong'] ??
+        0
       )
 
       const newCorrectCount = correctCount + (correct ? 1 : 0)
@@ -452,6 +457,81 @@ const QuizPage = () => {
     }
   }
 
+  const generateNextQuiz = async () => {
+    setLoading(true)
+
+    let finalKeywords
+    if (sessionTopic.length > 0) {
+      finalKeywords = ['주식', `난이도${difficulty}`, ...sessionTopic].slice(0, 8)
+    } else {
+      const stopWords = new Set([
+        '주식', '투자', '시장', '다음', '무엇', '대한', '관련', '설명', '가장',
+        '옳은', '틀린', '보기', '경우', '하는', '있는', '입니다', '이다', '수',
+        '및', '를', '을', '이', '가', '은', '는', '에', '의', '로', '과', '와',
+      ])
+
+      const sourceText = [
+        currentQuiz?.question,
+        currentQuiz?.explanation,
+        currentQuiz?.option_1,
+        currentQuiz?.option_2,
+        currentQuiz?.option_3,
+        currentQuiz?.option_4,
+      ]
+        .filter(Boolean)
+        .join(' ')
+
+      const keywords = [...new Set(
+        sourceText
+          .replace(/[^가-힣a-zA-Z0-9\s]/g, ' ')
+          .split(/\s+/)
+          .map((v) => v.trim())
+          .filter((v) => v.length >= 2 && !stopWords.has(v))
+      )].slice(0, 6)
+
+      finalKeywords = ['주식', `난이도${difficulty}`, ...keywords].slice(0, 8)
+    }
+
+    try {
+      const res = await api.post('/api/quiz/generate', {
+        difficulty,
+        keywords: finalKeywords,
+        seedQuestions: allQuizzes.map((q) => q.question).filter(Boolean),
+      })
+
+      const payload = res?.data?.data ?? res?.data ?? {}
+      if (!payload?.question) throw new Error('생성 실패')
+
+      const nextQuiz = {
+        quiz_id: `ai-gen-${Date.now()}`,
+        difficulty,
+        source: 'ai',
+        question: payload.question,
+        option_1: payload.option_1,
+        option_2: payload.option_2,
+        option_3: payload.option_3,
+        option_4: payload.option_4,
+        answer: Number(payload.answer),
+        explanation: payload.explanation,
+      }
+
+      const nextIndex = attemptNum + 1
+      const updatedList = [...allQuizzes, nextQuiz]
+      setAllQuizzes(updatedList)
+      loadQuestionByIndex(updatedList, nextIndex)
+    } catch (err) {
+      console.error('다음 문제 생성 실패 =', err)
+      const nextIndex = attemptNum + 1
+      if (nextIndex < allQuizzes.length) {
+        loadQuestionByIndex(null, nextIndex)
+      } else {
+        setStep('SUMMARY')
+      }
+    } finally {
+      setLoading(false)
+    }
+  }
+
   const handleNext = async () => {
     const nextIndex = attemptNum + 1
     const isAiSingleQuiz =
@@ -463,8 +543,7 @@ const QuizPage = () => {
     }
 
     if (nextIndex >= sessionLength) {
-      const finalCorrectCount = correctCount
-      const isPerfect = finalCorrectCount === sessionLength
+      const isPerfect = correctCount === sessionLength
 
       if (isPerfect && difficulty !== 'AI') {
         try {
@@ -497,14 +576,21 @@ const QuizPage = () => {
     setSessionLog([])
     setAllQuizzes([])
     setLlmKeywords('')
+    setSessionTopic([])
     setShowWrongNotes(false)
     fetchWrongNotes()
   }
 
   const getOxTypeLabel = (type) => {
-    if (type === 'market') return '📊 시장 기반'
-    if (type === 'concept') return '🤖 AI 개념'
+    if (type === 'market') return '시장 기반'
+    if (type === 'concept') return 'AI 개념'
     return 'OX 퀴즈'
+  }
+
+  const getOxTypeClass = (type) => {
+    if (type === 'market') return 'market'
+    if (type === 'concept') return 'concept'
+    return ''
   }
 
   const renderQuizRanking = () => (
@@ -603,9 +689,7 @@ const QuizPage = () => {
                     </div>
                   </div>
 
-                  <span className={`wrong-note-arrow ${isOpen ? 'open' : ''}`}>
-                    ▼
-                  </span>
+                  <img src={isOpen ? minus : plus} alt="toggle" />
                 </button>
 
                 <div className={`wrong-note-body ${isOpen ? 'open' : ''}`}>
@@ -618,13 +702,12 @@ const QuizPage = () => {
                       return (
                         <div
                           key={num}
-                          className={`wrong-note-option ${
-                            isCorrectAnswer
+                          className={`wrong-note-option ${isCorrectAnswer
                               ? 'correct'
                               : isMyAnswer
-                              ? 'my-answer'
-                              : ''
-                          }`}
+                                ? 'my-answer'
+                                : ''
+                            }`}
                         >
                           <strong className='wrong-note-option-num'>{num}번</strong>
                           <span>{optionText}</span>
@@ -665,6 +748,11 @@ const QuizPage = () => {
             type='text'
             value={llmKeywords}
             onChange={(e) => setLlmKeywords(e.target.value)}
+            onKeyDown={(e) => {
+              if (e.key === 'Enter') {
+                generateLLMQuiz ()
+              }
+            }}
             placeholder='예: PER, 공매도, 코스피'
             className='quiz-keyword-input'
           />
@@ -713,7 +801,7 @@ const QuizPage = () => {
                     <h2>FinSight 일일 O/X 퀴즈</h2>
                   </div>
                   <button className='ox-modal-close' onClick={() => setIsOxModalOpen(false)}>
-                    ✕
+                    <img src={close} alt='닫기' />
                   </button>
                 </div>
 
@@ -723,20 +811,7 @@ const QuizPage = () => {
                   </p>
 
                   {oxType && !oxResult && (
-                    <div
-                      style={{
-                        marginBottom: 12,
-                        display: 'inline-flex',
-                        alignItems: 'center',
-                        gap: 6,
-                        padding: '6px 12px',
-                        borderRadius: 999,
-                        background: '#f4f7ff',
-                        color: '#315efb',
-                        fontSize: 13,
-                        fontWeight: 700,
-                      }}
-                    >
+                    <div className={getOxTypeClass(oxType)}>
                       {getOxTypeLabel(oxType)}
                     </div>
                   )}
@@ -745,47 +820,38 @@ const QuizPage = () => {
                     <div className='ox-status-box finished'>
                       <h3>오늘의 퀴즈 완료!</h3>
                       <p>내일 새로운 주가 퀴즈로 만나요</p>
-                      <button className='btn btn-primary' onClick={() => setIsOxModalOpen(false)}>
+                      <button className='btn btn-submit' onClick={() => setIsOxModalOpen(false)}>
                         닫기
                       </button>
                     </div>
                   ) : oxResult ? (
                     <div className={`ox-status-box result ${oxResult.isCorrect ? 'correct' : 'wrong'}`}>
-                      <div
-                        style={{
-                          marginBottom: 10,
-                          display: 'inline-flex',
-                          alignItems: 'center',
-                          gap: 6,
-                          padding: '6px 12px',
-                          borderRadius: 999,
-                          background: '#f4f7ff',
-                          color: '#315efb',
-                          fontSize: 13,
-                          fontWeight: 700,
-                        }}
-                      >
+                      <div className={getOxTypeClass(oxResult.type)}>
                         {getOxTypeLabel(oxResult.type)}
                       </div>
-                      <h3>{oxResult.isCorrect ? '정답입니다!' : '아쉬워요!'}</h3>
-                      <p className='ox-reward'><span>{oxResult.rewardPoints}pt</span> 지급 완료</p>
+                      <div className='ox-reward-title'>
+                        <h3>{oxResult.isCorrect ? '정답입니다!' : '아쉬워요!'}</h3>
+                        <p className='ox-reward'>
+                          <span>{oxResult.rewardPoints}</span><span>pt</span> 지급 완료
+                        </p>
+                      </div>
                       <div className='ox-explanation-card'>
                         <div className='exp-answer'>정답: <strong>{oxResult.correctAnswer}</strong></div>
                         <p className='exp-text'>{oxResult.explanation}</p>
                       </div>
-                      <button className='btn btn-primary' onClick={() => setIsOxModalOpen(false)}>
+                      <button className='btn btn-submit' onClick={() => setIsOxModalOpen(false)}>
                         돌아가기
                       </button>
                     </div>
                   ) : oxQuizData ? (
                     <div className='ox-quiz-play'>
                       <div className='ox-question-card'>
+                        <p className='ox-question-text'>{oxQuizData.question}</p>
                         {oxQuizData.referenceDate && (
                           <div className='ox-reference-date'>
                             ({oxQuizData.referenceDate} 기준)
                           </div>
                         )}
-                        <p className='ox-question-text'>{oxQuizData.question}</p>
                       </div>
                       <div className='ox-btn-group'>
                         <button className='btn-ox btn-o' onClick={() => handleOxSubmit('O')}>
@@ -801,7 +867,7 @@ const QuizPage = () => {
                   ) : (
                     <div className='ox-loading'>
                       <div className='spinner'></div>
-                      <p>OX 퀴즈를 준비 중입니다.</p>
+                      <p>OX 퀴즈를 준비 중입니다...</p>
                     </div>
                   )}
                 </div>
@@ -873,7 +939,7 @@ const QuizPage = () => {
   )
 
   const renderResult = () => {
-    const isAiSingleQuiz = difficulty === 'AI'
+    const isAiSingleQuiz = difficulty === 'AI' && String(currentQuiz?.quiz_id).startsWith('ai-') && allQuizzes.length === 1
     const isLastQuestion = attemptNum + 1 >= sessionLength
     const pts = Number(
       resultData?.rewardPoints ??
@@ -899,7 +965,7 @@ const QuizPage = () => {
         </div>
         <div className={`result-banner ${isCorrect ? 'correct' : 'wrong'}`}>
           <span>{isCorrect ? '정답입니다!' : '아쉽게도 오답입니다.'}</span>
-          <span className={`result-pts ${isCorrect ? 'plus' : 'minus'}`}>
+          <span className={`result-pts ${isCorrect ? 'plus' : 'transparent'}`}>
             {pts > 0 ? '+' : ''}{pts.toLocaleString('ko-KR')} P
           </span>
         </div>
@@ -914,10 +980,14 @@ const QuizPage = () => {
           </p>
         </div>
         <div className='result-actions'>
-          <button className='btn btn-primary' onClick={handleNext}>
-            {isAiSingleQuiz
-              ? '퀴즈 메인으로'
-              : (isLastQuestion ? '결과 보기' : `다음 문제 (${attemptNum + 2} / ${sessionLength})`)}
+          <button className='btn btn-primary' onClick={handleNext} disabled={loading}>
+            {loading
+              ? '문제 생성 중...'
+              : isAiSingleQuiz
+                ? '퀴즈 메인으로'
+                : isLastQuestion
+                  ? '결과 보기'
+                  : `다음 문제 (${attemptNum + 2} / ${sessionLength})`}
           </button>
           <button className='btn btn-secondary' onClick={resetAll}>그만하기</button>
         </div>

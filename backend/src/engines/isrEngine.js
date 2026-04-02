@@ -61,6 +61,8 @@ function calculateRisk(logs) {
    3) 일관성 (Stability)
    - 손익 변동성만 반영
    - 최근 7일 활동일수 제거
+   - 평균 손익이 작거나 음수일 때
+     0으로 붕괴되는 문제 보정
 ========================= */
 function calculateStability(logs) {
   const validLogs = (logs || []).filter(
@@ -73,10 +75,24 @@ function calculateStability(logs) {
   const mean = avg(pnls);
   const deviation = stddev(pnls);
 
-  let pnlScore = 50;
-  if (Math.abs(mean) > 0) {
-    pnlScore = 100 - (deviation / Math.abs(mean)) * 100;
-  }
+  // 기존 방식:
+  // 100 - (deviation / Math.abs(mean)) * 100
+  // -> mean이 작거나 음수일 때 쉽게 음수로 떨어져 0으로 고정됨
+  //
+  // 개선 방식:
+  // normalized = deviation / (|mean| + deviation + 1)
+  // pnlScore = (1 - normalized) * 100
+  //
+  // 계산 예시:
+  // deviation = 30, |mean| = 10
+  // normalized = 30 / (10 + 30 + 1) = 30 / 41 = 0.7317
+  // pnlScore = (1 - 0.7317) * 100 = 26.83
+  //
+  // deviation = 10, |mean| = 40
+  // normalized = 10 / (40 + 10 + 1) = 10 / 51 = 0.1961
+  // pnlScore = 80.39
+  const normalized = deviation / (Math.abs(mean) + deviation + 1);
+  const pnlScore = (1 - normalized) * 100;
 
   return clamp(pnlScore);
 }
@@ -97,7 +113,38 @@ function calculateDiscipline(logs) {
 }
 
 /* =========================
-   5) 시장대응력 (Adaptability)
+   5) 전략성 (Strategy)
+   - 실제 사용/판정 전략의 일관성 반영
+   - strategy_type_actual 우선
+   - 없으면 strategy_type_user 보조 사용
+========================= */
+function calculateStrategy(logs) {
+  const logData = Array.isArray(logs) ? logs : [];
+  if (!logData.length) return 0;
+
+  const strategyLogs = logData
+    .map((l) => l.strategy_type_actual || l.strategy_type_user || null)
+    .filter(Boolean);
+
+  if (!strategyLogs.length) return 0;
+
+  const counts = {};
+  strategyLogs.forEach((strategy) => {
+    counts[strategy] = (counts[strategy] || 0) + 1;
+  });
+
+  const maxCount = Math.max(...Object.values(counts));
+
+  // 계산 예시:
+  // 전체 20개 중 SWING 12개, SCALPING 8개
+  // score = 12 / 20 * 100 = 60
+  const score = (maxCount / strategyLogs.length) * 100;
+
+  return clamp(score);
+}
+
+/* =========================
+   6) 시장대응력 (Adaptability)
    - 시장 추세별 성공률 평균
    - 최근 퀴즈 성장도 제거
 ========================= */
@@ -114,7 +161,9 @@ function calculateAdaptability(logs) {
   });
 
   const trendScores = Object.values(grouped).map((group) => {
-    const valid = group.filter((l) => l.status === "SUCCESS" || l.status === "FAIL");
+    const valid = group.filter(
+      (l) => l.status === "SUCCESS" || l.status === "FAIL"
+    );
     if (!valid.length) return 0;
 
     const successCount = valid.filter((l) => l.status === "SUCCESS").length;
@@ -177,6 +226,7 @@ function getISRSummary(result = {}) {
   const risk = Number(result.risk || 0);
   const stability = Number(result.stability || 0);
   const discipline = Number(result.discipline || 0);
+  const strategy = Number(result.strategy || 0);
   const adaptability = Number(result.adaptability || 0);
 
   if (risk >= 80 && stability >= 70) {
@@ -191,6 +241,10 @@ function getISRSummary(result = {}) {
     return "미완료 거래 비율이 높아 투자 습관 개선이 필요한 상태입니다.";
   }
 
+  if (strategy < 50) {
+    return "전략 패턴의 일관성이 낮아 투자 전략 정리가 더 필요한 상태입니다.";
+  }
+
   if (adaptability < 60) {
     return "특정 시장 상황에는 강하지만 시장 변화 대응력은 더 키울 필요가 있습니다.";
   }
@@ -200,27 +254,33 @@ function getISRSummary(result = {}) {
 
 /* =========================
    최종 ISR
+   - 전략성 포함
+   - 가중치 합계 = 100%
+   - 판단력 30 / 위험관리 25 / 일관성 20 /
+     투자습관 10 / 전략성 10 / 시장대응력 5
 ========================= */
 function calculateISR({ logs = [] }) {
   const accuracy = calculateAccuracy(logs);
   const risk = calculateRisk(logs);
   const stability = calculateStability(logs);
   const discipline = calculateDiscipline(logs);
+  const strategy = calculateStrategy(logs);
   const adaptability = calculateAdaptability(logs);
 
   const isr =
     accuracy * 0.30 +
     risk * 0.25 +
     stability * 0.20 +
-    discipline * 0.15 +
-    adaptability * 0.10;
+    discipline * 0.10 +
+    strategy * 0.10 +
+    adaptability * 0.05;
 
   return {
     accuracy: Number(clamp(accuracy).toFixed(2)),
     risk: Number(clamp(risk).toFixed(2)),
     stability: Number(clamp(stability).toFixed(2)),
     discipline: Number(clamp(discipline).toFixed(2)),
-    strategy: 0,
+    strategy: Number(clamp(strategy).toFixed(2)),
     adaptability: Number(clamp(adaptability).toFixed(2)),
     isr: Number(clamp(isr).toFixed(2)),
   };

@@ -664,10 +664,6 @@
     align-items: flex-start;
   }
 
-  .faq-open-form-btn {
-    width: 100%;
-  }
-
   .faq-panel-head {
     /* flex-direction: column; */
     align-items: flex-start;

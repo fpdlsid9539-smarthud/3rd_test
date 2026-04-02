@@ -1746,7 +1746,15 @@
   }
 
   .profile.collapsed {
+    width: calc(100% - 2rem);
     min-height: 4.5rem;
+    padding: 0.5rem;
+    box-sizing: border-box;
+
+    position: fixed;
+    top: calc(0% + 1rem);
+    left: calc(0% + 1rem);
+
     background-color: var(--bg-trans);
   }
 

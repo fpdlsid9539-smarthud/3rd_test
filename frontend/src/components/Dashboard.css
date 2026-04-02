@@ -57,9 +57,12 @@
 .dash-master {
   width: 100%;
   min-width: 0;
+
   display: grid;
   grid-template-columns: repeat(3, 1fr);
+  align-items: start;
   gap: 1rem;
+
   overflow: visible;
   box-sizing: border-box;
 }
@@ -83,6 +86,15 @@
   box-sizing: border-box;
   min-width: 0;
 }
+
+.dash-box {
+  height: fit-content;
+}
+
+.tool-box {
+  align-self: start;
+}
+
 
 
 .dash-tool {

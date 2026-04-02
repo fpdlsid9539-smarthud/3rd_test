@@ -361,18 +361,16 @@
   color: var(--text);
 }
 
-.stocks-card-body,
-.st-history-list {
+.stocks-card-body {
   height: 100%;
   padding-bottom: 0.75rem;
+  overflow-y: scroll;
+
   display: flex;
   flex-direction: column;
   gap: 0.5rem;
-  border-top: 1px solid var(--border);
-}
 
-.stocks-card-body {
-  overflow-y: scroll;
+  border-top: 1px solid var(--border);
 }
 
 .side-stock-item {
@@ -395,18 +393,19 @@
 }
 
 .side-stock-item:first-child:hover {
-  margin: 0.5rem 0.5rem 0;
-}
-
-.side-stock-item:hover,
-.side-stock-item:first-child:hover {
   padding: 0.75rem 0.5rem 0.5rem;
+  margin: 0.5rem 0.5rem 0;
+
   border: 1px solid var(--border-prim);
   border-radius: 0.75rem;
 }
 
 .side-stock-item:hover {
+  padding: 0.75rem 0.5rem 0.5rem;
   margin: 0 0.5rem;
+
+  border: 1px solid var(--border-prim);
+  border-radius: 0.75rem;
 }
 
 .side-stock-item2 {
@@ -452,23 +451,26 @@
   color: var(--text-highlight);
 }
 
-.side-stock-actions,
-.side-liked-actions {
+.side-liked-actions,
+.side-stock-actions {
   max-height: 0;
+
   display: flex;
   justify-content: flex-end;
   align-items: center;
   gap: 0.5rem;
-  visibility: hidden;
+
   transform: translateY(-1rem);
   opacity: 0;
-  
+  visibility: hidden;
+
   transition: max-height 0.3s ease, opacity 0.3s ease, transform 0.3s ease;
 }
 
-.side-stock-actions.flex,
-.side-liked-actions.flex {
+.side-liked-actions.flex,
+.side-stock-actions.flex {
   max-height: 40px;
+
   transform: translateY(0rem);
   opacity: 1;
   visibility: visible;
@@ -766,7 +768,15 @@
 }
 
 .st-history-list {
+  height: 100%;
+  padding-bottom: 0.75rem;
   overflow-y: auto;
+
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+
+  border-top: 1px solid var(--border);
 }
 
 .st-history-item {
@@ -840,16 +850,13 @@
 }
 
 @media (max-width: 768px) {
-  .stocks-container {
-    padding: 1rem;
-  }
 
   .stocks-tab-group {
     flex-wrap: wrap;
   }
 
   .stocks-list-item {
-    flex-direction: column;
+    /* flex-direction: column; */
     align-items: stretch;
   }
 
@@ -862,7 +869,6 @@
   }
 
   .stock-trade-btns {
-    width: 100%;
     justify-content: flex-end;
   }
 
@@ -870,8 +876,7 @@
     align-items: flex-start;
   }
 
-  .side-liked-actions {
-    flex-direction: column;
-    align-items: stretch;
+  .trade-btn.liked-buy {
+    width: 100%;
   }
 }

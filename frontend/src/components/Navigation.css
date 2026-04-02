@@ -359,3 +359,28 @@
     font-size: 1rem;
   }
 }
+
+
+
+/* =========================
+   Mobile
+========================= */
+@media (max-width: 768px) {
+
+  .nav-line span {
+    display: none;
+  }
+
+  .nav-menu {
+    min-height: 3rem;
+    font-size: 0.95rem;
+  }
+
+  .icon-btn {
+    padding: 0.75rem;
+  }
+
+  .billing-nav-button span {
+    display: none;
+  }
+}

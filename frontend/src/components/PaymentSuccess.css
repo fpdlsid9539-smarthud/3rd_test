@@ -3,31 +3,31 @@
   justify-content: center;
   align-items: center;
   height: 100vh;
-  background-color: var(--bg, #f4f6f8);
+  background-color: var(--bg);
 }
 
 .payment-success-card {
-  background: #ffffff;
+  background: var(--bg);
   padding: 3rem 4rem;
   border-radius: 1rem;
-  box-shadow: 0 10px 25px rgba(0, 0, 0, 0.08);
+  box-shadow: 0 0.5rem 0.75rem var(--shadow-1);
   text-align: center;
-  border: 1px solid var(--border, #eaeaea);
-  animation: popIn 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+  border: 1px solid var(--border);
+  animation: popIn 0.3s cubic-bezier(0.175, 0.885, 0.32, 1.275);
 }
 
 .payment-success-card h2 {
   margin: 0 0 1rem 0;
-  color: #3b82f6; /* 토스페이먼츠 메인 컬러 느낌 */
+  color: var(--primary); /* 토스페이먼츠 메인 컬러 느낌 */
   font-size: 1.8rem;
-  font-weight: 800;
+  font-weight: 700;
 }
 
 .payment-success-card p {
   margin: 0;
-  font-size: 1.2rem;
+  font-size: 1.25rem;
   font-weight: 600;
-  color: var(--text, #333333);
+  color: var(--text);
 }
 
 @keyframes popIn {

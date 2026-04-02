@@ -30,6 +30,7 @@ exports.getLeaderboard = async (req, res) => {
         member_id,
         nickname,
         profile_image,
+        profile_image2,
         points,
         ROUND(
           PERCENT_RANK() OVER (ORDER BY points ASC) * 100,
@@ -49,6 +50,7 @@ exports.getLeaderboard = async (req, res) => {
         memberId: row.member_id,
         nickname: row.nickname,
         profileImage: row.profile_image || null,
+        profileImage2: row.profile_image2 || null,
         points: Number(row.points || 0),
         rankingPoint,
         tier,

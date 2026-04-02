@@ -36,7 +36,7 @@ async function getUserTotalEarnedPoints(memberId) {
     "SELECT COALESCE(SUM(change_amount), 0) AS totalEarnedPoints FROM point_history WHERE member_id = ? AND reason LIKE 'lesson_complete:%'",
     [memberId]
   );
-  return Number(rows?.totalEarnedPoints || 0);
+  return Number(rows[0]?.totalEarnedPoints || 0);
 }
 
 // 🟢 프론트엔드가 요구하는 구조로 응답 데이터를 생성하는 함수
@@ -120,7 +120,7 @@ exports.completeLesson = async (req, res) => {
       });
     }
 
-    const lessonPoint = Number(lessonRows.xp || 0);
+    const lessonPoint = Number(lessonRows[0].xp || 0);
     const reason = buildLessonReason(lessonId);
 
     await connection.beginTransaction();

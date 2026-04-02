@@ -182,10 +182,10 @@ const Ranking = () => {
               {/* 1. 랭킹 산정 방식 */}
               <article className="guide-block">
                 <h3>1. 랭킹 점수 산정 방식</h3>
-                <p>
+                <p className='ranking-guide-text'>
                   FinSight의 랭킹 시스템은 단순한 누적 점수가 아닌, 유저가 보유한 총 포인트를 기준으로 전체 유저 중 자신이 상위 몇 %에 해당하는지 계산하는 방식으로 운영됩니다.
                 </p>
-                <p>
+                <p className='ranking-guide-text'>
                   모든 유저를 포인트 순으로 나열하여 0~100 사이의 백분위 지표를 구하며, 이 지표에 따라 티어가 실시간으로 배정됩니다. 
                 </p>
                 <ul className="guide-point-list">
@@ -194,7 +194,7 @@ const Ranking = () => {
                   <li><strong>실버:</strong> 상위 60% 이내 (백분위 40 이상 ~ 70 미만)</li>
                   <li><strong>브론즈:</strong> 하위 40% (백분위 40 미만)</li>
                 </ul>
-                <p>
+                <p className='ranking-guide-text'>
                   꾸준한 활동(퀴즈, 모의투자 등)으로 포인트를 모아 다른 유저들을 추월하고 최상위 랭커에 도전해 보세요!
                 </p>
               </article>

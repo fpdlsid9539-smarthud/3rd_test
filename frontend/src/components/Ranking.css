@@ -297,34 +297,57 @@
 }
 
 @media (max-width: 1600px) {
-  .league-grid,
-  .guide-tier-list {
+
+  .league-grid {
     grid-template-columns: repeat(2, minmax(0, 1fr));
   }
+}
+
+@media (max-width: 1280px) {
+  
+  .league-grid {
+    grid-template-columns: repeat(1, minmax(0, 1fr));
+  }
+
   .league-card {
     min-height: 300px;
     max-height: 500px;
   }
+
   .league-user-list {
     max-height: 400px;
+    overflow-y: auto;
+  }
+
+  .guide-tier-list {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
   }
 }
 
 @media (max-width: 1024px) {
-  .ranking-container {
-    padding: 16px;
+
+  .league-grid {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
   }
+
   .ranking-summary-card h1 {
     font-size: 1.8rem;
   }
+
   .ranking-summary-card strong {
     font-size: 1.9rem;
+  }
+
+  .ranking-guide-formula,
+  .ranking-guide-example {
+    padding: 0.8rem;
   }
 }
 
 @media (max-width: 768px) {
-  .league-grid,
-  .guide-tier-list {
+
+
+  .league-grid {
     grid-template-columns: 1fr;
   }
 }
