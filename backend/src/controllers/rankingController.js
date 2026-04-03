@@ -22,73 +22,69 @@ exports.getLeaderboard = async (req, res) => {
   try {
     const memberId = Number(req.user?.member_id || 0);
 
-    const [rows] = await db.promise().query(`
+    // 1. 모든 유저 가져오기
+    const [members] = await db.promise().query(`
       SELECT
-        ranked.member_id,
-        ranked.nickname,
-        ranked.profile_image,
-        ranked.profile_image2,
-        ranked.points,
-        ranked.invested_asset,
-        ranked.league_point,
-        ROUND(
-          PERCENT_RANK() OVER (ORDER BY ranked.league_point ASC) * 100,
-          2
-        ) AS ranking_point
-      FROM (
-        SELECT
-          m.member_id,
-          m.nickname,
-          m.profile_image,
-          m.profile_image2,
-          m.points,
-          COALESCE(SUM(os.quantity * os.avg_price), 0) AS invested_asset,
-          (
-            m.points + COALESCE(SUM(os.quantity * os.avg_price), 0)
-          ) AS league_point
-        FROM members m
-        LEFT JOIN owned_stocks os
-          ON m.member_id = os.member_id
-        GROUP BY
-          m.member_id,
-          m.nickname,
-          m.profile_image,
-          m.profile_image2,
-          m.points
-      ) ranked
-      ORDER BY ranked.league_point DESC, ranked.member_id ASC
+        member_id,
+        nickname,
+        profile_image,
+        profile_image2,
+        points
+      FROM members
     `);
 
-    const maxPoints =
-      rows.length > 0 ? Number(rows[0].league_point || 0) : 0;
+    // 2. 각 유저별 자산 계산
+    const rankedRows = await Promise.all(
+      members.map(async (member) => {
+        const [stocks] = await db.promise().query(
+          `
+          SELECT stock_code, quantity, avg_price
+          FROM owned_stocks
+          WHERE member_id = ?
+          `,
+          [member.member_id]
+        );
 
-    const rankedRows = rows.map((row, index) => {
-      const rankingPoint = Number(row.ranking_point || 0);
+        let totalStockValue = 0;
+
+        for (const stock of stocks) {
+          const quote = await getQuoteByCode(stock.stock_code).catch(() => null);
+          const price = Number(quote?.regularMarketPrice || 0);
+          const quantity = Number(stock.quantity || 0);
+
+          totalStockValue += price * quantity;
+        }
+
+        const leaguePoint = Number(member.points || 0) + totalStockValue;
+
+        return {
+          memberId: member.member_id,
+          nickname: member.nickname,
+          profileImage: member.profile_image || null,
+          profileImage2: member.profile_image2 || null,
+          points: Number(member.points || 0),
+          leaguePoint,
+        };
+      })
+    );
+
+    // 3. 정렬
+    rankedRows.sort((a, b) => b.leaguePoint - a.leaguePoint);
+
+    // 4. 랭킹 / 티어 계산
+    const maxPoints = rankedRows.length > 0 ? rankedRows[0].leaguePoint : 0;
+
+    const finalRows = rankedRows.map((row, index) => {
+      const rankingPoint = maxPoints > 0 ? (row.leaguePoint / maxPoints) * 100 : 0;
       const tier = getTierKeyByRankingPoint(rankingPoint);
 
       return {
-        memberId: row.member_id,
-        nickname: row.nickname,
-        profileImage: row.profile_image || null,
-        profileImage2: row.profile_image2 || null,
-
-        points: Number(row.points || 0),
-        investedAsset: Number(row.invested_asset || 0),
-        leaguePoint: Number(row.league_point || 0),
-
+        ...row,
         rankingPoint,
         tier,
         overallRank: index + 1,
       };
     });
-
-    const currentUserRow = rankedRows.find(
-      (row) => Number(row.memberId) === memberId
-    );
-
-    if (memberId && currentUserRow?.overallRank === 1) {
-      await achievementService.grantAchievementIfNotExists(memberId, 30);
-    }
 
     const leagues = {
       bronze: [],
@@ -97,7 +93,7 @@ exports.getLeaderboard = async (req, res) => {
       diamond: [],
     };
 
-    rankedRows.forEach((row) => {
+    finalRows.forEach((row) => {
       leagues[row.tier].push(row);
     });
 
@@ -109,11 +105,12 @@ exports.getLeaderboard = async (req, res) => {
     });
 
     return success(res, "랭킹 조회 성공", {
-      seasonName: "포인트 랭킹",
+      seasonName: "자산 랭킹",
       currentUserId: memberId || null,
       maxPoints,
       leagues,
     });
+
   } catch (err) {
     console.error("getLeaderboard error =", err);
     return fail(res, "랭킹 조회 실패", err.message, 500);
