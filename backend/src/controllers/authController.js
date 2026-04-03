@@ -381,7 +381,7 @@ async function getKakaoUserInfo(accessToken) {
     null;
 
   const profile_image = rawProfileImage
-    ? rawProfileImage.replace(/^http:/, "https:")
+    ? rawProfileImage.replaceAll("http://", "https://")
     : null;
 
   return {
