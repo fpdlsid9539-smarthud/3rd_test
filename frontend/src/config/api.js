@@ -1,4 +1,5 @@
-const API_BASE_URL = import.meta.env.VITE_API_URL || 'http://localhost:5000'
+export const API_BASE_URL =
+  import.meta.env.VITE_API_URL || 'http://localhost:5000'
 
 function getToken() {
   return localStorage.getItem('token')
@@ -68,8 +69,10 @@ export const api = {
       body: JSON.stringify(body),
     }),
 
-  delete: (path) =>
+  delete: (path, body = null) =>
     request(path, {
       method: 'DELETE',
+      ...(body ? { body: JSON.stringify(body) } : {}),
     }),
 }
+

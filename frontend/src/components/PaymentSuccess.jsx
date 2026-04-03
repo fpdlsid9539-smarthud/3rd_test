@@ -1,5 +1,6 @@
 import React, { useEffect, useState } from 'react';
 import './PaymentSuccess.css'; // 🟢 분리된 CSS 파일 불러오기
+import { api } from '../config/api';
 
 const PaymentSuccess = () => {
   const [status, setStatus] = useState('결제를 확인하고 있습니다...');
@@ -13,24 +14,12 @@ const PaymentSuccess = () => {
 
     const confirmPayment = async () => {
       try {
-        const response = await fetch('http://localhost:5000/api/billing/confirm', {
-          method: 'POST',
-          headers: {
-            'Content-Type': 'application/json',
-            Authorization: `Bearer ${localStorage.getItem('token')}`
-          },
-          body: JSON.stringify({ paymentKey, orderId, amount })
-        });
+        await api.post('/api/billing/confirm', { paymentKey, orderId, amount });
 
-        if (response.ok) {
-          setStatus('결제가 성공적으로 완료되었습니다! 프리미엄 혜택을 누려보세요.');
-          // 3초 뒤 메인 화면으로 리다이렉트
-          setTimeout(() => {
-            window.location.href = '/'; 
-          }, 3000); 
-        } else {
-          setStatus('결제 승인에 실패했습니다. 관리자에게 문의하세요.');
-        }
+        setStatus('결제가 성공적으로 완료되었습니다! 프리미엄 혜택을 누려보세요.');
+        setTimeout(() => {
+          window.location.href = '/';
+        }, 3000);
       } catch (error) {
         setStatus('결제 처리 중 에러가 발생했습니다.');
       }

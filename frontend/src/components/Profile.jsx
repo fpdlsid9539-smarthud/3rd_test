@@ -6,9 +6,9 @@ import account from '../assets/icons/account.svg'
 import logout from '../assets/icons/logout.svg'
 import spread from '../assets/icons/spread.svg'
 import defaultProfile from '../assets/chicken running machine.png'
-import { api } from '../config/api.js'
 import { getAchievementIcon } from '../utils/achievementIconMap'
 import close from '../assets/icons/close.svg'
+import { api, API_BASE_URL } from '../config/api'
 
 const extractArrayData = (payload) => {
   if (Array.isArray(payload)) return payload
@@ -642,7 +642,7 @@ const Profile = ({ collapsed, setCollapsed }) => {
       setIsTitleDropdownOpen(false)
     } catch (err) {
       console.error('칭호 장착 실패:', err)
-      alert(err?.response?.data?.message || '칭호 장착에 실패했습니다.')
+      alert(err.message || '칭호 장착에 실패했습니다.')
     } finally {
       setTitleEquipLoading(false)
     }
@@ -721,7 +721,7 @@ const Profile = ({ collapsed, setCollapsed }) => {
       )
     } catch (err) {
       console.error('포인트 내역 숨김 실패 =', err)
-      alert(err?.response?.data?.message || '포인트 내역 숨김에 실패했습니다.')
+      alert(err.message || '포인트 내역 숨김에 실패했습니다.')
     }
   }
 
@@ -773,39 +773,58 @@ const Profile = ({ collapsed, setCollapsed }) => {
   }
 
   const handleSave = async () => {
-    if (!editNickname.trim()) {
-      setSaveError('닉네임을 입력해주세요.')
-      nicknameInputRef.current?.focus()
-      return
-    }
-    setSaving(true)
-    setSaveError('')
-    try {
-      // Upload image first if one was selected
-      if (fileInputRef.current?.files[0]) {
-        const formData = new FormData()
-        formData.append('profile_image', fileInputRef.current.files[0])
-        await fetch(`http://localhost:5000/api/auth/me/image`, {
-          method: 'PATCH',
-          headers: { Authorization: `Bearer ${localStorage.getItem('token')}` },
-          body: formData, // multipart — do NOT set Content-Type manually
-        })
+  if (!editNickname.trim()) {
+    setSaveError('닉네임을 입력해주세요.')
+    nicknameInputRef.current?.focus()
+    return
+  }
+
+  setSaving(true)
+  setSaveError('')
+
+  try {
+    if (fileInputRef.current?.files[0]) {
+      const formData = new FormData()
+      formData.append('profile_image', fileInputRef.current.files[0])
+
+      const imageRes = await fetch(`${API_BASE_URL}/api/auth/me/image`, {
+        method: 'PATCH',
+        headers: {
+          Authorization: `Bearer ${localStorage.getItem('token')}`,
+        },
+        body: formData,
+      })
+
+      let imageData = null
+      try {
+        imageData = await imageRes.json()
+      } catch (_) {
+        imageData = null
       }
 
-      const data = await api.patch('/api/auth/me', { nickname: editNickname.trim() })
-      setMember(prev => ({
-        ...prev,
-        ...data.data.member,
-        profile_image2: editPreviewUrl || data.data.member.profile_image2,
-      }))
-      setEditMode(false)
-      setEditPreviewUrl(null)
-    } catch (err) {
-      setSaveError(err.message)
-    } finally {
-      setSaving(false)
+      if (!imageRes.ok || imageData?.success === false) {
+        throw new Error(imageData?.message || '프로필 이미지 업로드에 실패했습니다.')
+      }
     }
+
+    const data = await api.patch('/api/auth/me', {
+      nickname: editNickname.trim(),
+    })
+
+    setMember((prev) => ({
+      ...prev,
+      ...data.data.member,
+      profile_image2: editPreviewUrl || data.data.member.profile_image2,
+    }))
+
+    setEditMode(false)
+    setEditPreviewUrl(null)
+  } catch (err) {
+    setSaveError(err.message || '프로필 저장에 실패했습니다.')
+  } finally {
+    setSaving(false)
   }
+}
 
   const handleLogout = () => {
     if (!confirm('로그아웃 하시겠어요?')) return
@@ -1194,39 +1213,39 @@ const Profile = ({ collapsed, setCollapsed }) => {
               {achievementLoading ? (
                 <div className='achievement-empty-block'>불러오는 중...</div>
               ) : inProgressAchievements.length > 0 ? (
-                inProgressAchievements.map((item) => (
-                  <>
-                    <div className='achievement-trigger-item' key={item.ach_id}>
+              inProgressAchievements.map((item) => (
+              <React.Fragment key={item.ach_id}>
+                <div className='achievement-trigger-item'>
+                  <div className='achievement-mini-icon'>
+                    <img
+                      src={getAchievementIcon(item.ach_id)}
+                      alt={item.name}
+                      className='achievement-mini-icon-img'
+                    />
+                  </div>
 
-                      <div className='achievement-mini-icon'>
-                        <img
-                          src={getAchievementIcon(item.ach_id)}
-                          alt={item.name}
-                          className='achievement-mini-icon-img'
-                        />
-                      </div>
-                      <div className='achievement-speech-bubble'>
-                        <div className='bubble-arrow' />
-                        <div className='bubble-content'>
-                          <strong className='bubble-name'>{item.name}</strong>
-                          <p className='bubble-desc'>
-                            {getTooltipText(item, '업적 설명이 없습니다.')}
-                          </p>
-                        </div>
-                      </div>
+                  <div className='achievement-speech-bubble'>
+                    <div className='bubble-arrow' />
+                    <div className='bubble-content'>
+                      <strong className='bubble-name'>{item.name}</strong>
+                      <p className='bubble-desc'>
+                        {getTooltipText(item, '업적 설명이 없습니다.')}
+                      </p>
+                    </div>
+                  </div>
+                </div>
 
-                    </div>
-                    <div className='achievement-speech-bubble2'>
-                      <div className='bubble-arrow2' />
-                      <div className='bubble-content'>
-                        <strong className='bubble-name'>{item.name}</strong>
-                        <p className='bubble-desc'>
-                          {getTooltipText(item, '업적 설명이 없습니다.')}
-                        </p>
-                      </div>
-                    </div>
-                  </>
-                ))
+                <div className='achievement-speech-bubble2'>
+                  <div className='bubble-arrow2' />
+                  <div className='bubble-content'>
+                    <strong className='bubble-name'>{item.name}</strong>
+                    <p className='bubble-desc'>
+                      {getTooltipText(item, '업적 설명이 없습니다.')}
+                    </p>
+                  </div>
+                </div>
+              </React.Fragment>
+            ))
               ) : (
                 <div className='achievement-empty-block'>진행 중인 업적이 없습니다.</div>
               )}

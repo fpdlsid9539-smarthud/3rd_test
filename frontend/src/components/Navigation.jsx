@@ -9,6 +9,7 @@ import rank from '../assets/icons/rank.svg'
 import quiz from '../assets/icons/quiz.svg'
 import stocks from '../assets/icons/stocks.svg'
 import faq from '../assets/icons/megaphone.svg'
+import { api } from '../config/api'
 
 const Navigation = ({
   setActiveMenu,
@@ -42,25 +43,7 @@ const Navigation = ({
         return
       }
 
-      const res = await fetch('http://localhost:5000/api/billing/premium/cancel', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          Authorization: `Bearer ${token}`,
-        },
-      })
-
-      const contentType = res.headers.get('content-type') || ''
-
-      if (!contentType.includes('application/json')) {
-        throw new Error('구독취소 API 응답이 올바르지 않습니다. 서버를 다시 확인해주세요.')
-      }
-
-      const data = await res.json()
-
-      if (!res.ok) {
-        throw new Error(data.message || '구독취소 실패')
-      }
+      const data = await api.post('/api/billing/premium/cancel', {})
 
       alert(data.message || '구독취소가 되었습니다.')
       window.location.reload()

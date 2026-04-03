@@ -1,6 +1,7 @@
 import React, { useEffect, useMemo, useRef, useState } from 'react'
 import './Landing.css'
 import FAQPage from './FAQPage'
+import { api, API_BASE_URL } from '../config/api'
 import kakao from '../assets/kakao.svg'
 import google from '../assets/google.svg'
 import home from '../assets/icons/home.svg'
@@ -15,7 +16,7 @@ import logo from '../assets/logo-long.svg'
 import idk from '../assets/idk.jpg'
 import BackgroundGrid from './BackgroundGrid'
 
-const BACKEND_URL = import.meta.env.VITE_API_URL || 'http://localhost:5000'
+const BACKEND_URL = API_BASE_URL;
 
 const Landing = ({ setPage }) => {
   const [faqList, setFaqList] = useState([])
@@ -107,11 +108,10 @@ const Landing = ({ setPage }) => {
   useEffect(() => {
     const fetchFaq = async () => {
       try {
-        const res = await fetch(`${BACKEND_URL}/api/faq?limit=5`)
-        const data = await res.json()
+        const result = await api.get('/api/faq?limit=5')
 
-        if (data?.success && Array.isArray(data.data)) {
-          setFaqList(data.data)
+        if (Array.isArray(result?.data)) {
+          setFaqList(result.data)
         } else {
           setFaqList([])
         }

@@ -4,8 +4,7 @@ import arrowDown from '../assets/icons/arrow-down-line.svg'
 import check from '../assets/icons/check.svg'
 import finsightLogo from '../assets/finsight.svg'
 import crownIcon from '../assets/icons/premium.svg'
-
-const API_BASE_URL = 'http://localhost:5000'
+import { api } from '../config/api'
 
 const getAccessToken = () => {
   return localStorage.getItem('token') || ''
@@ -153,15 +152,7 @@ const Education = () => {
         const resolvedMemberId = getMemberIdFromToken()
         setMemberId(resolvedMemberId)
 
-        const res = await fetch(`${API_BASE_URL}/api/education`, {
-          method: 'GET',
-          headers: { Authorization: `Bearer ${token}` },
-        })
-
-        if (res.status === 401) throw new Error('UNAUTHORIZED')
-        if (!res.ok) throw new Error(`HTTP ${res.status}`)
-
-        const result = await res.json()
+        const result = await api.get('/api/education')
         const data = result?.data || {}
 
         setEducationLessons(data.lessons || [])
@@ -310,18 +301,7 @@ const Education = () => {
       const token = getAccessToken()
       if (!token) throw new Error('UNAUTHORIZED')
 
-      const res = await fetch(`${API_BASE_URL}/api/education/${lessonId}/complete`, {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          Authorization: `Bearer ${token}`,
-        },
-      })
-
-      if (res.status === 401) throw new Error('UNAUTHORIZED')
-      if (!res.ok) throw new Error(`HTTP ${res.status}`)
-
-      const result = await res.json()
+      const result = await api.post(`/api/education/${lessonId}/complete`, {})
       const data = result?.data || {}
 
       const completedLesson = educationLessons.find((l) => l.id === lessonId)

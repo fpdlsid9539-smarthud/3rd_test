@@ -25,7 +25,13 @@ console.log("[ENV CHECK]", {
   GROQ_MODEL: process.env.GROQ_MODEL,
 });
 
-const BASE_ORIGINS = ["http://localhost:5173", "http://localhost:5000"];
+const BASE_ORIGINS = [
+  "http://localhost:5173",
+  "http://localhost:5000",
+  "https://3rd-test-khaki.vercel.app",
+  "https://3rd-test-git-main-shkims-projects-92f4c7c6.vercel.app",
+  "https://3rd-test-l9pc4h59k-shkims-projects-92f4c7c6.vercel.app",
+];
 const allowedOrigins = process.env.FRONTEND_URL
   ? [...BASE_ORIGINS, process.env.FRONTEND_URL]
   : BASE_ORIGINS;
@@ -74,6 +80,6 @@ app.get("/__whoami", (req, res) => {
 const PORT = process.env.PORT || 5000;
 
 app.listen(PORT, () => {
-  console.log(`✅ 서버 실행중: http://localhost:${PORT}`);
+  console.log(`✅ 서버 실행중 (PORT=${PORT})`);
   console.log("✅ CORS 허용 origins:", allowedOrigins);
 });

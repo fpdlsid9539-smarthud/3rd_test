@@ -5,8 +5,7 @@ import bronze from '../assets/icons/ranked/bronze.png'
 import silver from '../assets/icons/ranked/silver.png'
 import gold from '../assets/icons/ranked/gold.png'
 import diamond from '../assets/icons/ranked/diamond.png'
-
-const API_BASE_URL = 'http://localhost:5000'
+import { api } from '../config/api'
 
 const getAccessToken = () => {
   return localStorage.getItem('token') || ''
@@ -43,23 +42,8 @@ const Ranking = () => {
           throw new Error('UNAUTHORIZED')
         }
 
-        const res = await fetch(`${API_BASE_URL}/api/ranking`, {
-          method: 'GET',
-          headers: {
-            Authorization: `Bearer ${token}`,
-          },
-        })
-
-        if (res.status === 401) {
-          throw new Error('UNAUTHORIZED')
-        }
-
-        if (!res.ok) {
-          throw new Error(`HTTP ${res.status}`)
-        }
-
-        const result = await res.json()
-        const data = result?.data || {}
+        const result = await api.get('/api/ranking')
+        const data = result?.data || result
 
         setSeasonName(data.seasonName || '포인트 랭킹')
         setCurrentUserId(data.currentUserId || null)

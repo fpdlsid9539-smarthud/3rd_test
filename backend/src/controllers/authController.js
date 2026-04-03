@@ -3,6 +3,8 @@ const db = require("../../config/db");
 const { createToken } = require("../utils/jwt");
 const achievementService = require("../services/achievementService");
 
+console.log("🔥 KAKAO KEY:", process.env.KAKAO_REST_API_KEY);
+
 /* 공통 응답 */
 function success(res, message, data = null, status = 200) {
   return res.status(status).json({
@@ -317,6 +319,11 @@ exports.refreshToken = async (req, res) => {
 
 /* Kakao */
 exports.kakaoLogin = (req, res) => {
+  console.log("[KAKAO ENV CHECK]", {
+    KAKAO_REST_API_KEY_EXISTS: !!process.env.KAKAO_REST_API_KEY,
+    KAKAO_REDIRECT_URI: process.env.KAKAO_REDIRECT_URI,
+  });
+
   if (!process.env.KAKAO_REST_API_KEY || !process.env.KAKAO_REDIRECT_URI) {
     return fail(res, "카카오 환경변수가 설정되지 않았습니다.", null, 500);
   }
