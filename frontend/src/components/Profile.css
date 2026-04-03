@@ -770,14 +770,14 @@
 }
 
 .achievement-grid-card-tooltip {
-
   min-width: 80px;
   max-width: 120px;
   padding: 0.5rem 0.75rem;
 
   position: absolute;
-  left: auto;
-  top: calc(0rem);
+  left: 50%;
+  top: auto;
+  bottom: calc(100% + 0.5rem);
 
   background: var(--bg-trans2);
   border: 1px solid var(--border);
@@ -795,7 +795,7 @@
   opacity: 0;
   visibility: hidden;
   pointer-events: none;
-  transform: translateY(50%);
+  transform: translateX(-50%) translateY(0.5rem);
 
   transition: opacity 0.3s ease, visibility 0.3s ease, transform 0.3s ease;
 }
@@ -803,20 +803,17 @@
 .achievement-grid-tooltip-arrow {
   width: 0.5rem;
   height: 0.5rem;
-
   position: absolute;
-  left: calc(50%);
-  top: calc(50%);
-
-  background: transparent;
-  transform: translateX(-50%);
-  rotate: 45deg;
+  left: 50%;
+  bottom: -0.25rem;
+  background: var(--bg-trans2);
+  transform: translateX(-50%) rotate(45deg);
 }
 
 .achievement-grid-card:hover .achievement-grid-card-tooltip {
   opacity: 1;
   visibility: visible;
-  transform: translateX(-50%) translateY(-0.5rem);
+  transform: translateX(-50%) translateY(0);
 }
 
 .achievement-grid-img {

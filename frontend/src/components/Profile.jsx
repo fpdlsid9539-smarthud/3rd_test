@@ -750,7 +750,7 @@ const Profile = ({ collapsed, setCollapsed }) => {
     membershipType === 'premium_member' ||
     membershipType === 'paid'
 
-  const membershipLabel = isPremium ? '👑' : 'Free'
+  const membershipLabel = isPremium ? <><img src={premium} alt='구독중' /> 멤버</> : 'Free'
 
   const openEdit = () => {
     setEditNickname(member?.nickname || '')
