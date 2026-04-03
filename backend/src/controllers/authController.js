@@ -177,15 +177,17 @@ async function loginOrRegister(provider, providerId, nickname, profile_image, pr
   if (member) {
     if (profile_image2) {
       await db.promise().query(
-        "UPDATE members SET profile_image2 = ? WHERE member_id = ?",
-        [profile_image2, member.member_id]
+        "UPDATE members SET nickname = ?, profile_image2 = ? WHERE member_id = ?",
+        [nickname, profile_image2, member.member_id]
       );
+      member.nickname = nickname;
       member.profile_image2 = profile_image2;
     } else {
       await db.promise().query(
-        "UPDATE members SET profile_image = ? WHERE member_id = ?",
-        [profile_image, member.member_id]
+        "UPDATE members SET nickname = ?, profile_image = ? WHERE member_id = ?",
+        [nickname, profile_image, member.member_id]
       );
+      member.nickname = nickname;
       member.profile_image = profile_image;
     }
 
@@ -364,6 +366,7 @@ async function getKakaoUserInfo(accessToken) {
   });
 
   const data = response.data;
+  console.log("[KAKAO USER RAW]", JSON.stringify(data, null, 2));
 
   const profileNeedsAgreement = data?.kakao_account?.profile_needs_agreement;
 
@@ -371,11 +374,15 @@ async function getKakaoUserInfo(accessToken) {
     console.warn("카카오 프로필 동의 필요 - 콘솔에서 동의항목 설정 확인 필요");
   }
 
-  const profile_image =
+  const rawProfileImage =
     data?.kakao_account?.profile?.profile_image_url ||
     data?.kakao_account?.profile?.thumbnail_image_url ||
     data?.properties?.profile_image ||
     null;
+
+  const profile_image = rawProfileImage
+    ? rawProfileImage.replace(/^http:/, "https:")
+    : null;
 
   return {
     provider: "kakao",
