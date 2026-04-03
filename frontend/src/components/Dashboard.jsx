@@ -111,14 +111,12 @@ const Dashboard = () => {
         memberRes,
         likedRes,
         ownedRes,
-        isrRes,
         rankingRes,
         questRes,
       ] = await Promise.allSettled([
         api.get('/api/auth/me'),
         api.get('/api/stocks/liked'),
         api.get('/api/stocks/owned'),
-        api.get('/api/isr/me'),
         api.get('/api/ranking'),
         api.get('/api/quiz/status/me'),
       ])
@@ -130,9 +128,16 @@ const Dashboard = () => {
           raw?.data?.member ||
           raw ||
           null
+
         setMember(memberData)
+
+        setIsrData((prev) => ({
+          ...prev,
+          isr: Number(memberData?.isr_score || 0),
+        }))
       } else {
         setMember(null)
+        setIsrData(EMPTY_ISR)
       }
 
       if (likedRes.status === 'fulfilled') {
@@ -183,30 +188,6 @@ const Dashboard = () => {
         setOwnedStocks(ownedData)
       } else {
         setOwnedStocks([])
-      }
-
-      if (isrRes.status === 'fulfilled') {
-        const rawIsr = toObject(isrRes.value, EMPTY_ISR)
-        setIsrData({
-          accuracy: Number(rawIsr?.accuracy || 0),
-          risk: Number(rawIsr?.risk || 0),
-          stability: Number(rawIsr?.stability || 0),
-          discipline: Number(rawIsr?.discipline || 0),
-          strategy: Number(rawIsr?.strategy || 0),
-          adaptability: Number(rawIsr?.adaptability || 0),
-          isr: Number(rawIsr?.isr || 0),
-
-          judgment: Number(rawIsr?.judgment ?? rawIsr?.accuracy ?? 0),
-          riskManagement: Number(rawIsr?.riskManagement ?? rawIsr?.risk ?? 0),
-          consistency: Number(rawIsr?.consistency ?? rawIsr?.stability ?? 0),
-          investmentHabit: Number(rawIsr?.investmentHabit ?? rawIsr?.discipline ?? 0),
-          marketResponse: Number(rawIsr?.marketResponse ?? rawIsr?.adaptability ?? 0),
-
-          grade: rawIsr?.grade || EMPTY_ISR.grade,
-          summary: rawIsr?.summary || EMPTY_ISR.summary,
-        })
-      } else {
-        setIsrData(EMPTY_ISR)
       }
 
       if (rankingRes.status === 'fulfilled') {
@@ -352,15 +333,15 @@ const Dashboard = () => {
   }, [loadDashboard])
 
   const formatNumber = (value) => {
-  const num = Math.round(Number(value  ||0))
-  return num.toLocaleString('ko-KR')
-}
+    const num = Math.round(Number(value || 0))
+    return num.toLocaleString('ko-KR')
+  }
 
-const formatSignedNumber = (value) => {
-  const num = Math.round(Number(value || 0))
-  const prefix = num > 0 ? '+' : ''
-  return `${prefix}${num.toLocaleString('ko-KR')}`
-}  
+  const formatSignedNumber = (value) => {
+    const num = Math.round(Number(value || 0))
+    const prefix = num > 0 ? '+' : ''
+    return `${prefix}${num.toLocaleString('ko-KR')}`
+  }
 
   const formatSignedPercent = (value) => {
     const num = Number(value || 0)
@@ -433,7 +414,6 @@ const formatSignedNumber = (value) => {
     const selectedList = (leagueRanks[selectedLeague] || [])
       .slice()
       .sort((a, b) => {
-        // Sort by leagueRank ascending if available, otherwise fall back to rankingPoint descending
         const rankA = Number(a.leagueRank || 0)
         const rankB = Number(b.leagueRank || 0)
         if (rankA > 0 && rankB > 0) return rankA - rankB
@@ -452,7 +432,7 @@ const formatSignedNumber = (value) => {
   }
 
   const handleLeagueClick = (leagueKey) => {
-    if (selectedLeague === leagueKey) return   // ← bail early, no re-render
+    if (selectedLeague === leagueKey) return
     setSelectedLeague(leagueKey)
   }
 
@@ -673,11 +653,11 @@ const formatSignedNumber = (value) => {
                   >
                     <p>{stock.stockName || stock.stockCode}</p>
                     <p className='numbers'>{formatNumber(stock.price)}pt</p>
-                    <p className={`numbers 
-                        ${Number(stock.changeRate || stock.changeRate || 0) >= 0
-                        ? 'gain'
-                        : 'loss'
-                      }`}>
+                    <p
+                      className={`numbers ${
+                        Number(stock.changeRate || 0) >= 0 ? 'gain' : 'loss'
+                      }`}
+                    >
                       {formatSignedNumber(stock.change)}pt
                     </p>
                   </li>
@@ -708,12 +688,12 @@ const formatSignedNumber = (value) => {
                     <p>{stock.stockName || stock.stockCode}</p>
                     <p className='numbers'>{stock.quantity}</p>
                     <p className='numbers'>{formatNumber(stock.principal)}pt</p>
-                    <p className={`numbers 
-                        ${Number(stock.myChangeRate || stock.myChangeRate || 0) >= 0
-                        ? 'gain'
-                        : 'loss'
-                      }`}>
-                      {formatSignedNumber(stock.changeAmount)}pt({formatSignedPercent(stock.myChangeRate)})
+                    <p
+                      className={`numbers ${
+                        Number(stock.changeRate || 0) >= 0 ? 'gain' : 'loss'
+                      }`}
+                    >
+                      {formatSignedNumber(stock.changeAmount)}pt({formatSignedPercent(stock.changeRate)})
                     </p>
                   </li>
                 ))
