@@ -17,14 +17,20 @@ const formatDateTime = (value) => {
     const date = new Date(raw)
     if (Number.isNaN(date.getTime())) return '-'
 
-    const yyyy = date.getFullYear()
-    const mm = String(date.getMonth() + 1).padStart(2, '0')
-    const dd = String(date.getDate()).padStart(2, '0')
-    const hh = String(date.getHours()).padStart(2, '0')
-    const mi = String(date.getMinutes()).padStart(2, '0')
+    const parts = new Intl.DateTimeFormat('ko-KR', {
+      timeZone: 'Asia/Seoul',
+      year: 'numeric',
+      month: '2-digit',
+      day: '2-digit',
+      hour: '2-digit',
+      minute: '2-digit',
+      hour12: false,
+    }).formatToParts(date)
 
-    return `${yyyy}.${mm}.${dd} ${hh}:${mi}`
-  }
+    const get = (type) => parts.find((part) => part.type === type)?.value || '00'
+
+    return `${get('year')}.${get('month')}.${get('day')} ${get('hour')}:${get('minute')}`
+}
 
   // 2) 이미 DB 로컬시간 문자열이면 그대로 표시
   // 예: 2026-04-03 12:31:41
