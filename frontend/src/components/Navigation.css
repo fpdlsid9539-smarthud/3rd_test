@@ -125,11 +125,18 @@
 
 .icon-btn {
   padding: 1rem;
+  transition: padding 0.4s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+.navigation.collapsed .icon-btn {
+  padding: 0.75rem;
 }
 
 .billing-nav {
-  width: 100%;
+  width: calc(100% - 2rem);
 
+  position: absolute;
+  bottom: calc(0vw + 1rem);
   display: flex;
   flex-direction: column;
   justify-content: center;
@@ -160,7 +167,7 @@
   gap: 0.5rem;
 
   border: none;
-  border-radius: 0.875rem;
+  border-radius: 0.75rem;
   background: linear-gradient(90deg, #ffd54a, #ffb300);
   color: var(--text);
 
@@ -287,20 +294,11 @@
   opacity: 1;
 }
 
-/* Icon padding tightens */
-.icon-btn {
-  transition: padding 0.4s cubic-bezier(0.4, 0, 0.2, 1);
-}
-
-.navigation.collapsed .icon-btn {
-  padding: 0.75rem;
-}
-
-
 /* =========================
    Tablet
 ========================= */
 @media (max-width: 1024px) {
+
   .navigation.collapsed,
   .navigation {
     width: calc(100% - 2rem);
@@ -331,8 +329,13 @@
     visibility: hidden;
   }
 
+  .navigation.collapsed .nav-content {
+    padding: 0.5rem;
+  }
+
   .nav-content {
-    padding: 0.5rem 0.5rem 0.5rem 1rem;
+    width: 100%;
+    padding: 0.5rem;
     flex-direction: row;
     gap: 1rem;
   }
@@ -345,18 +348,21 @@
   .nav-list {
     flex-direction: row;
     gap: 0rem;
+    align-items: center;
   }
 
   .nav-line span {
-    font-size: 1rem;
+    display: none;
   }
 
   .billing-nav {
     width: auto;
+    position: relative;
+    bottom: auto;
   }
 
   .billing-nav-button span {
-    font-size: 1rem;
+    display: none;
   }
 }
 
@@ -366,21 +372,20 @@
    Mobile
 ========================= */
 @media (max-width: 768px) {
+  .billing-nav-button {
+    padding: 1rem;
+    height: fit-content;
+  }
 
-  .nav-line span {
-    display: none;
+  .nav-content {
+    gap: 0;
   }
 
   .nav-menu {
-    min-height: 3rem;
-    font-size: 0.95rem;
+    min-height: 2.5rem;
   }
 
   .icon-btn {
-    padding: 0.75rem;
-  }
-
-  .billing-nav-button span {
-    display: none;
+    padding: 0.5rem;
   }
 }

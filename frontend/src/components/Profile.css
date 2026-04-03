@@ -88,14 +88,6 @@
   transition: all 0.3s ease;
 }
 
-.icons {
-  width: 1.35rem;
-  height: 1.35rem;
-  object-fit: contain;
-  display: block;
-  pointer-events: none;
-}
-
 .set-icons:hover,
 .set-icons--active {
   box-shadow: 0 0.25rem 0 var(--primary);
