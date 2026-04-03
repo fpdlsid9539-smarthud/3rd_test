@@ -98,7 +98,8 @@ const Dashboard = () => {
       nickname: rankMember.nickname ?? '사용자',
       profileImage: rankMember.profileImage ?? rankMember.profile_image ?? profile,
       points: Number(rankMember.points ?? 0),
-      rankingPoint: Number(rankMember.rankingPoint ?? rankMember.isr ?? rankMember.score ?? 0),
+      leaguePoint: Number(rankMember.leaguePoint ?? rankMember.league_point ?? 0),
+      rankingPoint: Number(rankMember.rankingPoint ?? rankMember.ranking_point ?? rankMember.isr ?? rankMember.score ?? 0),
       leagueRank: Number(rankMember.leagueRank ?? rankMember.rank ?? 0),
     }
   }
@@ -215,7 +216,7 @@ const Dashboard = () => {
           : null
 
         setUserLeague(detectedLeague)
-        setSelectedLeague(detectedLeague)
+        setSelectedLeague((prev) => prev ?? detectedLeague)
 
         const mergedRanking = [
           ...normalizedLeagues.bronze,
@@ -223,7 +224,7 @@ const Dashboard = () => {
           ...normalizedLeagues.gold,
           ...normalizedLeagues.diamond,
         ]
-          .sort((a, b) => Number(b.rankingPoint || 0) - Number(a.rankingPoint || 0))
+          .sort((a, b) => Number(b.leaguePoint || 0) - Number(a.leaguePoint || 0))
           .map((memberItem, index) => ({
             ...memberItem,
             overallRank: index + 1,
@@ -425,7 +426,7 @@ const Dashboard = () => {
         const rankA = Number(a.leagueRank || 0)
         const rankB = Number(b.leagueRank || 0)
         if (rankA > 0 && rankB > 0) return rankA - rankB
-        return Number(b.rankingPoint || 0) - Number(a.rankingPoint || 0)
+        return Number(b.leaguePoint || 0) - Number(a.leaguePoint || 0)
       })
 
     return selectedList
@@ -630,7 +631,7 @@ const Dashboard = () => {
                       </div>
 
                       <div className='rank-point'>
-                        {Number(rankMember.points || 0).toLocaleString('ko-KR')}pt
+                        {Number(rankMember.leaguePoint || 0).toLocaleString('ko-KR')}pt
                       </div>
                     </li>
                   )

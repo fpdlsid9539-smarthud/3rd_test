@@ -48,7 +48,7 @@ const Ranking = () => {
         }
 
         const result = await api.get('/api/ranking')
-        const data = result?.data || result
+        const data = result?.data?.data ?? result?.data ?? result
 
         setSeasonName(data.seasonName || '포인트 랭킹')
         setCurrentUserId(data.currentUserId || null)
@@ -153,7 +153,7 @@ const Ranking = () => {
                           </div>
 
                           <span className='league-score'>
-                            {Number(row.points || 0).toLocaleString('ko-KR')}pt
+                            {Number(row.leaguePoint || 0).toLocaleString('ko-KR')}pt
                           </span>
                         </li>
                       )

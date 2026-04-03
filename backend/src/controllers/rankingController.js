@@ -22,45 +22,45 @@ exports.getLeaderboard = async (req, res) => {
   try {
     const memberId = Number(req.user?.member_id || 0);
 
-    // PERCENT_RANK() returns 0.0–1.0 representing the fraction of players
-    // scoring strictly below each member. Multiply by 100 for a 0–100 percentile.
-    // This guarantees every tier has players as long as scores vary.
     const [rows] = await db.promise().query(`
       SELECT
-        m.member_id,
-        m.nickname,
-        m.profile_image,
-        m.profile_image2,
-        m.points,
-
-        COALESCE(SUM(s.total_price), 0) AS total_invested,
-        COALESCE(SUM(s.change_amount), 0) AS total_profit,
-
-        (m.points + 
-        COALESCE(SUM(s.total_price), 0) + 
-        COALESCE(SUM(s.change_amount), 0)
-        ) AS league_point,
-
+        ranked.member_id,
+        ranked.nickname,
+        ranked.profile_image,
+        ranked.profile_image2,
+        ranked.points,
+        ranked.invested_asset,
+        ranked.league_point,
         ROUND(
-          PERCENT_RANK() OVER (
-            ORDER BY (m.points + 
-                      COALESCE(SUM(s.total_price), 0) + 
-                      COALESCE(SUM(s.change_amount), 0)
-            ) ASC
-          ) * 100,
+          PERCENT_RANK() OVER (ORDER BY ranked.league_point ASC) * 100,
           2
         ) AS ranking_point
-
-      FROM members m
-      LEFT JOIN stocks s 
-        ON m.member_id = s.member_id
-
-      GROUP BY m.member_id
-
-      ORDER BY league_point DESC, m.member_id ASC
+      FROM (
+        SELECT
+          m.member_id,
+          m.nickname,
+          m.profile_image,
+          m.profile_image2,
+          m.points,
+          COALESCE(SUM(os.quantity * os.avg_price), 0) AS invested_asset,
+          (
+            m.points + COALESCE(SUM(os.quantity * os.avg_price), 0)
+          ) AS league_point
+        FROM members m
+        LEFT JOIN owned_stocks os
+          ON m.member_id = os.member_id
+        GROUP BY
+          m.member_id,
+          m.nickname,
+          m.profile_image,
+          m.profile_image2,
+          m.points
+      ) ranked
+      ORDER BY ranked.league_point DESC, ranked.member_id ASC
     `);
 
-    const maxPoints = rows.length > 0 ? Number(rows[0].points || 0) : 0;
+    const maxPoints =
+      rows.length > 0 ? Number(rows[0].league_point || 0) : 0;
 
     const rankedRows = rows.map((row, index) => {
       const rankingPoint = Number(row.ranking_point || 0);
@@ -71,7 +71,11 @@ exports.getLeaderboard = async (req, res) => {
         nickname: row.nickname,
         profileImage: row.profile_image || null,
         profileImage2: row.profile_image2 || null,
+
+        points: Number(row.points || 0),
+        investedAsset: Number(row.invested_asset || 0),
         leaguePoint: Number(row.league_point || 0),
+
         rankingPoint,
         tier,
         overallRank: index + 1,
