@@ -27,17 +27,37 @@ exports.getLeaderboard = async (req, res) => {
     // This guarantees every tier has players as long as scores vary.
     const [rows] = await db.promise().query(`
       SELECT
-        member_id,
-        nickname,
-        profile_image,
-        profile_image2,
-        points,
+        m.member_id,
+        m.nickname,
+        m.profile_image,
+        m.profile_image2,
+        m.points,
+
+        COALESCE(SUM(s.total_price), 0) AS total_invested,
+        COALESCE(SUM(s.change_amount), 0) AS total_profit,
+
+        (m.points + 
+        COALESCE(SUM(s.total_price), 0) + 
+        COALESCE(SUM(s.change_amount), 0)
+        ) AS league_point,
+
         ROUND(
-          PERCENT_RANK() OVER (ORDER BY points ASC) * 100,
+          PERCENT_RANK() OVER (
+            ORDER BY (m.points + 
+                      COALESCE(SUM(s.total_price), 0) + 
+                      COALESCE(SUM(s.change_amount), 0)
+            ) ASC
+          ) * 100,
           2
         ) AS ranking_point
-      FROM members
-      ORDER BY points DESC, member_id ASC
+
+      FROM members m
+      LEFT JOIN stocks s 
+        ON m.member_id = s.member_id
+
+      GROUP BY m.member_id
+
+      ORDER BY league_point DESC, m.member_id ASC
     `);
 
     const maxPoints = rows.length > 0 ? Number(rows[0].points || 0) : 0;
@@ -51,7 +71,7 @@ exports.getLeaderboard = async (req, res) => {
         nickname: row.nickname,
         profileImage: row.profile_image || null,
         profileImage2: row.profile_image2 || null,
-        points: Number(row.points || 0),
+        leaguePoint: Number(row.league_point || 0),
         rankingPoint,
         tier,
         overallRank: index + 1,

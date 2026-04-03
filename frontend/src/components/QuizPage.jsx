@@ -1186,7 +1186,7 @@ const QuizPage = () => {
     return (
       <div className='quiz-section summary-section'>
         <div className='quiz-title'>
-          <h1>{isPerfect ? '🏆 완벽해요!' : '📊 세션 결과'}</h1>
+          <h1>{isPerfect ? '🏆 완벽해요!' : '세션 결과'}</h1>
         </div>
         <div className='summary-score'>
           <div className='summary-fraction'>
