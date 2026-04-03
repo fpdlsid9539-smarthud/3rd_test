@@ -2,8 +2,9 @@ import React, { useEffect, useMemo, useRef, useState } from 'react'
 import './FAQPage.css'
 import minus from '../assets/icons/minus.svg'
 import plus from '../assets/icons/plus.svg'
+import { api, API_BASE_URL } from '../config/api'
 
-const API = 'http://localhost:5000/api/faq'
+const API = `${API_BASE_URL}/api/faq`
 
 const formatDateTime = (value) => {
   if (!value) return '-'
@@ -68,14 +69,9 @@ const FAQPage = ({ setPage, scrollTarget = 'top' }) => {
   const topRef = useRef(null)
   const questionRef = useRef(null)
 
-  const fetchComments = async (questionId, currentToken = getStoredToken()) => {
+  const fetchComments = async (questionId) => {
     try {
-      const res = await fetch(`${API}/questions/${questionId}/comments`, {
-        headers: {
-          ...(currentToken && { Authorization: `Bearer ${currentToken}` }),
-        },
-      })
-      const data = await res.json()
+      const data = await api.get(`/api/faq/questions/${questionId}/comments`)
 
       if (data.success) {
         setCommentList(data.data)
@@ -90,15 +86,9 @@ const FAQPage = ({ setPage, scrollTarget = 'top' }) => {
 
   const fetchData = async (currentToken = getStoredToken()) => {
     try {
-      const faqRes = await fetch(API)
-      const faqData = await faqRes.json()
+      const faqData = await api.get('/api/faq')
 
-      const qRes = await fetch(`${API}/questions`, {
-        headers: {
-          ...(currentToken && { Authorization: `Bearer ${currentToken}` }),
-        },
-      })
-      const qData = await qRes.json()
+      const qData = await api.get('/api/faq/questions')
 
       if (faqData.success) setFaqList(faqData.data)
 
@@ -112,7 +102,7 @@ const FAQPage = ({ setPage, scrollTarget = 'top' }) => {
 
           if (updatedQuestion) {
             setSelectedQuestion(updatedQuestion)
-            fetchComments(updatedQuestion.question_id, currentToken)
+            fetchComments(updatedQuestion.question_id)
           } else {
             setSelectedQuestion(null)
             setCommentList([])
@@ -249,12 +239,6 @@ const FAQPage = ({ setPage, scrollTarget = 'top' }) => {
     }
 
     try {
-      const url = editQuestionId
-        ? `${API}/questions/${editQuestionId}`
-        : `${API}/questions`
-
-      const method = editQuestionId ? 'PATCH' : 'POST'
-
       const bodyData = {
         title,
         content,
@@ -266,16 +250,9 @@ const FAQPage = ({ setPage, scrollTarget = 'top' }) => {
         bodyData.edit_password = editPassword
       }
 
-      const res = await fetch(url, {
-        method,
-        headers: {
-          'Content-Type': 'application/json',
-          ...(currentToken && { Authorization: `Bearer ${currentToken}` }),
-        },
-        body: JSON.stringify(bodyData),
-      })
-
-      const data = await res.json()
+      const data = editQuestionId
+        ? await api.patch(`/api/faq/questions/${editQuestionId}`, bodyData)
+        : await api.post('/api/faq/questions', bodyData)
 
       if (!data.success) {
         alert(data.message || (editQuestionId ? '질문 수정 실패' : '질문 등록 실패'))
@@ -305,18 +282,9 @@ const FAQPage = ({ setPage, scrollTarget = 'top' }) => {
     if (!ok) return
 
     try {
-      const res = await fetch(`${API}/questions/${q.question_id}`, {
-        method: 'DELETE',
-        headers: {
-          'Content-Type': 'application/json',
-          ...(currentToken && { Authorization: `Bearer ${currentToken}` }),
-        },
-        body: JSON.stringify({
-          edit_password: password,
-        }),
+      const data = await api.delete(`/api/faq/questions/${q.question_id}`, {
+        edit_password: password,
       })
-
-      const data = await res.json()
 
       if (!data.success) {
         alert(data.message || '질문 삭제 실패')
@@ -372,19 +340,10 @@ const FAQPage = ({ setPage, scrollTarget = 'top' }) => {
     }
 
     try {
-      const res = await fetch(
-        `${API}/questions/${selectedQuestion.question_id}/comments`,
-        {
-          method: 'POST',
-          headers: {
-            'Content-Type': 'application/json',
-            ...(currentToken && { Authorization: `Bearer ${currentToken}` }),
-          },
-          body: JSON.stringify(bodyData),
-        }
+      const data = await api.post(
+        `/api/faq/questions/${selectedQuestion.question_id}/comments`,
+        bodyData
       )
-
-      const data = await res.json()
 
       if (!data.success) {
         alert(data.message || '댓글 등록 실패')
@@ -395,8 +354,8 @@ const FAQPage = ({ setPage, scrollTarget = 'top' }) => {
       setGuestCommentNickname('')
       setGuestCommentPassword('')
 
-      await fetchData(currentToken)
-      await fetchComments(selectedQuestion.question_id, currentToken)
+      await fetchData()
+      await fetchComments(selectedQuestion.question_id)
     } catch (err) {
       console.error('댓글 등록 실패:', err)
       alert('댓글 등록 중 오류가 발생했습니다.')
@@ -422,19 +381,10 @@ const FAQPage = ({ setPage, scrollTarget = 'top' }) => {
     }
 
     try {
-      const res = await fetch(
-        `${API}/questions/${selectedQuestion.question_id}/comments/${comment.comment_id}`,
-        {
-          method: 'DELETE',
-          headers: {
-            'Content-Type': 'application/json',
-            ...(currentToken && { Authorization: `Bearer ${currentToken}` }),
-          },
-          body: JSON.stringify(bodyData),
-        }
+      const data = await api.delete(
+        `/api/faq/questions/${selectedQuestion.question_id}/comments/${comment.comment_id}`,
+        bodyData
       )
-
-      const data = await res.json()
 
       if (!data.success) {
         alert(data.message || '댓글 삭제 실패')
@@ -446,8 +396,8 @@ const FAQPage = ({ setPage, scrollTarget = 'top' }) => {
         [comment.comment_id]: '',
       }))
 
-      await fetchData(currentToken)
-      await fetchComments(selectedQuestion.question_id, currentToken)
+      await fetchData()
+      await fetchComments(selectedQuestion.question_id)
     } catch (err) {
       console.error('댓글 삭제 실패:', err)
       alert('댓글 삭제 중 오류가 발생했습니다.')
