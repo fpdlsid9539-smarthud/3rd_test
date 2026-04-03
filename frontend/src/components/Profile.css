@@ -770,14 +770,14 @@
 }
 
 .achievement-grid-card-tooltip {
+
   min-width: 80px;
   max-width: 120px;
   padding: 0.5rem 0.75rem;
 
   position: absolute;
-  left: 50%;
-  top: auto;
-  bottom: calc(100% + 0.5rem);
+  left: auto;
+  top: calc(0rem);
 
   background: var(--bg-trans2);
   border: 1px solid var(--border);
@@ -795,7 +795,7 @@
   opacity: 0;
   visibility: hidden;
   pointer-events: none;
-  transform: translateX(-50%) translateY(0.5rem);
+  transform: translateY(1rem);
 
   transition: opacity 0.3s ease, visibility 0.3s ease, transform 0.3s ease;
 }
@@ -803,17 +803,20 @@
 .achievement-grid-tooltip-arrow {
   width: 0.5rem;
   height: 0.5rem;
+
   position: absolute;
-  left: 50%;
-  bottom: -0.25rem;
-  background: var(--bg-trans2);
-  transform: translateX(-50%) rotate(45deg);
+  left: calc(50%);
+  top: calc(50%);
+
+  background: transparent;
+  transform: translateX(-50%);
+  rotate: 45deg;
 }
 
 .achievement-grid-card:hover .achievement-grid-card-tooltip {
   opacity: 1;
   visibility: visible;
-  transform: translateX(-50%) translateY(0);
+  transform: translateX(0%) translateY(0rem);
 }
 
 .achievement-grid-img {
@@ -1114,6 +1117,7 @@
 
 .title-item {
   padding: 0.5rem;
+  padding-left: 1rem;
 
   position: relative;
   display: flex;
@@ -1296,6 +1300,7 @@
 }
 
 .point-history-list {
+  max-height: 44rem;
   display: flex;
   flex-direction: column;
   gap: 0.5rem;
@@ -1379,15 +1384,6 @@
 .profile-account-icon {
   display: none;
 }
-
-/* ─── Overflow overrides ─────────────────────── */
-/* .profile-content,
-.profile-stock,
-.title-list,
-.title-item,
-.title-item-left {
-  overflow: visible !important;
-} */
 
 /* ─── Investment modal ───────────────────────── */
 .profile-investment-modal-overlay {
@@ -1858,7 +1854,6 @@
   }
 
   .achievement-grid-full {
-    height: 8.5rem;
     grid-template-columns: repeat(5, minmax(0, 1fr));
     overflow-y: auto;
     overflow-x: hidden;
@@ -1874,10 +1869,22 @@
   .point-history-list {
     height: 41rem;
   }
+
+  .title-list{
+    display: grid;
+    grid-template-columns: 1fr 1fr 1fr;
+    gap: 0.5rem;
+  }
 }
 
 /* ─── Responsive: max-width 768px ───────────── */
 @media (max-width: 768px) {
+
+  .title-list{
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 0.5rem;
+  }
 
   .profile-investment-sections {
     grid-template-columns: repeat(2, 1fr);

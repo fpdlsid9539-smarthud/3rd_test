@@ -687,3 +687,14 @@
     grid-template-columns: minmax(90px, 1.7fr) minmax(72px, 1fr) minmax(72px, 1fr);
   }
 }
+
+@media (max-width: 768px) {
+  .dash-master {
+    grid-template-columns: repeat(1, 1fr);
+  }
+
+  .dash-master> :first-child {
+    grid-column: 1/1;
+  }
+  
+}

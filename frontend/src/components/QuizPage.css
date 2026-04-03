@@ -568,8 +568,6 @@
 }
 
 .log-question {
-  overflow: hidden;
-  white-space: nowrap;
   text-overflow: ellipsis;
   color: var(--text);
 }
