@@ -34,7 +34,7 @@ function extractMemberId(req) {
 }
 
 /* =========================
-  테이블 에러 체크
+  테이블 / 컬럼 에러 체크
 ========================= */
 
 function isTableMissingError(err) {
@@ -42,6 +42,14 @@ function isTableMissingError(err) {
     err &&
     (err.code === "ER_NO_SUCH_TABLE" ||
       String(err.message || "").includes("doesn't exist"))
+  );
+}
+
+function isUnknownColumnError(err) {
+  return (
+    err &&
+    (err.code === "ER_BAD_FIELD_ERROR" ||
+      String(err.message || "").includes("Unknown column"))
   );
 }
 
@@ -179,24 +187,72 @@ exports.checkAnswer = async (req, res) => {
     const selectedAnswer = Number(answer);
     const isCorrect = correctAnswer === selectedAnswer;
 
+    const resolvedDifficulty = difficulty || quiz.difficulty || "하";
+
     const pts =
-      POINT_TABLE[difficulty]?.[isCorrect ? "correct" : "wrong"] ??
+      POINT_TABLE[resolvedDifficulty]?.[isCorrect ? "correct" : "wrong"] ??
       (isCorrect ? 100 : 0);
 
     let historySaved = false;
 
     try {
+      // 확장 스키마 대응 저장
       await db.promise().query(
         `
         INSERT INTO member_quiz_history
-        (member_id, quiz_id, selected_answer, is_correct)
-        VALUES (?, ?, ?, ?)
+        (
+          member_id,
+          quiz_id,
+          question,
+          option_1,
+          option_2,
+          option_3,
+          option_4,
+          correct_answer,
+          selected_answer,
+          is_correct,
+          explanation,
+          difficulty,
+          source
+        )
+        VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
         `,
-        [memberId, quiz_id, selectedAnswer, isCorrect ? 1 : 0]
+        [
+          memberId,
+          quiz.quiz_id,
+          quiz.question,
+          quiz.option_1,
+          quiz.option_2,
+          quiz.option_3,
+          quiz.option_4,
+          correctAnswer,
+          selectedAnswer,
+          isCorrect ? 1 : 0,
+          quiz.explanation || "",
+          resolvedDifficulty,
+          "db",
+        ]
       );
       historySaved = true;
     } catch (err) {
-      if (!isTableMissingError(err)) {
+      // 구 스키마 하위호환
+      if (isUnknownColumnError(err)) {
+        try {
+          await db.promise().query(
+            `
+            INSERT INTO member_quiz_history
+            (member_id, quiz_id, selected_answer, is_correct)
+            VALUES (?, ?, ?, ?)
+            `,
+            [memberId, quiz.quiz_id, selectedAnswer, isCorrect ? 1 : 0]
+          );
+          historySaved = true;
+        } catch (innerErr) {
+          if (!isTableMissingError(innerErr)) {
+            return fail(res, "퀴즈 기록 저장 실패", innerErr.message);
+          }
+        }
+      } else if (!isTableMissingError(err)) {
         return fail(res, "퀴즈 기록 저장 실패", err.message);
       }
     }
@@ -211,7 +267,7 @@ exports.checkAnswer = async (req, res) => {
       INSERT INTO point_history (member_id, change_amount, reason)
       VALUES (?, ?, ?)
       `,
-      [memberId, pts, `quiz_${difficulty}_${isCorrect ? "correct" : "wrong"}`]
+      [memberId, pts, `quiz_${resolvedDifficulty}_${isCorrect ? "correct" : "wrong"}`]
     );
 
     if (historySaved) {
@@ -229,7 +285,7 @@ exports.checkAnswer = async (req, res) => {
         option_4: quiz.option_4,
         correctAnswer,
         selectedAnswer,
-        difficulty: difficulty || quiz.difficulty || "하",
+        difficulty: resolvedDifficulty,
         fallbackExplanation: quiz.explanation,
       });
     }
@@ -262,6 +318,10 @@ exports.checkAiAnswer = async (req, res) => {
     const memberId = extractMemberId(req);
     const {
       question,
+      option_1,
+      option_2,
+      option_3,
+      option_4,
       answer,
       correctAnswer,
       explanation,
@@ -290,10 +350,26 @@ exports.checkAiAnswer = async (req, res) => {
       INSERT INTO point_history (member_id, change_amount, reason)
       VALUES (?, ?, ?)
       `,
-      [memberId, pts, `quiz_${difficulty}_${isCorrect ? "correct" : "wrong"}`]
+      [memberId, pts, `quiz_${difficulty}_${isCorrect ? "correct" : "wrong"}_ai`]
     );
 
     await refreshMemberAchievements(memberId);
+
+    let llmExplanation = "";
+
+    if (!isCorrect) {
+      llmExplanation = await generateQuizExplanation({
+        question: question || "",
+        option_1: option_1 || "",
+        option_2: option_2 || "",
+        option_3: option_3 || "",
+        option_4: option_4 || "",
+        correctAnswer: actualCorrectAnswer,
+        selectedAnswer,
+        difficulty,
+        fallbackExplanation: explanation || "",
+      });
+    }
 
     const [memberRows] = await db.promise().query(
       `SELECT member_id, nickname, points FROM members WHERE member_id = ?`,
@@ -304,7 +380,7 @@ exports.checkAiAnswer = async (req, res) => {
       isCorrect,
       correctAnswer: actualCorrectAnswer,
       explanation: explanation || "",
-      llmExplanation: isCorrect ? "" : explanation || "",
+      llmExplanation,
       rewardPoints: pts,
       historySaved: false,
       member: memberRows[0] || null,
@@ -327,31 +403,77 @@ exports.getWrongAnswerNotes = async (req, res) => {
       return fail(res, "사용자 인증 필요", null, 401);
     }
 
-    const [rows] = await db.promise().query(
-      `
-      SELECT
-        h.history_id,
-        h.quiz_id,
-        h.selected_answer,
-        h.is_correct,
-        h.solved_at,
-        q.difficulty,
-        q.question,
-        q.option_1,
-        q.option_2,
-        q.option_3,
-        q.option_4,
-        q.answer AS correct_answer,
-        q.explanation
-      FROM member_quiz_history h
-      JOIN quizzes q
-        ON h.quiz_id = q.quiz_id
-      WHERE h.member_id = ?
-        AND h.is_correct = 0
-      ORDER BY h.solved_at DESC, h.history_id DESC
-      `,
-      [memberId]
-    );
+    let rows = [];
+
+    try {
+      // 확장 스키마 기준: AI/DB 둘 다 조회 가능
+      const [newRows] = await db.promise().query(
+        `
+        SELECT
+          h.history_id,
+          h.quiz_id,
+          h.selected_answer,
+          h.is_correct,
+          h.solved_at,
+          COALESCE(h.difficulty, q.difficulty) AS difficulty,
+          COALESCE(h.question, q.question) AS question,
+          COALESCE(h.option_1, q.option_1) AS option_1,
+          COALESCE(h.option_2, q.option_2) AS option_2,
+          COALESCE(h.option_3, q.option_3) AS option_3,
+          COALESCE(h.option_4, q.option_4) AS option_4,
+          COALESCE(h.correct_answer, q.answer) AS correct_answer,
+          COALESCE(h.explanation, q.explanation) AS explanation,
+          COALESCE(h.source, CASE WHEN h.quiz_id IS NULL THEN 'ai' ELSE 'db' END) AS source
+        FROM member_quiz_history h
+        LEFT JOIN quizzes q
+          ON h.quiz_id = q.quiz_id
+        WHERE h.member_id = ?
+          AND h.is_correct = 0
+          AND (
+            h.quiz_id IS NOT NULL
+            OR h.question IS NOT NULL
+          )
+        ORDER BY h.solved_at DESC, h.history_id DESC
+        `,
+        [memberId]
+      );
+
+      rows = newRows;
+    } catch (err) {
+      // 구 스키마 하위호환: 기존 DB 문제만 조회 가능
+      if (!isUnknownColumnError(err)) {
+        throw err;
+      }
+
+      const [legacyRows] = await db.promise().query(
+        `
+        SELECT
+          h.history_id,
+          h.quiz_id,
+          h.selected_answer,
+          h.is_correct,
+          h.solved_at,
+          q.difficulty,
+          q.question,
+          q.option_1,
+          q.option_2,
+          q.option_3,
+          q.option_4,
+          q.answer AS correct_answer,
+          q.explanation,
+          'db' AS source
+        FROM member_quiz_history h
+        JOIN quizzes q
+          ON h.quiz_id = q.quiz_id
+        WHERE h.member_id = ?
+          AND h.is_correct = 0
+        ORDER BY h.solved_at DESC, h.history_id DESC
+        `,
+        [memberId]
+      );
+
+      rows = legacyRows;
+    }
 
     return success(res, "오답노트 조회 성공", rows);
   } catch (err) {
@@ -718,7 +840,11 @@ exports.submitOxAnswer = async (req, res) => {
       INSERT INTO point_history (member_id, change_amount, reason)
       VALUES (?, ?, ?)
       `,
-      [memberId, rewardPoints, `daily_ox_${savedQuiz.type}_${isCorrect ? "correct" : "participation"}`]
+      [
+        memberId,
+        rewardPoints,
+        `daily_ox_${savedQuiz.type}_${isCorrect ? "correct" : "participation"}`,
+      ]
     );
 
     await refreshMemberAchievements(memberId);

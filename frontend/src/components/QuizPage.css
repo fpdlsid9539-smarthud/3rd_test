@@ -1189,3 +1189,23 @@
     padding: 0 0.95rem 0.95rem;
   }
 }
+.wrong-note-more-btn {
+  width: 100%;
+  padding: 0.95rem 1rem;
+
+  background: var(--primary-highlight);
+  border: 1px solid var(--border-prim);
+  border-radius: 0.75rem;
+
+  font-size: 0.95rem;
+  font-weight: 600;
+  color: var(--primary);
+
+  cursor: pointer;
+  transition: all 0.3s ease;
+}
+
+.wrong-note-more-btn:hover {
+  background: var(--primary);
+  color: var(--bg);
+}

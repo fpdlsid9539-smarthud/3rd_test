@@ -15,12 +15,16 @@ const POINT_TABLE = {
   중: { correct: 2000, wrong: 0 },
   상: { correct: 3000, wrong: 0 },
 }
+
 const PERFECT_BONUS = { 하: 5000, 중: 10000, 상: 20000 }
 
 const MAX_QUESTIONS = 10
 const DB_QUESTION_COUNT = 7
 const AI_QUESTION_COUNT = 3
 const DIFFICULTIES = ['하', '중', '상']
+
+const WRONG_NOTE_INITIAL_LIMIT = 5
+const WRONG_NOTE_STEP = 5
 
 const shuffleArray = (arr = []) => [...arr].sort(() => Math.random() - 0.5)
 
@@ -164,6 +168,62 @@ const buildKeywordCandidates = (quizzes = [], difficulty = '하') => {
   return ['주식', '기초', `난이도${difficulty}`, ...unique].slice(0, 10)
 }
 
+const AI_WRONG_NOTE_KEY = 'finsight_ai_wrong_notes_v1'
+
+const getAiWrongNotesFromStorage = () => {
+  try {
+    const raw = localStorage.getItem(AI_WRONG_NOTE_KEY)
+    const parsed = JSON.parse(raw || '[]')
+    return Array.isArray(parsed) ? parsed : []
+  } catch (err) {
+    console.error('AI 오답노트 읽기 실패', err)
+    return []
+  }
+}
+
+const saveAiWrongNotesToStorage = (notes = []) => {
+  try {
+    localStorage.setItem(AI_WRONG_NOTE_KEY, JSON.stringify(notes))
+  } catch (err) {
+    console.error('AI 오답노트 저장 실패', err)
+  }
+}
+
+const buildAiWrongNoteItem = ({
+  quiz,
+  selectedAnswer,
+  difficulty,
+}) => {
+  const now = new Date()
+
+  return {
+    history_id: `ai-${now.getTime()}-${Math.random().toString(36).slice(2, 8)}`,
+    quiz_id: quiz?.quiz_id || null,
+    selected_answer: Number(selectedAnswer),
+    is_correct: 0,
+    solved_at: now.toISOString(),
+    difficulty: difficulty === 'AI' ? '하' : (difficulty || quiz?.difficulty || '하'),
+    question: quiz?.question || '',
+    option_1: quiz?.option_1 || '',
+    option_2: quiz?.option_2 || '',
+    option_3: quiz?.option_3 || '',
+    option_4: quiz?.option_4 || '',
+    correct_answer: Number(quiz?.answer),
+    explanation: quiz?.explanation || '',
+    source: 'ai',
+  }
+}
+
+const mergeWrongNotes = (serverNotes = [], aiNotes = []) => {
+  const merged = [...aiNotes, ...serverNotes]
+
+  return merged.sort((a, b) => {
+    const aTime = new Date(a?.solved_at || 0).getTime()
+    const bTime = new Date(b?.solved_at || 0).getTime()
+    return bTime - aTime
+  })
+}
+
 const QuizPage = () => {
   const [step, setStep] = useState('DIFFICULTY')
   const [difficulty, setDifficulty] = useState(null)
@@ -195,12 +255,15 @@ const QuizPage = () => {
   const [wrongNotesLoading, setWrongNotesLoading] = useState(false)
   const [showWrongNotes, setShowWrongNotes] = useState(false)
   const [openWrongNoteIds, setOpenWrongNoteIds] = useState({})
+  const [visibleWrongNoteCount, setVisibleWrongNoteCount] = useState(WRONG_NOTE_INITIAL_LIMIT)
 
   const [llmKeywords, setLlmKeywords] = useState('')
   const [llmQuizLoading, setLlmQuizLoading] = useState(false)
   const [sessionTopic, setSessionTopic] = useState([])
 
   const sessionLength = allQuizzes.length || MAX_QUESTIONS
+  const visibleWrongNotes = wrongNotes.slice(0, visibleWrongNoteCount)
+  const hasMoreWrongNotes = wrongNotes.length > visibleWrongNoteCount
 
   useEffect(() => {
     const fetchUserAuth = async () => {
@@ -240,14 +303,27 @@ const QuizPage = () => {
 
   const fetchWrongNotes = async () => {
     setWrongNotesLoading(true)
+
     try {
-      const res = await api.get('/api/quiz/wrong-notes/me')
-      const data = res?.data?.data ?? res?.data ?? []
-      const nextWrongNotes = Array.isArray(data) ? data : []
+      let serverWrongNotes = []
+
+      try {
+        const res = await api.get('/api/quiz/wrong-notes/me')
+        const data = res?.data?.data ?? res?.data ?? []
+        serverWrongNotes = Array.isArray(data) ? data : []
+      } catch (err) {
+        console.error('서버 오답노트 로딩 실패', err)
+        serverWrongNotes = []
+      }
+
+      const aiWrongNotes = getAiWrongNotesFromStorage()
+      const nextWrongNotes = mergeWrongNotes(serverWrongNotes, aiWrongNotes)
+
       setWrongNotes(nextWrongNotes)
+      setVisibleWrongNoteCount(WRONG_NOTE_INITIAL_LIMIT)
 
       const initialOpenState = {}
-      nextWrongNotes.slice(0, 5).forEach((item, index) => {
+      nextWrongNotes.slice(0, WRONG_NOTE_INITIAL_LIMIT).forEach((item, index) => {
         initialOpenState[item.history_id] = index === 0
       })
       setOpenWrongNoteIds(initialOpenState)
@@ -255,6 +331,7 @@ const QuizPage = () => {
       console.error('오답노트 로딩 실패', err)
       setWrongNotes([])
       setOpenWrongNoteIds({})
+      setVisibleWrongNoteCount(WRONG_NOTE_INITIAL_LIMIT)
     } finally {
       setWrongNotesLoading(false)
     }
@@ -265,6 +342,23 @@ const QuizPage = () => {
       ...prev,
       [historyId]: !prev[historyId],
     }))
+  }
+
+  const handleShowMoreWrongNotes = () => {
+    const nextCount = visibleWrongNoteCount + WRONG_NOTE_STEP
+    const nextVisibleNotes = wrongNotes.slice(0, nextCount)
+
+    setVisibleWrongNoteCount(nextCount)
+
+    setOpenWrongNoteIds((prev) => {
+      const updated = { ...prev }
+      nextVisibleNotes.forEach((item) => {
+        if (!(item.history_id in updated)) {
+          updated[item.history_id] = false
+        }
+      })
+      return updated
+    })
   }
 
   const handleOpenOxModal = async () => {
@@ -541,6 +635,10 @@ const QuizPage = () => {
 
         const res = await api.post('/api/quiz/check-ai', {
           question: currentQuiz.question,
+          option_1: currentQuiz.option_1,
+          option_2: currentQuiz.option_2,
+          option_3: currentQuiz.option_3,
+          option_4: currentQuiz.option_4,
           answer: userAnswer,
           correctAnswer: currentQuiz.answer,
           explanation: currentQuiz.explanation,
@@ -571,6 +669,24 @@ const QuizPage = () => {
             source: 'ai',
           },
         ])
+
+        if (!correct) {
+          const savedAiNotes = getAiWrongNotesFromStorage()
+          const newAiWrongNote = {
+            ...buildAiWrongNoteItem({
+              quiz: currentQuiz,
+              selectedAnswer: userAnswer,
+              difficulty: aiDifficulty,
+            }),
+            explanation:
+              payload.llmExplanation ||
+              payload.explanation ||
+              currentQuiz.explanation,
+          }
+
+          const nextAiNotes = [newAiWrongNote, ...savedAiNotes].slice(0, 100)
+          saveAiWrongNotesToStorage(nextAiNotes)
+        }
 
         window.dispatchEvent(new Event('pointsUpdated'))
         setStep('RESULT')
@@ -715,6 +831,7 @@ const QuizPage = () => {
       difficulty === 'AI' && String(currentQuiz?.quiz_id).startsWith('ai-')
 
     if (isAiSingleQuiz) {
+      fetchWrongNotes()
       setStep('DIFFICULTY')
       return
     }
@@ -755,6 +872,7 @@ const QuizPage = () => {
     setLlmKeywords('')
     setSessionTopic([])
     setShowWrongNotes(false)
+    setVisibleWrongNoteCount(WRONG_NOTE_INITIAL_LIMIT)
     fetchWrongNotes()
   }
 
@@ -848,70 +966,90 @@ const QuizPage = () => {
         {wrongNotesLoading ? (
           <div className='qr-empty'>오답노트 불러오는 중...</div>
         ) : wrongNotes.length > 0 ? (
-          wrongNotes.slice(0, 5).map((item) => {
-            const isOpen = Boolean(openWrongNoteIds[item.history_id])
+          <>
+            {visibleWrongNotes.map((item) => {
+              const isOpen = Boolean(openWrongNoteIds[item.history_id])
 
-            return (
-              <div
-                className={`wrong-note-card ${isOpen ? 'open' : ''}`}
-                key={item.history_id}
-              >
-                <button
-                  type='button'
-                  className='wrong-note-toggle'
-                  onClick={() => toggleWrongNoteItem(item.history_id)}
+              return (
+                <div
+                  className={`wrong-note-card ${isOpen ? 'open' : ''}`}
+                  key={item.history_id}
                 >
-                  <div className='wrong-note-toggle-left'>
-                    <div className='wrong-note-question'>
-                      [{item.difficulty}] {item.question}
+                  <button
+                    type='button'
+                    className='wrong-note-toggle'
+                    onClick={() => toggleWrongNoteItem(item.history_id)}
+                  >
+                    <div className='wrong-note-toggle-left'>
+                      <div className='wrong-note-question'>
+                        [{item.difficulty}] {item.source === 'ai' ? '[AI] ' : ''}{item.question}
+                      </div>
+                      <div className='wrong-note-answer-meta'>
+                        내 답: {item.selected_answer}번 / 정답: {item.correct_answer}번
+                      </div>
                     </div>
-                    <div className='wrong-note-answer-meta'>
-                      내 답: {item.selected_answer}번 / 정답: {item.correct_answer}번
-                    </div>
-                  </div>
 
-                  <img src={isOpen ? minus : plus} alt="toggle" />
-                </button>
+                    <img src={isOpen ? minus : plus} alt='toggle' />
+                  </button>
 
-                <div className={`wrong-note-body ${isOpen ? 'open' : ''}`}>
-                  <div className='wrong-note-options'>
-                    {[1, 2, 3, 4].map((num) => {
-                      const optionText = item[`option_${num}`]
-                      const isMyAnswer = Number(item.selected_answer) === num
-                      const isCorrectAnswer = Number(item.correct_answer) === num
+                  <div className={`wrong-note-body ${isOpen ? 'open' : ''}`}>
+                    <div className='wrong-note-options'>
+                      {[1, 2, 3, 4].map((num) => {
+                        const optionText = item[`option_${num}`]
+                        const isMyAnswer = Number(item.selected_answer) === num
+                        const isCorrectAnswer = Number(item.correct_answer) === num
 
-                      return (
-                        <div
-                          key={num}
-                          className={`wrong-note-option ${isCorrectAnswer
-                              ? 'correct'
-                              : isMyAnswer
-                                ? 'my-answer'
-                                : ''
+                        return (
+                          <div
+                            key={num}
+                            className={`wrong-note-option ${
+                              isCorrectAnswer
+                                ? 'correct'
+                                : isMyAnswer
+                                  ? 'my-answer'
+                                  : ''
                             }`}
-                        >
-                          <strong className='wrong-note-option-num'>{num}번</strong>
-                          <span>{optionText}</span>
+                          >
+                            <strong className='wrong-note-option-num'>{num}번</strong>
+                            <span>{optionText}</span>
 
-                          {isMyAnswer && (
-                            <span className='wrong-note-badge my-answer'>
-                              (내 선택)
-                            </span>
-                          )}
+                            {isMyAnswer && (
+                              <span className='wrong-note-badge my-answer'>
+                                (내 선택)
+                              </span>
+                            )}
 
-                          {isCorrectAnswer && (
-                            <span className='wrong-note-badge correct'>
-                              (정답)
-                            </span>
-                          )}
-                        </div>
-                      )
-                    })}
+                            {isCorrectAnswer && (
+                              <span className='wrong-note-badge correct'>
+                                (정답)
+                              </span>
+                            )}
+                          </div>
+                        )
+                      })}
+                    </div>
+
+                    {item.explanation && (
+                      <div className='explanation-card'>
+                        <h3 className='explanation-title'>해설</h3>
+                        <p className='explanation-text'>{item.explanation}</p>
+                      </div>
+                    )}
                   </div>
                 </div>
-              </div>
-            )
-          })
+              )
+            })}
+
+            {hasMoreWrongNotes && (
+              <button
+                type='button'
+                className='wrong-note-more-btn'
+                onClick={handleShowMoreWrongNotes}
+              >
+                더보기
+              </button>
+            )}
+          </>
         ) : (
           <div className='qr-empty'>오답노트가 없습니다.</div>
         )}
@@ -1048,7 +1186,7 @@ const QuizPage = () => {
                   ) : (
                     <div className='ox-loading'>
                       <div className='spinner'></div>
-                      <p>OX 퀴즈를 준비 중입니다...</p>
+                      <p>OX 퀴즈를 준비 중입니다.</p>
                     </div>
                   )}
                 </div>
@@ -1123,7 +1261,11 @@ const QuizPage = () => {
   )
 
   const renderResult = () => {
-    const isAiSingleQuiz = difficulty === 'AI' && String(currentQuiz?.quiz_id).startsWith('ai-') && allQuizzes.length === 1
+    const isAiSingleQuiz =
+      difficulty === 'AI' &&
+      String(currentQuiz?.quiz_id).startsWith('ai-') &&
+      allQuizzes.length === 1
+
     const isLastQuestion = attemptNum + 1 >= sessionLength
     const pts = Number(
       resultData?.rewardPoints ??
@@ -1147,12 +1289,14 @@ const QuizPage = () => {
             />
           </div>
         </div>
+
         <div className={`result-banner ${isCorrect ? 'correct' : 'wrong'}`}>
-          <span>{isCorrect ? '정답입니다!' : '아쉽게도 오답입니다.'}</span>
+          <span className='result-text'>{isCorrect ? '정답입니다!' : '오답입니다!'}</span>
           <span className={`result-pts ${isCorrect ? 'plus' : 'transparent'}`}>
             {pts > 0 ? '+' : ''}{pts.toLocaleString('ko-KR')} P
           </span>
         </div>
+
         <div className='explanation-card'>
           <h3 className='explanation-title'>
             {isCorrect ? '💡 기본 해설' : '🤖 AI 해설'}
@@ -1163,6 +1307,7 @@ const QuizPage = () => {
               : (resultData?.llmExplanation || resultData?.explanation || currentQuiz?.explanation)}
           </p>
         </div>
+
         <div className='result-actions'>
           <button className='btn btn-primary' onClick={handleNext} disabled={loading}>
             {loading
@@ -1186,7 +1331,7 @@ const QuizPage = () => {
     return (
       <div className='quiz-section summary-section'>
         <div className='quiz-title'>
-          <h1>{isPerfect ? '🏆 완벽해요!' : '세션 결과'}</h1>
+          <h1>{isPerfect ? '🏆 완벽해요!' : '📊 세션 결과'}</h1>
         </div>
         <div className='summary-score'>
           <div className='summary-fraction'>
