@@ -39,19 +39,20 @@ const normalizeLikedStocks = (payload) => {
 }
 
 const getStockPrincipal = (stock) => {
-  const directTotalPrice = Number(
-    stock?.totalPrice ??
-    stock?.total_price ??
+  const principal = Number(
     stock?.principal ??
     stock?.originPrice ??
     stock?.origin_price ??
     0
   )
 
-  if (directTotalPrice > 0) return directTotalPrice
+  // 👉 진짜 원금이 있으면 바로 사용
+  if (principal > 0) return principal
 
+  // 👉 없으면 수량 * 평균단가로 계산
   const quantity = Number(stock?.quantity || 0)
   const avgPrice = Number(stock?.avgPrice ?? stock?.avg_price ?? 0)
+
   return quantity * avgPrice
 }
 
