@@ -21,7 +21,7 @@ function createToken(member) {
 }
 
 function verifyToken(token) {
-  return jwt.verify(token, getJwtSecret());
+  return jwt.verify(token, getJwtSecret(), { clockTolerance: 30 }); 
 }
 
 function extractBearerToken(authHeader = "") {

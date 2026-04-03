@@ -1,4 +1,4 @@
-const jwt = require("jsonwebtoken");
+const { verifyToken } = require("../src/utils/jwt");
 
 module.exports = (req, res, next) => {
   try {
@@ -20,7 +20,7 @@ module.exports = (req, res, next) => {
       });
     }
 
-    const decoded = jwt.verify(token, process.env.JWT_SECRET);
+    const decoded = verifyToken(token);
     req.user = decoded;
 
     next();
