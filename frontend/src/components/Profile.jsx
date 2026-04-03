@@ -9,6 +9,7 @@ import defaultProfile from '../assets/chicken running machine.png'
 import { getAchievementIcon } from '../utils/achievementIconMap'
 import close from '../assets/icons/close.svg'
 import { api, API_BASE_URL } from '../config/api'
+import premium from '../assets/icons/premium.svg'
 
 const extractArrayData = (payload) => {
   if (Array.isArray(payload)) return payload
