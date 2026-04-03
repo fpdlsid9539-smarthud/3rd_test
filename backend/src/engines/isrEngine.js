@@ -17,6 +17,107 @@ function stddev(arr) {
 }
 
 /* =========================
+   Demo fallback용 seed 유틸
+   - DB 없이 배포했을 때
+     유저별로 완전히 똑같은 값이 나오지 않게
+     seed 기반으로 고정된 데모 점수 생성
+========================= */
+function normalizeSeed(seed) {
+  if (seed === undefined || seed === null || seed === "") return "default-seed";
+  return String(seed);
+}
+
+function hashString(str) {
+  let hash = 0;
+  const text = String(str || "");
+  for (let i = 0; i < text.length; i += 1) {
+    hash = (hash * 31 + text.charCodeAt(i)) >>> 0;
+  }
+  return hash;
+}
+
+function seededUnit(seed, offset = 0) {
+  const base = hashString(`${normalizeSeed(seed)}:${offset}`);
+  return (base % 10000) / 10000;
+}
+
+function seededRange(seed, min, max, offset = 0) {
+  const unit = seededUnit(seed, offset);
+  return min + unit * (max - min);
+}
+
+function round2(value) {
+  return Number(Number(value || 0).toFixed(2));
+}
+
+/* =========================
+   Demo fallback ISR 생성
+   - logs가 없을 때 0으로만 고정되지 않도록
+   - seed가 있으면 유저별로 안정적인 데모값 생성
+   - seed가 없으면 모두 같은 기본 데모값
+========================= */
+function buildDemoISR(seed) {
+  const hasCustomSeed =
+    seed !== undefined && seed !== null && String(seed).trim() !== "";
+
+  if (!hasCustomSeed) {
+    const accuracy = 68;
+    const risk = 64;
+    const stability = 66;
+    const discipline = 72;
+    const strategy = 61;
+    const adaptability = 63;
+
+    const isr =
+      accuracy * 0.30 +
+      risk * 0.25 +
+      stability * 0.20 +
+      discipline * 0.10 +
+      strategy * 0.10 +
+      adaptability * 0.05;
+
+    return {
+      accuracy: round2(clamp(accuracy)),
+      risk: round2(clamp(risk)),
+      stability: round2(clamp(stability)),
+      discipline: round2(clamp(discipline)),
+      strategy: round2(clamp(strategy)),
+      adaptability: round2(clamp(adaptability)),
+      isr: round2(clamp(isr)),
+      mode: "DEMO",
+      hasRealLogs: false,
+    };
+  }
+
+  const accuracy = seededRange(seed, 62, 79, 1);
+  const risk = seededRange(seed, 58, 76, 2);
+  const stability = seededRange(seed, 55, 74, 3);
+  const discipline = seededRange(seed, 60, 84, 4);
+  const strategy = seededRange(seed, 52, 73, 5);
+  const adaptability = seededRange(seed, 50, 72, 6);
+
+  const isr =
+    accuracy * 0.30 +
+    risk * 0.25 +
+    stability * 0.20 +
+    discipline * 0.10 +
+    strategy * 0.10 +
+    adaptability * 0.05;
+
+  return {
+    accuracy: round2(clamp(accuracy)),
+    risk: round2(clamp(risk)),
+    stability: round2(clamp(stability)),
+    discipline: round2(clamp(discipline)),
+    strategy: round2(clamp(strategy)),
+    adaptability: round2(clamp(adaptability)),
+    isr: round2(clamp(isr)),
+    mode: "DEMO",
+    hasRealLogs: false,
+  };
+}
+
+/* =========================
    1) 판단력 (Accuracy)
    - SUCCESS / (SUCCESS + FAIL)
    - PENDING 제외
@@ -75,22 +176,6 @@ function calculateStability(logs) {
   const mean = avg(pnls);
   const deviation = stddev(pnls);
 
-  // 기존 방식:
-  // 100 - (deviation / Math.abs(mean)) * 100
-  // -> mean이 작거나 음수일 때 쉽게 음수로 떨어져 0으로 고정됨
-  //
-  // 개선 방식:
-  // normalized = deviation / (|mean| + deviation + 1)
-  // pnlScore = (1 - normalized) * 100
-  //
-  // 계산 예시:
-  // deviation = 30, |mean| = 10
-  // normalized = 30 / (10 + 30 + 1) = 30 / 41 = 0.7317
-  // pnlScore = (1 - 0.7317) * 100 = 26.83
-  //
-  // deviation = 10, |mean| = 40
-  // normalized = 10 / (40 + 10 + 1) = 10 / 51 = 0.1961
-  // pnlScore = 80.39
   const normalized = deviation / (Math.abs(mean) + deviation + 1);
   const pnlScore = (1 - normalized) * 100;
 
@@ -135,9 +220,6 @@ function calculateStrategy(logs) {
 
   const maxCount = Math.max(...Object.values(counts));
 
-  // 계산 예시:
-  // 전체 20개 중 SWING 12개, SCALPING 8개
-  // score = 12 / 20 * 100 = 60
   const score = (maxCount / strategyLogs.length) * 100;
 
   return clamp(score);
@@ -228,6 +310,11 @@ function getISRSummary(result = {}) {
   const discipline = Number(result.discipline || 0);
   const strategy = Number(result.strategy || 0);
   const adaptability = Number(result.adaptability || 0);
+  const mode = String(result.mode || "").toUpperCase();
+
+  if (mode === "DEMO") {
+    return "현재는 실제 투자 로그가 없어 시연용 ISR 지표가 표시되고 있습니다.";
+  }
 
   if (risk >= 80 && stability >= 70) {
     return "안정적인 판단과 위험 관리를 기반으로 투자하는 유형입니다.";
@@ -258,14 +345,27 @@ function getISRSummary(result = {}) {
    - 가중치 합계 = 100%
    - 판단력 30 / 위험관리 25 / 일관성 20 /
      투자습관 10 / 전략성 10 / 시장대응력 5
+
+   사용 방식
+   1) 실제 계산
+      calculateISR({ logs })
+
+   2) DB 없는 배포 데모
+      calculateISR({ logs: [], seed: member_id })
 ========================= */
-function calculateISR({ logs = [] }) {
-  const accuracy = calculateAccuracy(logs);
-  const risk = calculateRisk(logs);
-  const stability = calculateStability(logs);
-  const discipline = calculateDiscipline(logs);
-  const strategy = calculateStrategy(logs);
-  const adaptability = calculateAdaptability(logs);
+function calculateISR({ logs = [], seed = null } = {}) {
+  const logData = Array.isArray(logs) ? logs : [];
+
+  if (!logData.length) {
+    return buildDemoISR(seed);
+  }
+
+  const accuracy = calculateAccuracy(logData);
+  const risk = calculateRisk(logData);
+  const stability = calculateStability(logData);
+  const discipline = calculateDiscipline(logData);
+  const strategy = calculateStrategy(logData);
+  const adaptability = calculateAdaptability(logData);
 
   const isr =
     accuracy * 0.30 +
@@ -276,13 +376,15 @@ function calculateISR({ logs = [] }) {
     adaptability * 0.05;
 
   return {
-    accuracy: Number(clamp(accuracy).toFixed(2)),
-    risk: Number(clamp(risk).toFixed(2)),
-    stability: Number(clamp(stability).toFixed(2)),
-    discipline: Number(clamp(discipline).toFixed(2)),
-    strategy: Number(clamp(strategy).toFixed(2)),
-    adaptability: Number(clamp(adaptability).toFixed(2)),
-    isr: Number(clamp(isr).toFixed(2)),
+    accuracy: round2(clamp(accuracy)),
+    risk: round2(clamp(risk)),
+    stability: round2(clamp(stability)),
+    discipline: round2(clamp(discipline)),
+    strategy: round2(clamp(strategy)),
+    adaptability: round2(clamp(adaptability)),
+    isr: round2(clamp(isr)),
+    mode: "REAL",
+    hasRealLogs: true,
   };
 }
 
