@@ -5,6 +5,11 @@ import close from '../assets/icons/close.svg'
 import minus from '../assets/icons/minus.svg'
 import plus from '../assets/icons/plus.svg'
 
+const toHttpsImage = (url) => {
+  if (!url) return ''
+  return url.startsWith('http://') ? url.replace('http://', 'https://') : url
+}
+
 const POINT_TABLE = {
   하: { correct: 1000, wrong: 0 },
   중: { correct: 2000, wrong: 0 },
@@ -804,7 +809,11 @@ const QuizPage = () => {
                 <span className={`qr-rank num-${index + 1}`}>{index + 1}</span>
                 <div className='qr-profile-placeholder'>
                   {user.profileImage ? (
-                    <img src={user.profileImage} alt='profile' className='qr-profile-img' />
+                    <img
+                      src={toHttpsImage(user.profileImage)}
+                      alt='profile'
+                      className='qr-profile-img'
+                    />
                   ) : (
                     user.nickname?.substring(0, 1)
                   )}

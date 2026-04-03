@@ -7,6 +7,11 @@ import gold from '../assets/icons/ranked/gold.png'
 import diamond from '../assets/icons/ranked/diamond.png'
 import { api } from '../config/api'
 
+const toHttpsImage = (url) => {
+  if (!url) return ''
+  return url.startsWith('http://') ? url.replace('http://', 'https://') : url
+}
+
 const getAccessToken = () => {
   return localStorage.getItem('token') || ''
 }
@@ -140,7 +145,7 @@ const Ranking = () => {
                           <div className='league-user-main'>
                             <span className='league-rank'>{row.leagueRank}</span>
                             <img
-                              src={row.profileImage || defaultProfile}
+                              src={toHttpsImage(row.profileImage) || defaultProfile}
                               alt={`${row.nickname} 프로필`}
                               className='league-profile'
                             />

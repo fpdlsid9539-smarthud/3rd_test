@@ -719,7 +719,7 @@ const FAQPage = ({ setPage, scrollTarget = 'top' }) => {
                       <div className='comment-actions'>
                         <button
                           type='button'
-                          className='faq-secondary-btn'
+                          className='faq-secondary-btn faq-danger-btn'
                           onClick={() => handleCommentDelete(comment)}
                         >
                           댓글 삭제
@@ -742,7 +742,7 @@ const FAQPage = ({ setPage, scrollTarget = 'top' }) => {
                         />
                         <button
                           type='button'
-                          className='faq-secondary-btn'
+                          className='faq-secondary-btn faq-danger-btn'
                           onClick={() => handleCommentDelete(comment)}
                         >
                           댓글 삭제
@@ -769,7 +769,7 @@ const FAQPage = ({ setPage, scrollTarget = 'top' }) => {
 
                 <button
                   type='button'
-                  className='faq-secondary-btn'
+                  className='faq-secondary-btn faq-danger-btn'
                   onClick={() => handleDeleteByOwner(selectedQuestion)}
                 >
                   삭제
