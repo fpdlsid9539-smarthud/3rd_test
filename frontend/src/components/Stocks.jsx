@@ -681,8 +681,8 @@ const Stocks = () => {
             <div className='stocks-card-body'>
               {ownedStocks.length > 0 ? (
                 ownedStocks.map((stock) => (
-                  <>
-                    <div key={`owned-${stock.stockCode}`}
+                  <React.Fragment key={`owned-${stock.stockCode}`}>
+                    <div
                       className='side-stock-item'
                       onClick={() =>
                         setOpenStockCode((prev) =>
@@ -731,8 +731,8 @@ const Stocks = () => {
                       </div>
                     </div>
                     <div className='hr' />
-                  </>
-                ))
+                    </React.Fragment>
+                  ))
               ) : (
                 <div className='stocks-empty side-empty'>보유 주식이 없습니다.</div>
               )}
@@ -747,8 +747,8 @@ const Stocks = () => {
                   const liked = isLiked(stock.stockCode);
 
                   return (
-                    <>
-                      <div key={`liked-${stock.stockCode}`}
+                    <React.Fragment key={`liked-${stock.stockCode}`}>
+                      <div
                         className={`side-stock-item ${openLikeCode === stock.stockCode ? 'flex' : ''}`}
                         onClick={() =>
                           setOpenLikeCode((prev) =>
@@ -789,9 +789,9 @@ const Stocks = () => {
                         </div>
                       </div >
                       <div className='hr' />
-                    </>
-                  );
-                })
+                      </React.Fragment>
+                    );
+                  })
               ) : (
                 <div className='stocks-empty side-empty'>찜한 주식이 없습니다.</div>
               )}
@@ -805,8 +805,8 @@ const Stocks = () => {
                 <div className='stocks-empty side-empty'>매매 내역이 없습니다.</div>
               ) : (
                 tradeHistory.map((item) => (
-                  <>
-                    <div key={item.id} className='st-history-item'>
+                  <React.Fragment key={item.id}>
+                    <div className='st-history-item'>
                       <div className='st-history-left'>
                         <div className='st-history-name'>{item.stockName}</div>
                         <div
@@ -833,7 +833,7 @@ const Stocks = () => {
                       </div>
                     </div>
                     <div className='hr' />
-                  </>
+                  </React.Fragment>
                 ))
               )}
             </div>

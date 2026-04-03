@@ -352,15 +352,15 @@ const Dashboard = () => {
   }, [loadDashboard])
 
   const formatNumber = (value) => {
-    const num = Number(value || 0)
-    return num.toLocaleString('ko-KR')
-  }
+  const num = Math.round(Number(value  ||0))
+  return num.toLocaleString('ko-KR')
+}
 
-  const formatSignedNumber = (value) => {
-    const num = Number(value || 0)
-    const prefix = num > 0 ? '+' : ''
-    return `${prefix}${num.toLocaleString('ko-KR')}`
-  }
+const formatSignedNumber = (value) => {
+  const num = Math.round(Number(value || 0))
+  const prefix = num > 0 ? '+' : ''
+  return `${prefix}${num.toLocaleString('ko-KR')}`
+}  
 
   const formatSignedPercent = (value) => {
     const num = Number(value || 0)

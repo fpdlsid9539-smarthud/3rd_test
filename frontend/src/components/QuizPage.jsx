@@ -13,10 +13,118 @@ const POINT_TABLE = {
 const PERFECT_BONUS = { 하: 5000, 중: 10000, 상: 20000 }
 
 const MAX_QUESTIONS = 10
-const MAX_AI_MIX_COUNT = 3
+const DB_QUESTION_COUNT = 7
+const AI_QUESTION_COUNT = 3
 const DIFFICULTIES = ['하', '중', '상']
 
 const shuffleArray = (arr = []) => [...arr].sort(() => Math.random() - 0.5)
+
+const normalizeText = (value = '') =>
+  String(value || '')
+    .replace(/\([^)]*\)/g, ' ')
+    .replace(/[“”"'`~!@#$%^&*_=+|\\/:;,.<>?[\]{}-]/g, ' ')
+    .replace(/\s+/g, ' ')
+    .trim()
+    .toLowerCase()
+
+const normalizeQuestionText = (value = '') =>
+  normalizeText(value)
+    .replace(/무엇(인가요|일까요|입니까|인가|일까)?/g, '무엇')
+    .replace(/뜻하는 것은/g, '뜻')
+    .replace(/가장 적절한 것은/g, '적절')
+    .replace(/옳은 것은/g, '옳음')
+    .replace(/틀린 것은/g, '틀림')
+    .replace(/다음 중/g, '')
+    .replace(/설명으로/g, '설명')
+    .replace(/것은/g, '')
+    .trim()
+
+const getSimilarity = (a = '', b = '') => {
+  const aa = normalizeQuestionText(a)
+  const bb = normalizeQuestionText(b)
+
+  if (!aa || !bb) return 0
+  if (aa === bb) return 1
+  if (aa.includes(bb) || bb.includes(aa)) return 0.95
+
+  const aTokens = aa.split(' ').filter(Boolean)
+  const bTokens = bb.split(' ').filter(Boolean)
+
+  if (!aTokens.length || !bTokens.length) return 0
+
+  const aSet = new Set(aTokens)
+  const bSet = new Set(bTokens)
+
+  let intersection = 0
+  for (const token of aSet) {
+    if (bSet.has(token)) intersection += 1
+  }
+
+  return intersection / Math.max(aSet.size, bSet.size)
+}
+
+const isTooSimilarQuestion = (a = '', b = '') => getSimilarity(a, b) >= 0.72
+
+const hasDuplicateOptions = (quiz) => {
+  const options = [
+    quiz?.option_1,
+    quiz?.option_2,
+    quiz?.option_3,
+    quiz?.option_4,
+  ].map((v) => normalizeText(v))
+
+  if (options.some((v) => !v)) return true
+  return new Set(options).size !== 4
+}
+
+const hasTooSimilarOptions = (quiz) => {
+  const options = [
+    quiz?.option_1,
+    quiz?.option_2,
+    quiz?.option_3,
+    quiz?.option_4,
+  ].map((v) => String(v || '').trim())
+
+  for (let i = 0; i < options.length; i += 1) {
+    for (let j = i + 1; j < options.length; j += 1) {
+      if (getSimilarity(options[i], options[j]) >= 0.78) {
+        return true
+      }
+    }
+  }
+
+  return false
+}
+
+const isValidQuizPayload = (payload) => {
+  if (!payload?.question) return false
+  if (!payload?.option_1) return false
+  if (!payload?.option_2) return false
+  if (!payload?.option_3) return false
+  if (!payload?.option_4) return false
+  if (![1, 2, 3, 4].includes(Number(payload?.answer))) return false
+  if (hasDuplicateOptions(payload)) return false
+  if (hasTooSimilarOptions(payload)) return false
+  return true
+}
+
+const pickUniqueDbQuizzes = (dbQuizzes = [], count = 7) => {
+  const picked = []
+
+  for (const quiz of shuffleArray(dbQuizzes)) {
+    const duplicated = picked.some((saved) =>
+      isTooSimilarQuestion(saved?.question, quiz?.question)
+    )
+
+    if (!duplicated) {
+      picked.push({ ...quiz, source: 'db' })
+    }
+
+    if (picked.length === count) break
+  }
+
+  return picked
+}
 
 const buildKeywordCandidates = (quizzes = [], difficulty = '하') => {
   const stopWords = new Set([
@@ -218,50 +326,73 @@ const QuizPage = () => {
   }
 
   const createMixedQuizSession = async (selectedLevel, dbQuizzes) => {
-    const selectedDbCount = Math.max(1, MAX_QUESTIONS - MAX_AI_MIX_COUNT)
-    const shuffledDb = shuffleArray(dbQuizzes)
-    const selectedDb = shuffledDb
-      .slice(0, selectedDbCount)
-      .map((quiz) => ({ ...quiz, source: 'db' }))
+    const selectedDb = pickUniqueDbQuizzes(dbQuizzes, DB_QUESTION_COUNT)
 
-    const aiNeedCount = Math.max(0, MAX_QUESTIONS - selectedDb.length)
+    if (selectedDb.length < DB_QUESTION_COUNT) {
+      throw new Error(`DB 문제는 최소 ${DB_QUESTION_COUNT}개의 서로 다른 문제가 필요합니다.`)
+    }
+
     const keywordCandidates = buildKeywordCandidates(selectedDb, selectedLevel)
-    const seedQuestions = selectedDb.slice(0, 5).map((quiz) => quiz.question)
+    const usedQuestions = selectedDb.map((quiz) => quiz.question)
+    const aiQuizzes = []
 
-    const aiPromises = Array.from({ length: aiNeedCount }).map((_, index) =>
-      api.post('/api/quiz/generate', {
-        difficulty: selectedLevel,
-        keywords: keywordCandidates,
-        seedQuestions,
-        mixIndex: index + 1,
-      })
-    )
+    for (let index = 0; index < AI_QUESTION_COUNT; index += 1) {
+      let createdQuiz = null
 
-    const aiResults = await Promise.allSettled(aiPromises)
+      for (let attempt = 1; attempt <= 6; attempt += 1) {
+        try {
+          const res = await api.post('/api/quiz/generate', {
+            difficulty: selectedLevel,
+            keywords: keywordCandidates,
+            seedQuestions: usedQuestions,
+            mixIndex: index + 1,
+            attempt,
+          })
 
-    const aiQuizzes = aiResults
-      .map((result, index) => {
-        if (result.status !== 'fulfilled') return null
+          const payload = res?.data?.data ?? res?.data ?? {}
 
-        const payload = result.value?.data?.data ?? result.value?.data ?? {}
-        if (!payload?.question) return null
+          if (!isValidQuizPayload(payload)) continue
 
-        return {
-          quiz_id: `ai-mix-${Date.now()}-${index}`,
-          difficulty: selectedLevel,
-          source: 'ai',
-          question: payload.question,
-          option_1: payload.option_1,
-          option_2: payload.option_2,
-          option_3: payload.option_3,
-          option_4: payload.option_4,
-          answer: Number(payload.answer),
-          explanation: payload.explanation,
+          const duplicated = usedQuestions.some((question) =>
+            isTooSimilarQuestion(question, payload.question)
+          )
+
+          if (duplicated) continue
+
+          createdQuiz = {
+            quiz_id: `ai-mix-${Date.now()}-${index}-${attempt}`,
+            difficulty: selectedLevel,
+            source: 'ai',
+            question: payload.question,
+            option_1: payload.option_1,
+            option_2: payload.option_2,
+            option_3: payload.option_3,
+            option_4: payload.option_4,
+            answer: Number(payload.answer),
+            explanation: payload.explanation,
+          }
+
+          break
+        } catch (err) {
+          console.error(`AI 혼합 문제 생성 실패 [${index + 1}-${attempt}] =`, err)
         }
-      })
-      .filter(Boolean)
+      }
 
-    return shuffleArray([...selectedDb, ...aiQuizzes]).slice(0, MAX_QUESTIONS)
+      if (!createdQuiz) {
+        throw new Error(`AI 문제 ${AI_QUESTION_COUNT}개를 생성하지 못했습니다.`)
+      }
+
+      aiQuizzes.push(createdQuiz)
+      usedQuestions.push(createdQuiz.question)
+    }
+
+    const finalSession = [...selectedDb, ...aiQuizzes]
+
+    if (finalSession.length !== MAX_QUESTIONS) {
+      throw new Error(`혼합 세션 문제 수가 ${MAX_QUESTIONS}개가 아닙니다.`)
+    }
+
+    return shuffleArray(finalSession)
   }
 
   const startSession = async (selectedLevel) => {
@@ -285,8 +416,8 @@ const QuizPage = () => {
 
       const mixedSession = await createMixedQuizSession(selectedLevel, filtered)
 
-      if (!mixedSession.length) {
-        alert('퀴즈 세션을 생성하지 못했습니다.')
+      if (mixedSession.length !== MAX_QUESTIONS) {
+        alert(`퀴즈는 반드시 ${MAX_QUESTIONS}문제로 생성되어야 합니다.`)
         return
       }
 
@@ -315,14 +446,33 @@ const QuizPage = () => {
     setSessionTopic(parsedKeywords)
 
     try {
-      const res = await api.post('/api/quiz/generate', {
-        keywords: parsedKeywords,
-      })
+      let payload = null
 
-      const payload = res?.data?.data ?? res?.data ?? {}
+      for (let attempt = 1; attempt <= 6; attempt += 1) {
+        const res = await api.post('/api/quiz/generate', {
+          keywords: parsedKeywords,
+          difficulty: '하',
+          seedQuestions: allQuizzes.map((quiz) => quiz.question).filter(Boolean),
+          attempt,
+          mixIndex: 1,
+        })
+
+        const nextPayload = res?.data?.data ?? res?.data ?? {}
+
+        if (!isValidQuizPayload(nextPayload)) continue
+
+        const duplicated = allQuizzes.some((quiz) =>
+          isTooSimilarQuestion(quiz.question, nextPayload.question)
+        )
+
+        if (duplicated) continue
+
+        payload = nextPayload
+        break
+      }
 
       if (!payload?.question) {
-        throw new Error('AI 퀴즈 생성 결과가 올바르지 않습니다.')
+        throw new Error('AI 퀴즈 생성 결과가 올바르지 않거나 중복되었습니다.')
       }
 
       const aiQuiz = {
@@ -361,7 +511,11 @@ const QuizPage = () => {
       setStep('PLAYING')
     } catch (err) {
       console.error('AI 퀴즈 생성 실패 =', err)
-      alert(err?.response?.data?.message || err?.message || 'AI 퀴즈 생성에 실패했습니다.')
+      alert(
+        err?.response?.data?.message ||
+        err?.message ||
+        'AI 퀴즈 생성에 실패했습니다.'
+      )
     } finally {
       setLlmQuizLoading(false)
     }
@@ -493,13 +647,31 @@ const QuizPage = () => {
     }
 
     try {
-      const res = await api.post('/api/quiz/generate', {
-        difficulty,
-        keywords: finalKeywords,
-        seedQuestions: allQuizzes.map((q) => q.question).filter(Boolean),
-      })
+      let payload = null
 
-      const payload = res?.data?.data ?? res?.data ?? {}
+      for (let attempt = 1; attempt <= 6; attempt += 1) {
+        const res = await api.post('/api/quiz/generate', {
+          difficulty,
+          keywords: finalKeywords,
+          seedQuestions: allQuizzes.map((q) => q.question).filter(Boolean),
+          attempt,
+          mixIndex: 1,
+        })
+
+        const nextPayload = res?.data?.data ?? res?.data ?? {}
+
+        if (!isValidQuizPayload(nextPayload)) continue
+
+        const duplicated = allQuizzes.some((quiz) =>
+          isTooSimilarQuestion(quiz.question, nextPayload.question)
+        )
+
+        if (duplicated) continue
+
+        payload = nextPayload
+        break
+      }
+
       if (!payload?.question) throw new Error('생성 실패')
 
       const nextQuiz = {
@@ -750,7 +922,7 @@ const QuizPage = () => {
             onChange={(e) => setLlmKeywords(e.target.value)}
             onKeyDown={(e) => {
               if (e.key === 'Enter') {
-                generateLLMQuiz ()
+                generateLLMQuiz()
               }
             }}
             placeholder='예: PER, 공매도, 코스피'
@@ -916,6 +1088,9 @@ const QuizPage = () => {
         </div>
       </div>
       <div className='quiz-card'>
+        {currentQuiz?.source === 'ai' && (
+          <div className='ai-label'>AI 생성 문제</div>
+        )}
         <h3 className='quiz-question'>
           {difficulty === 'AI'
             ? `AI 문제. ${currentQuiz?.question}`
