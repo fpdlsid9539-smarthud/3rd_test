@@ -18,6 +18,32 @@ function fail(res, message, error = null, status = 500) {
   });
 }
 
+let yfInstance = null;
+
+async function getYahooFinance() {
+  if (yfInstance) return yfInstance;
+  const mod = await import("yahoo-finance2");
+  const YahooFinance = mod.default || mod;
+  yfInstance = new YahooFinance();
+  return yfInstance;
+}
+
+function normalizeStockCode(value) {
+  return String(value || "").trim().padStart(6, "0");
+}
+
+async function getQuoteByCode(stockCode) {
+  const yahooFinance = await getYahooFinance();
+  const code = normalizeStockCode(stockCode);
+
+  let quote = await yahooFinance.quote(`${code}.KS`).catch(() => null);
+  if (!quote) {
+    quote = await yahooFinance.quote(`${code}.KQ`).catch(() => null);
+  }
+
+  return quote;
+}
+
 exports.getLeaderboard = async (req, res) => {
   try {
     const memberId = Number(req.user?.member_id || 0);
@@ -74,13 +100,19 @@ exports.getLeaderboard = async (req, res) => {
     // 4. 랭킹 / 티어 계산
     const maxPoints = rankedRows.length > 0 ? rankedRows[0].leaguePoint : 0;
 
+    const totalCount = rankedRows.length;
+
     const finalRows = rankedRows.map((row, index) => {
-      const rankingPoint = maxPoints > 0 ? (row.leaguePoint / maxPoints) * 100 : 0;
+      const rankingPoint =
+        totalCount > 1
+          ? ((totalCount - 1 - index) / (totalCount - 1)) * 100
+          : 100;
+
       const tier = getTierKeyByRankingPoint(rankingPoint);
 
       return {
         ...row,
-        rankingPoint,
+        rankingPoint: Number(rankingPoint.toFixed(2)),
         tier,
         overallRank: index + 1,
       };
