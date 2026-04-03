@@ -113,12 +113,14 @@ const Dashboard = () => {
         ownedRes,
         rankingRes,
         questRes,
+        isrRes,
       ] = await Promise.allSettled([
         api.get('/api/auth/me'),
         api.get('/api/stocks/liked'),
         api.get('/api/stocks/owned'),
         api.get('/api/ranking'),
         api.get('/api/quiz/status/me'),
+        api.get('/api/isr/me/latest'),
       ])
 
       if (memberRes.status === 'fulfilled') {
@@ -131,10 +133,6 @@ const Dashboard = () => {
 
         setMember(memberData)
 
-        setIsrData((prev) => ({
-          ...prev,
-          isr: Number(memberData?.isr_score || 0),
-        }))
       } else {
         setMember(null)
         setIsrData(EMPTY_ISR)
@@ -257,6 +255,16 @@ const Dashboard = () => {
         setQuestStatus(EMPTY_QUEST)
       }
 
+      if (isrRes.status === 'fulfilled') {
+        const isrPayload = toObject(isrRes.value, EMPTY_ISR)
+        setIsrData({
+          ...EMPTY_ISR,
+          ...isrPayload,
+        })
+      } else {
+        setIsrData(EMPTY_ISR)
+      }
+      
       if (memberRes.status === 'rejected') {
         throw memberRes.reason
       }
