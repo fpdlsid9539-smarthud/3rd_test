@@ -31,7 +31,9 @@ const BASE_ORIGINS = [
   "https://3rd-test-khaki.vercel.app",
   "https://3rd-test-git-main-shkims-projects-92f4c7c6.vercel.app",
   "https://3rd-test-l9pc4h59k-shkims-projects-92f4c7c6.vercel.app",
+  "https://3rd-test-cqvv5youa-shkims-projects-92f4c7c6.vercel.app",
 ];
+
 const allowedOrigins = process.env.FRONTEND_URL
   ? [...BASE_ORIGINS, process.env.FRONTEND_URL]
   : BASE_ORIGINS;
@@ -39,9 +41,16 @@ const allowedOrigins = process.env.FRONTEND_URL
 app.use(
   cors({
     origin: (origin, callback) => {
-      if (!origin || allowedOrigins.includes(origin)) {
+      const isAllowedExact = !origin || allowedOrigins.includes(origin);
+
+      const isVercelPreview =
+        typeof origin === "string" &&
+        /^https:\/\/3rd-test-[a-z0-9-]+-shkims-projects-92f4c7c6\.vercel\.app$/.test(origin);
+
+      if (isAllowedExact || isVercelPreview) {
         return callback(null, true);
       }
+
       return callback(new Error(`CORS 차단: 허용되지 않은 origin — ${origin}`));
     },
     credentials: true,
