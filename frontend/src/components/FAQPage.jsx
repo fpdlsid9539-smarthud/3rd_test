@@ -8,14 +8,30 @@ import { api } from '../config/api'
 const formatDateTime = (value) => {
   if (!value) return '-'
 
-  const date = new Date(value)
-  if (Number.isNaN(date.getTime())) return '-'
+  const raw = String(value).trim()
 
-  const yyyy = date.getFullYear()
-  const mm = String(date.getMonth() + 1).padStart(2, '0')
-  const dd = String(date.getDate()).padStart(2, '0')
-  const hh = String(date.getHours()).padStart(2, '0')
-  const mi = String(date.getMinutes()).padStart(2, '0')
+  // 1) UTC/ISO 문자열이면 한국시간으로 변환
+  // 예: 2026-04-03T03:42:10.000Z
+  if (raw.includes('T') || raw.endsWith('Z')) {
+    const date = new Date(raw)
+    if (Number.isNaN(date.getTime())) return '-'
+
+    const yyyy = date.getFullYear()
+    const mm = String(date.getMonth() + 1).padStart(2, '0')
+    const dd = String(date.getDate()).padStart(2, '0')
+    const hh = String(date.getHours()).padStart(2, '0')
+    const mi = String(date.getMinutes()).padStart(2, '0')
+
+    return `${yyyy}.${mm}.${dd} ${hh}:${mi}`
+  }
+
+  // 2) 이미 DB 로컬시간 문자열이면 그대로 표시
+  // 예: 2026-04-03 12:31:41
+  const [datePart, timePart = ''] = raw.split(' ')
+  if (!datePart) return '-'
+
+  const [yyyy, mm, dd] = datePart.split('-')
+  const [hh = '00', mi = '00'] = timePart.split(':')
 
   return `${yyyy}.${mm}.${dd} ${hh}:${mi}`
 }
