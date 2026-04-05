@@ -40,6 +40,7 @@
   --btn-prim: linear-gradient(90deg, var(--primary-70) 25%, hsla(225, 100%, 88%, 0.70) 100%);
   --btn-warn: linear-gradient(135deg, var(--warning), color-mix(in oklab, var(--warning), var(--danger) 40%));
   --bg-grad: linear-gradient(180deg, var(--bg-trans2), var(--bg-trans));
+  --bg-trans-gd: linear-gradient(180deg, var(--bg) 50%, transparent);
 
   --shadow-1: color-mix(in oklab, var(--text) 24%, transparent);
   --shadow-2: color-mix(in oklab, var(--text) 12%, transparent);

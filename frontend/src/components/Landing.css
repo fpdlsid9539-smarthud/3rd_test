@@ -152,7 +152,7 @@ body {
 .google_btn img {
   width: 1.25rem;
   height: 1.25rem;
-  object-fit: contain; 
+  object-fit: contain;
 }
 
 .container {
@@ -175,6 +175,7 @@ body {
   justify-content: center;
   align-items: center;
   gap: 1.5rem;
+  text-align: center
 }
 
 .hero-title {
@@ -201,11 +202,11 @@ body {
 
   font-size: 1.4rem;
   font-weight: 600;
+  text-align: center;
 }
 
 .title-description p {
-  margin: 0px;
-  line-height: 200%;
+  line-height: 2;
 }
 
 .intro-container,
@@ -393,6 +394,7 @@ body {
   border-color: transparent;
   color: var(--primary);
 }
+
 .landing-faq-chip:focus {
   background: var(--primary-highlight);
 }
@@ -410,7 +412,7 @@ body {
   height: 3rem;
   padding: 0.75rem;
   box-sizing: border-box;
-  
+
   background: transparent;
   border: 1px solid var(--border);
   border-radius: 0.75rem;
@@ -569,7 +571,7 @@ body {
   font-weight: 600;
 }
 
-.landing-faq-primary-btn:hover, 
+.landing-faq-primary-btn:hover,
 .landing-faq-secondary-btn:hover {
   transform: translateY(-2px);
   box-shadow: 0 0.25rem 0.5rem var(--shadow-2);
@@ -745,7 +747,130 @@ body {
   color: #555;
 }
 
+/* ─── FAQ Modal ──────────────────────────────── */
+.faq-modal-overlay {
+  position: fixed;
+  inset: 0;
+  z-index: 1000;
+  background: var(--text-trans);
+  backdrop-filter: blur(0.25rem);
+
+  display: flex;
+  align-items: center;
+  justify-content: center;
+
+  animation: faq-fade-in 0.2s ease;
+}
+
+@keyframes faq-fade-in {
+  from {
+    opacity: 0;
+  }
+
+  to {
+    opacity: 1;
+  }
+}
+
+.faq-modal-container {
+  position: relative;
+  width: min(900px, 92vw);
+  max-height: 85vh;
+
+  /* container itself does NOT scroll — inner body does */
+  overflow: hidden;
+
+  background: var(--bg);
+  border: 1px solid var(--border);
+  border-radius: 2rem;
+  box-shadow: 0 0.5rem 1rem var(--shadow-1);
+
+  display: flex;
+  flex-direction: column;
+
+  animation: faq-slide-up 0.25s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+@keyframes faq-slide-up {
+  from {
+    opacity: 0;
+    transform: translateY(2rem);
+  }
+
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+/* sticky header row housing the close button */
+.faq-modal-header {
+  flex-shrink: 0;
+  display: flex;
+  justify-content: flex-end;
+  align-items: center;
+  padding: 0.875rem 1rem;
+  border-bottom: 1px solid var(--border);
+  background: var(--bg);
+}
+
+/* scrollable content area — scrollbar visible on right edge of modal */
+.faq-modal-body {
+  padding: 0 1.5rem;
+  flex: 1;
+  overflow-y: auto;
+  overflow-x: hidden;
+}
+
+.faq-modal-close {
+  width: 2.5rem;
+  height: 2.5rem;
+  flex-shrink: 0;
+
+  display: flex;
+  align-items: center;
+  justify-content: center;
+
+  border: 1px solid var(--border);
+  border-radius: 50%;
+  background: var(--bg);
+
+  font-size: 1rem;
+  color: var(--text);
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+
+.faq-modal-close:hover {
+  background: var(--primary-highlight);
+  border: 1px solid var(--primary);
+  color: var(--danger);
+  box-shadow: 0 0.25rem 0.5rem var(--shadow-2);
+}
+
 @media (max-width: 1400px) {
+  .intro-description {
+    padding-left: 0.5rem;
+    font-size: 1.2rem;
+    line-height: 1.5;
+  }
+
+  .intro-title h2 {
+    font-size: 1.75rem;
+  }
+
+  .intro-title {
+    padding: 1rem;
+  }
+
+  .ad-title h2 {
+    font-size: 1.75rem;
+  }
+
+  .ad-title {
+    padding: 1rem;
+  }
+
   .landing-header {
     width: 88%;
     gap: 1rem;
@@ -796,7 +921,39 @@ body {
   }
 }
 
+@media (max-width: 900px) {
+
+
+  .kakao_btn>span,
+  .google_btn>span {
+    display: none;
+  }
+
+}
+
 @media (max-width: 768px) {
+  .intro-description {
+    font-size: 1.125rem;
+    line-height: 1.5;
+  }
+
+  .intro-title h2 {
+    font-size: 1.25rem;
+  }
+
+  .intro-title {
+    padding: 0.5rem 0.75rem;
+  }
+
+  .ad-title h2 {
+    font-size: 1.25rem;
+  }
+
+  .ad-title {
+    padding: 0.5rem 0.75rem;
+  }
+
+
   .landing-header {
     width: calc(100% - 1rem);
     padding: 0.5rem;
@@ -812,7 +969,7 @@ body {
     font-size: 0.875rem;
   }
 
-  .landing-navigation-menu > p {
+  .landing-navigation-menu>p {
     display: none;
   }
 
@@ -831,11 +988,6 @@ body {
   .google_btn {
     justify-content: center;
     padding: 0.5rem;
-  }
-
-  .kakao_btn>span,
-  .google_btn>span {
-    display: none;
   }
 
   .title {
@@ -876,93 +1028,4 @@ body {
   .landing-faq-preview-actions {
     flex-direction: column;
   }
-}
-
-/* ─── FAQ Modal ──────────────────────────────── */
-.faq-modal-overlay {
-  position: fixed;
-  inset: 0;
-  z-index: 1000;
-  background: var(--text-trans);
-  backdrop-filter: blur(0.25rem);
- 
-  display: flex;
-  align-items: center;
-  justify-content: center;
- 
-  animation: faq-fade-in 0.2s ease;
-}
- 
-@keyframes faq-fade-in {
-  from { opacity: 0; }
-  to   { opacity: 1; }
-}
- 
-.faq-modal-container {
-  position: relative;
-  width: min(900px, 92vw);
-  max-height: 85vh;
- 
-  /* container itself does NOT scroll — inner body does */
-  overflow: hidden;
- 
-  background: var(--bg);
-  border: 1px solid var(--border);
-  border-radius: 2rem;
-  box-shadow: 0 0.5rem 1rem var(--shadow-1);
- 
-  display: flex;
-  flex-direction: column;
- 
-  animation: faq-slide-up 0.25s cubic-bezier(0.4, 0, 0.2, 1);
-}
- 
-@keyframes faq-slide-up {
-  from { opacity: 0; transform: translateY(2rem); }
-  to   { opacity: 1; transform: translateY(0); }
-}
- 
-/* sticky header row housing the close button */
-.faq-modal-header {
-  flex-shrink: 0;
-  display: flex;
-  justify-content: flex-end;
-  align-items: center;
-  padding: 0.875rem 1rem;
-  border-bottom: 1px solid var(--border);
-  background: var(--bg);
-}
- 
-/* scrollable content area — scrollbar visible on right edge of modal */
-.faq-modal-body {
-  padding: 0 1.5rem;
-  flex: 1;
-  overflow-y: auto;
-  overflow-x: hidden;
-}
- 
-.faq-modal-close {
-  width: 2.5rem;
-  height: 2.5rem;
-  flex-shrink: 0;
- 
-  display: flex;
-  align-items: center;
-  justify-content: center;
- 
-  border: 1px solid var(--border);
-  border-radius: 50%;
-  background: var(--bg);
- 
-  font-size: 1rem;
-  color: var(--text);
-  cursor: pointer;
-  transition: all 0.2s ease;
-}
- 
-.faq-modal-close:hover {
-  background: var(--primary-highlight);
-  border: 1px solid var(--primary);
-  color: var(--danger);
-  box-shadow: 0 0.25rem 0.5rem var(--shadow-2);
 }

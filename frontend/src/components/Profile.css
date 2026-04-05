@@ -30,7 +30,8 @@
   width: 100%;
   min-height: auto;
   box-sizing: border-box;
-  overflow: visible;
+  overflow-x: hidden;
+  overflow-y: auto;
 
   position: relative;
   display: flex;
@@ -736,7 +737,7 @@
 
 /* ─── Achievement full grid (achievements page) ─ */
 .achievement-grid-full {
-  height: 12rem;
+  height: calc(50vh - 12rem);
   overflow-y: auto;
   display: grid;
   grid-template-columns: repeat(2, minmax(0, 1fr));
@@ -920,7 +921,7 @@
   padding: 0.5rem 0.75rem;
 
   position: absolute;
-  bottom: calc(0% - 4rem);
+  bottom: calc(0% - 6rem);
   left: 0;
 
   background: var(--box-bg);
@@ -1101,6 +1102,7 @@
 
 /* ─── Title list (achievements page) ────────── */
 .title-list {
+  width: 100%;
   display: flex;
   flex-direction: column;
   gap: 0.5rem;
@@ -1126,15 +1128,16 @@
 
 .title-item-tooltip {
   position: absolute;
-  top: auto;
-  bottom: calc(100%);
-  right: calc(0% + 15%);
-  min-width: 180px;
-  max-width: 240px;
+  top: 0;
+  left: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
   padding: 0.5rem 0.75rem;
   border: 1px solid var(--border);
   border-radius: 0.75rem;
-  background: var(--bg);
+  background: var(--bg-trans);
+  backdrop-filter: blur(0.1rem);
   color: var(--text);
   font-size: 0.875rem;
   line-height: 1.45;
@@ -1146,26 +1149,15 @@
   opacity: 0;
   visibility: hidden;
   pointer-events: none;
-  transform: translateY(1rem);
+  transform: translateY(2px);
   transition: opacity 0.3s ease, visibility 0.3s ease, transform 0.3s ease;
   z-index: 10001;
-}
-
-.title-item-tooltip::before {
-  content: "";
-  position: absolute;
-  right: calc(50%);
-  bottom: -6px;
-  width: 0.75rem;
-  height: 0.75rem;
-  background: var(--bg);
-  transform: rotate(45deg);
 }
 
 .title-item:hover .title-item-tooltip {
   opacity: 1;
   visibility: visible;
-  transform: translateY(0);
+  transform: translateY(-1px);
 }
 
 .title-item-left {
@@ -1701,7 +1693,20 @@
 
 /* ─── Responsive: max-width 1024px ───────────── */
 @media (max-width: 1024px) {
+
+  .profile-pic {
+    width: 104px;
+    height: 104px;
+  }
+
+  .profile-stock-list {
+    flex-direction: row;
+    flex-wrap: wrap;
+    justify-content: space-between;
+  }
+
   .profile.collapsed .profile-set {
+    background: transparent;
     padding: 0.5rem;
   }
 
@@ -1745,7 +1750,7 @@
 
   /* profile-content is the anchor for the dropdown panel */
   .profile .profile-content {
-    max-height: calc(100vh - 4rem);
+    max-height: calc(100vh - 2.5rem);
 
     align-items: center;
     position: relative;
@@ -1756,7 +1761,7 @@
 
     position: fixed;
     top: 0.25rem;
-
+    background: var(--bg-trans-gd);
     z-index: 10000;
   }
 
@@ -1781,6 +1786,7 @@
   /* When open (not collapsed): drop profile info down as a panel */
   .profile:not(.collapsed) .profile-content>*:not(.profile-set) {
     display: flex !important;
+    /* flex-wrap: wrap; */
     padding: 4rem 0.5rem 0;
     max-height: calc(100% - 4rem);
     width: 100%;
@@ -1818,7 +1824,7 @@
   }
 
   .achievement-grid-card-tooltip {
-    min-width: 100px;
+    min-width: 90px;
     max-width: 150px;
     background: var(--bg-trans2);
     backdrop-filter: blur(0.2rem);
@@ -1852,17 +1858,17 @@
   }
 
   .achievement-progress-tooltip-grid {
-    height: 6rem;
+    height: 8rem;
     overflow-y: auto;
     overflow-x: hidden;
     grid-template-columns: repeat(auto-fill, minmax(40px, 1fr));
   }
 
   .point-history-list {
-    height: 41rem;
+    height: calc(70vh - 3rem);
   }
 
-  .title-list{
+  .title-list {
     display: grid;
     grid-template-columns: 1fr 1fr 1fr;
     gap: 0.5rem;
@@ -1872,7 +1878,7 @@
 /* ─── Responsive: max-width 768px ───────────── */
 @media (max-width: 768px) {
 
-  .title-list{
+  .title-list {
     display: grid;
     grid-template-columns: 1fr 1fr;
     gap: 0.5rem;
@@ -1901,12 +1907,23 @@
 
 /* ─── Responsive: max-width 480px ───────────── */
 @media (max-width: 480px) {
+  .title-list {
+    height: calc(30vh - 6.5rem);
+    overflow-y: scroll;
+  }
+
+  .title-item {
+    padding-left: 0.5rem;
+    flex-direction: column;
+    gap: 0.5rem;
+  }
+
   .achievement-grid-full {
     grid-template-columns: repeat(2, minmax(0, 1fr));
   }
 
   .achievement-recent-grid {
-    grid-template-columns: repeat(2, minmax(0, 1fr));
+    grid-template-columns: repeat(3, minmax(0, 1fr));
   }
 
   .point-history-item {
@@ -1925,14 +1942,8 @@
 
   .profile-title-text-tooltip,
   .title-item-tooltip {
-    right: 50%;
-    left: auto;
-    transform: translateX(50%);
-    max-width: min(240px, calc(100vw - 2rem));
-  }
-
-  .title-item-tooltip::before {
-    right: calc(50% - 6px);
+    min-width: 90px;
+    max-width: 150px;
   }
 
   .profile-investment-sections {

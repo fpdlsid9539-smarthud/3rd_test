@@ -178,16 +178,16 @@
   display: flex;
   justify-content: space-between;
   align-items: center;
-  gap: 1rem;
 
   cursor: pointer;
 }
 
 .stocks-info-group {
+  overflow-x: hidden;
   display: flex;
   align-items: center;
 
-  gap: 1rem;
+  gap: 0.5rem;
 }
 
 .stocks-item-left,
@@ -233,8 +233,8 @@
 }
 
 .stock-rank-badge {
-  width: 2.5rem;
-  height: 2.5rem;
+  min-width: 2.5rem;
+  min-height: 2.5rem;
 
   display: flex;
   align-items: center;
