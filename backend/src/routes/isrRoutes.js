@@ -7,6 +7,9 @@ const authMiddleware = require("../../middlewares/authMiddleware");
 /* 로그인 사용자 ISR 계산 */
 router.get("/me", authMiddleware, isrController.calculateMyISR);
 
+/* 로그인 사용자 ISR 재계산 (POST - used after buy/sell) */
+router.post("/me/calculate", authMiddleware, isrController.calculateMyISR);
+
 /* 로그인 사용자 최신 ISR 조회 */
 router.get("/me/latest", authMiddleware, isrController.getMyLatestISR);
 

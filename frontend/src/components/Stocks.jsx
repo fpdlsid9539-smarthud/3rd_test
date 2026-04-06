@@ -361,7 +361,7 @@ const Stocks = () => {
       window.dispatchEvent(new Event('pointsUpdated'));
 
       // 매수/매도 후 ISR 재계산 (fire-and-forget)
-      api.post('/api/isr/me').catch((err) => {
+      api.post('/api/isr/me/calculate').catch((err) => {
         console.error('ISR 재계산 실패:', err)
       })
 
