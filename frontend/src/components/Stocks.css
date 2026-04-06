@@ -13,7 +13,7 @@
   display: grid;
   grid-template-columns: minmax(40vw, 2fr) minmax(10vw, 1fr);
   gap: 1rem;
-  /* align-items: start; */
+  align-items: start;
 }
 
 .stocks-main {
@@ -212,6 +212,7 @@
   font-size: 1rem;
   font-weight: 700;
   color: var(--text);
+  word-break: break-all;
 }
 
 .stocks-item-price {
@@ -334,7 +335,7 @@
   overflow-x: hidden;
   display: flex;
   flex-direction: column;
-  gap: 0.5rem;
+  gap: 1rem;
 }
 
 .stocks-card {
@@ -548,6 +549,7 @@
   border-top-left-radius: 0.75rem;
   border-bottom-left-radius: 0.75rem;
 }
+
 .chart-range-btn:last-child {
   border-top-right-radius: 0.75rem;
   border-bottom-right-radius: 0.75rem;
@@ -839,11 +841,9 @@
   color: var(--text-highlight);
 }
 
-@media (max-width: 1100px) {
+@media (max-width: 1024px) {
   .stocks-layout {
-    display: flex;
-    flex-direction: column;
-    
+    align-items: normal;
   }
 
   .stocks-side {
@@ -852,7 +852,10 @@
 }
 
 @media (max-width: 768px) {
-
+  .stocks-layout {
+    display: flex;
+    flex-direction: column;
+  }
   .stocks-tab-group {
     flex-wrap: wrap;
   }

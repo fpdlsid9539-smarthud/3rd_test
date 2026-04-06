@@ -717,11 +717,13 @@
 .bubble-arrow {
   left: 88%;
   top: 98%;
+  background: transparent;
 }
 
 .bubble-arrow2 {
   left: 50%;
   top: 50%;
+  background: transparent;
 }
 
 

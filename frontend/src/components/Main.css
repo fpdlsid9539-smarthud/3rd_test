@@ -34,6 +34,13 @@ body {
 
 @media (max-width: 1024px) {
   .main-body {
+    /* keep grid layout but force collapsed column widths */
+    grid-template-columns: 5.5rem minmax(0, 1fr) 5.5rem;
+  }
+}
+
+@media (max-width: 1024px) {
+  .main-body {
     width: 100%;
     overflow-x: hidden;
     display: flex;
