@@ -281,13 +281,13 @@ const Stocks = () => {
       type,
       stock: toTradeStock(stock),
     });
-    setTradeQuantity(0); // 0으로 변경
+    setTradeQuantity(1); // 0으로 변경
   };
 
   const closeTradeModal = () => {
     if (tradeLoading) return;
     setTradeModal({ isOpen: false, type: '', stock: null });
-    setTradeQuantity(0); // 0으로 변경
+    setTradeQuantity(1); // 0으로 변경
   };
 
   const isLiked = (stockCode) => likedCodeSet.has(String(stockCode).padStart(6, '0'));

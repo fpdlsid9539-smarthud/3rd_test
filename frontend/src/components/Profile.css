@@ -644,6 +644,7 @@
   padding: 0.5rem;
   border: 1px solid var(--border);
   border-radius: 0.75rem;
+  position: relative;
   display: flex;
   flex-direction: column;
   justify-content: center;
@@ -656,12 +657,12 @@
 }
 
 .achievement-recent-tooltip {
-  min-width: 160px;
-  max-width: 220px;
+  min-width: inherit;
+  min-height: inherit;
   padding: 0.5rem 0.75rem;
 
   position: absolute;
-  bottom: calc(100% + 0.75rem);
+  bottom: calc(0% + 0.75rem);
   left: 0;
 
   background: var(--bg);
@@ -677,7 +678,7 @@
   opacity: 0;
   visibility: hidden;
   pointer-events: none;
-  transform: translateX(-60%) translateY(1rem);
+  transform: translateY(1rem);
 
   transition: opacity 0.3s ease, visibility 0.3s ease, transform 0.3s ease;
 }
@@ -685,7 +686,7 @@
 .achievement-recent-card:hover .achievement-recent-tooltip {
   opacity: 1;
   visibility: visible;
-  transform: translateX(-60%) translateY(0rem);
+  transform: translateY(0rem);
 }
 
 .achievement-recent-tooltip-arrow,
@@ -701,8 +702,10 @@
 }
 
 .achievement-recent-tooltip-arrow {
-  left: 80%;
-  top: 98%;
+  left: 50%;
+  top: 50%;
+  
+  background: transparent;
 }
 
 .achievement-grid-tooltip-arrow {
@@ -921,7 +924,7 @@
   padding: 0.5rem 0.75rem;
 
   position: absolute;
-  bottom: calc(0% - 6rem);
+  bottom: calc(0vh - 4rem);
   left: 0;
 
   background: var(--box-bg);
@@ -1845,10 +1848,6 @@
     visibility: visible;
     opacity: 1;
     pointer-events: auto;
-  }
-
-  .achievement-recent-tooltip {
-    left: 50%;
   }
 
   .achievement-grid-full {
