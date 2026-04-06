@@ -56,66 +56,66 @@ function round2(value) {
    - seed가 있으면 유저별로 안정적인 데모값 생성
    - seed가 없으면 모두 같은 기본 데모값
 ========================= */
-function buildDemoISR(seed) {
-  const hasCustomSeed =
-    seed !== undefined && seed !== null && String(seed).trim() !== "";
+// function buildDemoISR(seed) {
+//   const hasCustomSeed =
+//     seed !== undefined && seed !== null && String(seed).trim() !== "";
 
-  if (!hasCustomSeed) {
-    const accuracy = 68;
-    const risk = 64;
-    const stability = 66;
-    const discipline = 72;
-    const strategy = 61;
-    const adaptability = 63;
+//   if (!hasCustomSeed) {
+//     const accuracy = 68;
+//     const risk = 64;
+//     const stability = 66;
+//     const discipline = 72;
+//     const strategy = 61;
+//     const adaptability = 63;
 
-    const isr =
-      accuracy * 0.30 +
-      risk * 0.25 +
-      stability * 0.20 +
-      discipline * 0.10 +
-      strategy * 0.10 +
-      adaptability * 0.05;
+//     const isr =
+//       accuracy * 0.30 +
+//       risk * 0.25 +
+//       stability * 0.20 +
+//       discipline * 0.10 +
+//       strategy * 0.10 +
+//       adaptability * 0.05;
 
-    return {
-      accuracy: round2(clamp(accuracy)),
-      risk: round2(clamp(risk)),
-      stability: round2(clamp(stability)),
-      discipline: round2(clamp(discipline)),
-      strategy: round2(clamp(strategy)),
-      adaptability: round2(clamp(adaptability)),
-      isr: round2(clamp(isr)),
-      mode: "DEMO",
-      hasRealLogs: false,
-    };
-  }
+//     return {
+//       accuracy: round2(clamp(accuracy)),
+//       risk: round2(clamp(risk)),
+//       stability: round2(clamp(stability)),
+//       discipline: round2(clamp(discipline)),
+//       strategy: round2(clamp(strategy)),
+//       adaptability: round2(clamp(adaptability)),
+//       isr: round2(clamp(isr)),
+//       mode: "DEMO",
+//       hasRealLogs: false,
+//     };
+//   }
 
-  const accuracy = seededRange(seed, 62, 79, 1);
-  const risk = seededRange(seed, 58, 76, 2);
-  const stability = seededRange(seed, 55, 74, 3);
-  const discipline = seededRange(seed, 60, 84, 4);
-  const strategy = seededRange(seed, 52, 73, 5);
-  const adaptability = seededRange(seed, 50, 72, 6);
+//   const accuracy = seededRange(seed, 62, 79, 1);
+//   const risk = seededRange(seed, 58, 76, 2);
+//   const stability = seededRange(seed, 55, 74, 3);
+//   const discipline = seededRange(seed, 60, 84, 4);
+//   const strategy = seededRange(seed, 52, 73, 5);
+//   const adaptability = seededRange(seed, 50, 72, 6);
 
-  const isr =
-    accuracy * 0.30 +
-    risk * 0.25 +
-    stability * 0.20 +
-    discipline * 0.10 +
-    strategy * 0.10 +
-    adaptability * 0.05;
+//   const isr =
+//     accuracy * 0.30 +
+//     risk * 0.25 +
+//     stability * 0.20 +
+//     discipline * 0.10 +
+//     strategy * 0.10 +
+//     adaptability * 0.05;
 
-  return {
-    accuracy: round2(clamp(accuracy)),
-    risk: round2(clamp(risk)),
-    stability: round2(clamp(stability)),
-    discipline: round2(clamp(discipline)),
-    strategy: round2(clamp(strategy)),
-    adaptability: round2(clamp(adaptability)),
-    isr: round2(clamp(isr)),
-    mode: "DEMO",
-    hasRealLogs: false,
-  };
-}
+//   return {
+//     accuracy: round2(clamp(accuracy)),
+//     risk: round2(clamp(risk)),
+//     stability: round2(clamp(stability)),
+//     discipline: round2(clamp(discipline)),
+//     strategy: round2(clamp(strategy)),
+//     adaptability: round2(clamp(adaptability)),
+//     isr: round2(clamp(isr)),
+//     mode: "DEMO",
+//     hasRealLogs: false,
+//   };
+// }
 
 /* =========================
    1) 판단력 (Accuracy)
